@@ -1,0 +1,2299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://www.smileconsult.de/Marina" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.smileconsult.de/Marina">
+    <element name="Marina">
+        <complexType>
+            <all>
+                
+                <element name="ControlParameter" maxOccurs="1"
+                         minOccurs="1">
+                    
+                    <complexType>
+                        <all>
+                            <element name="BaseDir" type="string"
+                                     maxOccurs="1" minOccurs="1">
+                            </element>
+                            <element name="NumberOfThreads" type="int"
+                                     minOccurs="0" maxOccurs="1">
+                            </element>
+                            
+                            <element name="System"
+                                     minOccurs="1" maxOccurs="1"> 
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="TriangleMesh">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TMeshFileType">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="EPSGCode" type="int"
+                                                 minOccurs="0" maxOccurs="1">
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            <element name="SimulationTime" minOccurs="1"
+                                     maxOccurs="1">
+                                <complexType>
+                                    <sequence>
+                                        <element name="ReferenceDate" type="string" minOccurs="0" maxOccurs="1"></element> <!-- Reference date [yyyy-MM-dd HH:mm:ss UTC+X] -->
+                                        <element name="StartTime"
+                                                 type="double" minOccurs="1" maxOccurs="1">
+                                        </element>  <!-- Start time [s] w.r.t. ReferenceDate -->
+                                        <element name="EndTime"
+                                                 type="double" minOccurs="1" maxOccurs="1">
+                                        </element><!-- End time [s] w.r.t. ReferenceDate -->
+                                        <element name="ResultTimeStep"
+                                                 type="double" minOccurs="1" maxOccurs="1">
+                                        </element><!-- Result time step [s] -->
+                                    </sequence>
+                                </complexType>
+                            </element>
+                        </all>
+                    </complexType>
+                </element>
+                
+                <element name="Configuration" maxOccurs="1"
+                         minOccurs="1">
+                    
+                    <complexType>
+                        <all>
+                            
+                            <element name="CurrentModel2D" minOccurs="0"
+                                     maxOccurs="1">
+                                <complexType>
+                                    <sequence>
+                                        <element name="DryFallBound"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element name="InfiltrationRate"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element name="Latitude"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TCurrent2DBoundaryFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="BottomFriction"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="Nikuradse">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element name="FileName" type="string">
+                                                                            </element>
+                                                                            <element name="FileType" type="tns:TMeshFileType">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="ManningStrickler">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element name="FileName" type="string">
+                                                                            </element>
+                                                                            <element name="FileType" type="tns:TMeshFileType">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="TriangleMesh"> <!-- Strickler wird ab 1.8 nicht mehr genutzt -->
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">  <!-- Strickler wird ab 1.8 nicht mehr genutzt -->
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="WaterLevel">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        
+                                        
+                                        <element name="WeirFile"
+                                                 maxOccurs="1" minOccurs="0">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" minOccurs="1"
+                                                        maxOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TWeirFileType"
+                                                        minOccurs="1" maxOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" minOccurs="1"
+                                                        maxOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        minOccurs="1" maxOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            <element name="GroundWaterModel2D"
+                                     minOccurs="0" maxOccurs="1">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TGroundWater2DBoundaryFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="SurfaceWater"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="Permeability"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element
+                                            name="ImpermeableLayerDepth" minOccurs="1"
+                                            maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element
+                                            name="UpperImpermeableLayerThickness" minOccurs="1"
+                                            maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="WaterLevel">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" minOccurs="1"
+                                                        maxOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        minOccurs="1" maxOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            
+                            <element name="CurrentModel3D" minOccurs="0"
+                                     maxOccurs="1">
+                                <complexType>
+                                    <sequence>
+                                        <element name="DryFallBound"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TCurrent2DBoundaryFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="BottomFriction"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="Nikuradse">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element name="FileName" type="string">
+                                                                            </element>
+                                                                            <element name="FileType" type="tns:TMeshFileType">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="ManningStrickler">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element name="FileName" type="string">
+                                                                            </element>
+                                                                            <element name="FileType" type="tns:TMeshFileType">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="TriangleMesh"> <!-- Strickler wird ab 1.8 nicht mehrgenutzt -->
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">  <!-- Strickler wird ab 1.8 nicht mehrgenutzt -->
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="DepthLayer"
+                                                 type="tns:TDepthLayer" maxOccurs="1"
+                                                 minOccurs="1">
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="WaterLevel">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile2D"
+                                                 minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" minOccurs="1"
+                                                        maxOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        minOccurs="1" maxOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" minOccurs="1"
+                                                        maxOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        minOccurs="1" maxOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            <element name="MeteorologyCondition"
+                                     minOccurs="0" maxOccurs="1">
+                                <complexType>
+                                    <sequence>
+                                        <element name="FileName"
+                                                 type="string" minOccurs="1" maxOccurs="1">
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="MeteorologicalModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="DataBased"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="WindTimeSeries">
+                                                        <complexType>
+                                                            <sequence>
+
+                                                                <element name="FileName"
+                                                                         type="string" minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="ResultFile">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            <element name="BathymetricModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="DataBased"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="ResultFile">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            <element name="SaltTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TSalt2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                        
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            <element name="HeatTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="AirTemperature"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:THeat2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Temperature">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+                            
+                            
+                            <element name="SedimentTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <all>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        
+                                        <element name="MaxErosion"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+
+                                        <element name="NoErodibleHorizon"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        
+                                        <element name="MaintainedDepth"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Constant" type="double">
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+
+                                        <element name="GrainSize"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element name="singleSSSFile" maxOccurs="1" minOccurs="0">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TSSSFileType" maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="D50" maxOccurs="1" minOccurs="0">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element
+                                                                    name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element
+                                                                    name="Constant" type="double">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Dmax" maxOccurs="1" minOccurs="0">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element
+                                                                    name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element
+                                                                    name="Constant" type="double" maxOccurs="1" minOccurs="0" default="2.">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Dmin" maxOccurs="1" minOccurs="0">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element
+                                                                    name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element
+                                                                    name="Constant" type="double" maxOccurs="1" minOccurs="0" default="0.02">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Sorting" maxOccurs="1" minOccurs="0">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element
+                                                                    name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element
+                                                                    name="Constant" type="double" maxOccurs="1" minOccurs="0" default="1.0">
+                                                                </element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        
+                                        <element name="DuneParameter"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="ReadFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="DuneHight">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        
+                                        <element
+                                            name="SuspendedLoadFormula"
+                                            type="tns:TSuspendedLoadFormula" maxOccurs="1"
+                                            minOccurs="1">
+                                        </element>
+                                        <element name="BedLoadFormula"
+                                                 type="tns:TBedLoadFormula" maxOccurs="1"
+                                                 minOccurs="1">
+                                        </element>
+                                        <element name="CriticalShieldsFormula"
+                                                 type="tns:TCriticalShieldsFormula" maxOccurs="1"
+                                                 minOccurs="1">
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="0">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TSediment2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element
+                                            name="MorphologicalFactor" type="double"
+                                            maxOccurs="1" minOccurs="0" default="1.">
+                                        </element>
+                                        <element name="SoilModel"
+                                                 maxOccurs="1" minOccurs="0">
+                                            <complexType>
+                                                <sequence>
+                                                    <element name="WriteModulo" type="integer"
+                                                             maxOccurs="1"  minOccurs="0" default="1">
+                                                    </element>
+                                                    <element name="initialSoilModel"
+                                                             minOccurs="0" maxOccurs="1">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element name="FileName" type="string" 
+                                                                         maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                                <element name="FileType" type="tns:TSoilModelFileType"
+                                                                         maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                                <element name="Coarsen" type="boolean"
+                                                                         maxOccurs="1" minOccurs="0">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="ResultFile"
+                                                             maxOccurs="1" minOccurs="1">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element name="FileName" type="string" 
+                                                                         maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                                <element name="FileType" type="tns:TSoilModelFileType"
+                                                                         maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                                <element name="Coarsen" type="boolean"
+                                                                         maxOccurs="1" minOccurs="0">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </all>
+                                </complexType>
+                            </element>
+                            
+                            
+                            <element name="WaveHypModel" maxOccurs="1"
+                                     minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TWaveBoundaryFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="WaterLevelOffSet"
+                                                 type="double" minOccurs="1" maxOccurs="1">
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="FluidMudFlowModel2D" minOccurs="0"
+                                     maxOccurs="1">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TFluidMudFlow2DBoundaryFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="FluidMudLevel">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element
+                                            name="Density">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Constant" type="double"></element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element
+                                            name="Viscosity">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="TriangleMesh">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Constant" type="double"></element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" minOccurs="1"
+                                                        maxOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        minOccurs="1" maxOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="AdvectionDispersionModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="DispersionCoefficient"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element name="DegradationRate"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TAdvectionDispersion2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+
+                            <element name="OxygenTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="WaterTemperature" type="double"
+                                                 maxOccurs="1" minOccurs="0">
+                                        </element>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TQxygen2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="SpartinaAlternifloraModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element
+                                                        name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element
+                                                        name="Density">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="NitratTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TEco2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="PhosphatTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TEco2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="ZooplanktonTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TEco2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="PhytoplanktonTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TEco2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                            <element name="DetritusTransportModel2D"
+                                     maxOccurs="1" minOccurs="0">
+                                <complexType>
+                                    <sequence>
+                                        <element
+                                            name="BoundaryCondition" maxOccurs="1"
+                                            minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType"
+                                                        type="tns:TEco2DBoundaryFileType" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                        <element name="InitialCondition"
+                                                 minOccurs="0" maxOccurs="1">
+                                            <complexType>
+                                                <choice>
+                                                    <element name="StartFromResult">
+                                                        <complexType>
+                                                            <sequence>
+                                                                <element
+                                                                    name="FileName" type="string" minOccurs="1"
+                                                                    maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="FileType" type="tns:TResultFileType"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                                <element
+                                                                    name="TimeStepCounter" type="int"
+                                                                    minOccurs="1" maxOccurs="1">
+                                                                </element>
+                                                            </sequence>
+                                                        </complexType>
+                                                    </element>
+                                                    <element name="Concentration">
+                                                        <complexType>
+                                                            <choice>
+                                                                <element name="TriangleMesh">
+                                                                    <complexType>
+                                                                        <sequence>
+                                                                            <element
+                                                                                name="FileName" type="string">
+                                                                            </element>
+                                                                            <element
+                                                                                name="FileType" type="tns:TMeshFileType" maxOccurs="1" minOccurs="1">
+                                                                            </element>
+                                                                        </sequence>
+                                                                    </complexType>
+                                                                </element>
+                                                                <element name="Constant" type="double"></element>
+                                                            </choice>
+                                                        </complexType>
+                                                    </element>
+                                                </choice>
+                                            </complexType>
+                                        </element>
+                                        <element name="ResultFile"
+                                                 maxOccurs="1" minOccurs="1">
+                                            <complexType>
+                                                <sequence>
+                                                    <element
+                                                        name="FileName" type="string" maxOccurs="1"
+                                                        minOccurs="1">
+                                                    </element>
+                                                    <element
+                                                        name="FileType" type="tns:TResultFileType"
+                                                        maxOccurs="1" minOccurs="1">
+                                                    </element>
+                                                </sequence>
+                                            </complexType>
+                                        </element>
+                                    </sequence>
+                                </complexType>
+                            </element>
+
+                        </all>
+                    </complexType>
+                </element>
+
+                <element name="Description" type="string" maxOccurs="1"
+                         minOccurs="0">
+                </element>
+                <element name="Author" type="string" maxOccurs="1"
+                         minOccurs="0">
+                </element>
+                <element name="Date" type="dateTime" maxOccurs="1"
+                         minOccurs="0">
+                </element>
+                <element name="Version"  maxOccurs="1"
+                         minOccurs="0">
+                    <complexType>
+                        <sequence>
+                            <element
+                                name="Major" type="int" maxOccurs="1"
+                                minOccurs="1">
+                            </element>
+                            <element
+                                name="Minor" type="int"
+                                maxOccurs="1" minOccurs="1">
+                            </element>
+                        </sequence>
+                    </complexType>
+                </element>
+
+                <element name="Projectname" type="string" maxOccurs="1" minOccurs="0"></element>
+            </all>
+        </complexType>
+    </element>
+
+
+
+
+    <simpleType name="TMeshFileType">
+        <restriction base="string">
+            <enumeration value="JanetBinaryFile"></enumeration>
+            <enumeration value="SysDatFile"></enumeration>
+        </restriction>
+    </simpleType>
+    
+    <simpleType name="TSSSFileType">
+        <restriction base="string">
+            <enumeration value="CSV"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TWaveBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="WaveRandnDat"></enumeration>
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="WaveXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TCurrent2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="Current2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TCurrent3DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="Current3DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TGroundWater2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="GroundWater2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TEco2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="EcoBoundaryDat"></enumeration>
+            <enumeration value="EcoBoundary2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TFluidMudFlow2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="FluidMudFlow2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TSalt2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="Salt2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="THeat2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="Heat2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TQxygen2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="Oxygen2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TAdvectionDispersion2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="AdvectionDispersion2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TSediment2DBoundaryFileType">
+        <restriction base="string">
+            <enumeration value="RndwerteBAW"></enumeration>
+            <enumeration value="Sediment2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TResultFileType">
+        <restriction base="string">
+            <enumeration value="TicadSysErg"></enumeration>
+            <enumeration value="Current3DErg"></enumeration>
+        </restriction>
+    </simpleType>
+    
+    <simpleType name="TSoilModelFileType">
+        <restriction base="string">
+            <enumeration value="CSV"></enumeration>
+            <enumeration value="AVSUCD"></enumeration>
+            <enumeration value="SediMorph"></enumeration>
+            <enumeration value="Delft3D.FM"></enumeration>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TSuspendedLoadFormula">
+        <restriction base="string">
+            <enumeration value="RossinskyDebolsky"/>
+            <enumeration value="Bagnold1966"/>
+            <enumeration value="vanRijn84"/>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TBedLoadFormula">
+        <restriction base="string">
+            <enumeration value="MPM48"/>
+            <enumeration value="FernandezLuque_vanBeck_1976"/>
+            <enumeration value="Wilson_1966"/>
+            <enumeration value="Wiberg_Smith_1989"/>
+            <enumeration value="EngelundHansen"/>
+            <enumeration value="EngelundHansen_1967"/>
+            <enumeration value="EngelundHansen67"/>
+            <enumeration value="EngelundHansen72"/>
+            <enumeration value="Hunziker95"/>
+            <enumeration value="CamenenLarson2005"/>
+            <enumeration value="Zanke"/>
+            <enumeration value="EHWS"/>
+            <enumeration value="Yang_1973"/>
+            <enumeration value="KomarovaAndHulscher_2000"/>
+            <enumeration value="vanRijn84"/>
+            <enumeration value="vanRijn89"/>
+            <enumeration value="vanRijn2007"/>
+            <enumeration value="Einstein-Brown_1950"/>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="TCriticalShieldsFormula">
+        <restriction base="string">
+            <enumeration value="Classic"/>
+            <enumeration value="Sisyphe"/>
+            <enumeration value="Soulsby"/>
+            <enumeration value="SoulsbyKnoroz"/>
+            <enumeration value="VanRijn"/>
+            <enumeration value="Knoroz"/>
+            <enumeration value="Julien"/>
+            <enumeration value="JulienKnoroz"/>
+        </restriction>
+    </simpleType>
+
+
+    <complexType name="TDepthLayer">
+        <sequence maxOccurs="unbounded" minOccurs="2">
+            <element name="Depth" type="double"></element>
+        </sequence>
+    </complexType>
+
+    <simpleType name="TWeirFileType">
+        <restriction base="string">
+            <enumeration value="Weirs2DXML"></enumeration>
+        </restriction>
+    </simpleType>
+</schema>
+

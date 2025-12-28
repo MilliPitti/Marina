@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://www.example.org/Weirs" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.example.org/Weirs">
+    <element name="Weirs">
+        <complexType>
+            <sequence maxOccurs="unbounded" minOccurs="0">
+                <element name="Weir" type="tns:TWeir" maxOccurs="unbounded" minOccurs="1"></element>
+            </sequence>
+        </complexType>
+    </element>
+    
+    <complexType name="TWeir">
+        <sequence>
+            <element name="ListofNodes" type="tns:TListOfNodes" maxOccurs="1" minOccurs="1"></element>
+            <element name="WeirType" type="tns:TWeirType"/>
+        </sequence>
+    </complexType>
+    
+    <complexType name="TListOfNodes">
+        <sequence maxOccurs="unbounded" minOccurs="1">
+            <element name="NodeID" type="int"></element>
+        </sequence>
+    </complexType>
+    
+    <complexType name="TWeirType">
+        <choice>
+            
+            <element name="BroadCrestedWeir">
+                <complexType>
+                    <sequence>
+                        <element
+                            name="Name" type="string" minOccurs="0"
+                            maxOccurs="1">
+                        </element>
+                        
+                        <element name="CrestLevel">
+                            <complexType>
+                                <choice>
+                                    
+                                    <element name="Constant">
+                                        <simpleType>
+                                            <restriction base="double"/>
+                                        </simpleType>
+                                    </element>
+                                    
+                                    <element name="TimeSeries" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+                                    
+                                    <element name="WaterLevelControlled">
+                                        <complexType>
+                                            <sequence>
+                                                <element name="InitalCrestLevel">
+                                                    <simpleType>
+                                                        <restriction base="double"/>
+                                                    </simpleType>
+                                                </element>
+                                                <element name="ListofReferenceNodes" type="tns:TListOfNodes" maxOccurs="1" minOccurs="1"></element>
+                                                <element name="WaterLevel">
+                                                    <complexType>
+                                                        <choice>
+                                                            <element name="Constant">
+                                                                <simpleType>
+                                                                    <restriction base="double"/>
+                                                                </simpleType>
+                                                            </element>
+                                                            <element name="TimeSeries" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+                                                        </choice>
+                                                    </complexType>
+                                                </element>
+                                                <element name="PControllerFactor" minOccurs="0" maxOccurs="1">
+                                                    <simpleType>
+                                                        <restriction base="double"/>
+                                                    </simpleType>
+                                                </element>
+                                                <element name="DControllerFactor" minOccurs="0" maxOccurs="1">
+                                                    <simpleType>
+                                                        <restriction base="double"/>
+                                                    </simpleType>
+                                                </element>
+                                            </sequence>
+                                        </complexType>
+                                    </element>
+                                    
+                                </choice>
+                            </complexType>
+                        </element>
+                    </sequence>
+                </complexType>
+            </element>
+            
+            <element name="BroadCrestedTopoWeir">
+                <complexType>
+                    <sequence>
+                        <element
+                            name="Name" type="string" minOccurs="0"
+                            maxOccurs="1">
+                        </element>
+                        <element name="CrestLevel">
+                            <complexType>
+                                <choice>
+                                    
+                                    <element name="Constant">
+                                        <simpleType>
+                                            <restriction base="double"/>
+                                        </simpleType>
+                                    </element>
+                                    
+                                    <element name="TimeSeries" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+ 
+                                </choice>
+                            </complexType>
+                        </element>
+                    </sequence>
+                </complexType>
+            </element>
+            
+            <element name="UnderFlowWeir">
+                <complexType>
+                    <sequence>
+                        <element
+                            name="Name" type="string" minOccurs="0"
+                            maxOccurs="1">
+                        </element>
+                        <element name="SluiceLevel"> <!-- Schuetzhoehe im selben Koordinatensystem wie z -->
+                            <complexType>
+                                <choice>
+                                    
+                                    <element name="Constant">
+                                        <simpleType>
+                                            <restriction base="double"/>
+                                        </simpleType>
+                                    </element>
+                                    
+                                    <element name="TimeSeries" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+ 
+                                </choice>
+                            </complexType>
+                        </element>
+                    </sequence>
+                </complexType>
+            </element>
+            
+            <element name="UnderFlowTopoWeir">
+                <complexType>
+                    <sequence>
+                        <element
+                            name="Name" type="string" minOccurs="0"
+                            maxOccurs="1">
+                        </element>
+                        <element name="SluiceLevel"> <!-- Schuetzhoehe im selben Koordinatensystem wie z -->
+                            <complexType>
+                                <choice>
+                                    
+                                    <element name="Constant">
+                                        <simpleType>
+                                            <restriction base="double"/>
+                                        </simpleType>
+                                    </element>
+                                    
+                                    <element name="TimeSeries" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+ 
+                                </choice>
+                            </complexType>
+                        </element>
+                    </sequence>
+                </complexType>
+            </element>
+            
+            <element name="NeedleWeir">
+                <complexType>
+                    <sequence>
+                        <element
+                            name="Name" type="string" minOccurs="0"
+                            maxOccurs="1">
+                        </element>
+                        <!--                        <element name="Opening" type="double" minOccurs="1" maxOccurs="1" default="1."></element> /!-->
+                        <element name="Opening">
+                            <complexType>
+                                <choice>
+                                    
+                                    <element name="Constant">
+                                        <simpleType>
+                                            <restriction base="double"/>
+                                        </simpleType>
+                                    </element>
+                                    
+                                    <element name="TimeSeriesOfOpening" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+                                    
+                                    <element name="WaterLevelControlled">
+                                        <complexType>
+                                            <sequence>
+                                                <element name="InitalOpening">
+                                                    <simpleType>
+                                                        <restriction base="double"/>
+                                                    </simpleType>
+                                                </element>
+                                                <element name="ListofReferenceNodes" type="tns:TListOfNodes" maxOccurs="1" minOccurs="1"></element>
+                                                <element name="WaterLevel">
+                                                    <complexType>
+                                                        <choice>
+                                                            <element name="Constant">
+                                                                <simpleType>
+                                                                    <restriction base="double"/>
+                                                                </simpleType>
+                                                            </element>
+                                                            <element name="TimeSeries" type="tns:TTimeSeries" maxOccurs="1" minOccurs="1"></element>
+                                                        </choice>
+                                                    </complexType>
+                                                </element>
+                                                <element name="PControllerFactor" minOccurs="0" maxOccurs="1">
+                                                    <simpleType>
+                                                        <restriction base="double"/>
+                                                    </simpleType>
+                                                </element>
+                                                <element name="DControllerFactor" minOccurs="0" maxOccurs="1">
+                                                    <simpleType>
+                                                        <restriction base="double"/>
+                                                    </simpleType>
+                                                </element>
+                                            </sequence>
+                                        </complexType>
+                                    </element>
+                                    
+                                </choice>
+                            </complexType>
+                        </element>
+                    </sequence>
+                </complexType>
+            </element>
+            
+            <element name="RadialGate">
+                <complexType>
+                    <sequence>
+                        <element
+                            name="Name" type="string" minOccurs="0"
+                            maxOccurs="1">
+                        </element>
+                        <element name="OpeningHight" type="double" minOccurs="1" maxOccurs="1"></element>
+                    </sequence>
+                </complexType>
+            </element>
+        </choice>
+    </complexType>
+    
+    <complexType name="TTimeSeries">
+        <sequence maxOccurs="unbounded" minOccurs="1">
+            <element name="Item" type="tns:TItem"></element>
+        </sequence>
+    </complexType>
+    
+    <complexType name="TItem">
+        <sequence>
+            <element name="Time">
+                <simpleType>
+                    <restriction base="double"/>
+                </simpleType>
+            </element>
+            <element name="Value">
+                <simpleType>
+                    <restriction base="double"/>
+                </simpleType>
+            </element>
+        </sequence>
+    </complexType>
+</schema>

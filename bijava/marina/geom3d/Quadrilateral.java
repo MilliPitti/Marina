@@ -1,0 +1,45 @@
+/* ----- AGPL ------------------------------------------------------------------
+ * Copyright (C) Peter Milbradt, 1996-2023
+
+ * This file is part of Marina.
+
+ * Marina is free software: you can redistribute it and/or modify              
+ * it under the terms of the GNU Affero General Public License as               
+ * published by the Free Software Foundation version 3.
+ * 
+ * Marina is distributed in the hope that it will be useful,                  
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                
+ * GNU Affero General Public License for more details.                          
+ *                                                                              
+ * You should have received a copy of the GNU Affero General Public License     
+ * along with Marina.  If not, see <http://www.gnu.org/licenses/>.             
+ *                                                                               
+ * contact: milbradt@smileconsult.de                                        
+ * smile consult GmbH                                                           
+ * Schiffgraben 11                                                                 
+ * 30159 Hannover, Germany 
+ * 
+ */
+package bijava.marina.geom3d;
+
+import javax.vecmath.Point3d;
+
+/**
+ *
+ * @author milbradt
+ */
+public class Quadrilateral  extends ConvexCell3d{
+    double area = 0.;
+
+    @Override
+    public boolean contains(Point3d p) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public double[] getNaturefromCart(Point3d p) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+    
+}

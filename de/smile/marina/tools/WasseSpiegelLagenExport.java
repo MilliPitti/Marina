@@ -37,11 +37,9 @@ public class WasseSpiegelLagenExport {
             // Kommentar lesen, bis ASCII-Zeichen 7 kommt
             StringBuilder description = new StringBuilder();
             char c;
-            long read = 0;
             do {
                 c = (char) inStream.readByte();
                 description.append(c);
-                read += 1;
             } while (c != 7);
             // Ende Kommentar
             // sind Offset-Koordianten gespeichert
@@ -63,11 +61,9 @@ public class WasseSpiegelLagenExport {
             inStream.skip(9 * 4);
             // Ergebnismaske lesen und auswerten
             int ergMaske = inStream.readInt();
-            read += 4 * 13;
             int anzWerte = TicadIO.ergMaskeAuswerten(ergMaske);
             // dummy
             inStream.readInt();
-            read += 4;
             // Knoten erzeugen
             DOF[] dof = new DOF[anzKnoten];
             for (int i = 0; i < anzKnoten; i++) {
@@ -84,7 +80,6 @@ public class WasseSpiegelLagenExport {
                 FTriangle elmt = new FTriangle(dof[nodeI], dof[nodeJ], dof[nodeK]);
                 elmt.setKennung(kennung);
                 elemente[i] = elmt;
-                read += 16;
             }
             // Knotenkoordinaten Lesen
             for (int i = 0; i < anzKnoten; i++) {
@@ -92,7 +87,6 @@ public class WasseSpiegelLagenExport {
                 dof[i].y = inStream.readFloat() + offset_y;
                 dof[i].z = inStream.readFloat();
                 dof[i].addModelData(new CurrentModel2DData());
-                read += 12;
             }
 
             // FED erzeugen

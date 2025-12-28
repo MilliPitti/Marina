@@ -1,7 +1,11 @@
 #!/bin/bash
 # use java from environment
-JAVA_HOME=$(/usr/libexec/java_home)
-JAVA=$JAVA_HOME/bin/java
+# JAVA_HOME usually set on Linux, otherwise use system java
+if [ -z "$JAVA_HOME" ]; then
+    JAVA=$(which java)
+else
+    JAVA=$JAVA_HOME/bin/java
+fi
 
 # Libraries
 LIB_DIR=lib

@@ -623,8 +623,8 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
                                 // }
                             }
                         }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -689,9 +689,9 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
     public ModelData genData(DOF dof) {
         OxygenTransportModel2DData data = new OxygenTransportModel2DData();
         int dofnumber = dof.number;
-        Enumeration b = bsc.elements();
+        Enumeration<BoundaryCondition> b = bsc.elements();
         while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+            BoundaryCondition bcond = b.nextElement();
             if (dofnumber == bcond.pointnumber) {
                 data.bsc = bcond.function;
                 bsc.removeElement(bcond);

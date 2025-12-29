@@ -1,5 +1,5 @@
 /* ----- AGPL ------------------------------------------------------------------
- * Copyright (C) Peter Milbradt, 1996-2024
+ * Copyright (C) Peter Milbradt, 1996-2026
 
  * This file is part of Marina.
 

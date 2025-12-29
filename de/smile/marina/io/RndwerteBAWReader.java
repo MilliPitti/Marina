@@ -1,3 +1,26 @@
+/* ----- AGPL ------------------------------------------------------------------
+ * Copyright (C) Peter Milbradt, 1996-2026
+
+ * This file is part of Marina.
+
+ * Marina is free software: you can redistribute it and/or modify              
+ * it under the terms of the GNU Affero General Public License as               
+ * published by the Free Software Foundation version 3.
+ * 
+ * Marina is distributed in the hope that it will be useful,                  
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                
+ * GNU Affero General Public License for more details.                          
+ *                                                                              
+ * You should have received a copy of the GNU Affero General Public License     
+ * along with Marina.  If not, see <http://www.gnu.org/licenses/>.             
+ *                                                                               
+ * contact: milbradt@smileconsult.de                                        
+ * smile consult GmbH                                                           
+ * Schiffgraben 11                                                                 
+ * 30159 Hannover, Germany 
+ * 
+ */
 package de.smile.marina.io;
 
 import bijava.math.ifunction.DiscretScalarFunction1d;
@@ -28,21 +51,21 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
     public final static byte CONCENTRATION_GESETZT = 8; // g/l oder kg/m^3
     public final static byte BOTTOM_GESETZT = 10; // m unter NN
     public final static byte D50_GESETZT = 11; // mm
-    public final static byte U_GESETZT = 12;  // depth integrated velocity in x-direction [m/s]
-    public final static byte V_GESETZT = 13;  // depth integrated velocity in y-direction [m/s]
+    public final static byte U_GESETZT = 12; // depth integrated velocity in x-direction [m/s]
+    public final static byte V_GESETZT = 13; // depth integrated velocity in y-direction [m/s]
     public final static byte Qx_GESETZT = 14;
     public final static byte Qy_GESETZT = 15;
     public final static byte QxygenConcentration = 16; // mg/l
-    
-    public final static byte Q_Source = 20;  // m^3/s
-    public final static byte H_Source = 21;  // m/m^2/s
-    
+
+    public final static byte Q_Source = 20; // m^3/s
+    public final static byte H_Source = 21; // m/m^2/s
+
     public final static byte SALT_Source = 24; // g/s
-    
+
     public static final int wellenperiode = 30; // s
-    public static final int wellenhoehe = 31;   // m
+    public static final int wellenhoehe = 31; // m
     public static final int wellenrichtung = 32;// meteorologische Richtung?
-        
+
     private boolean qx_FLAG = false;
     private boolean qy_FLAG = false;
     private boolean H_FLAG = false;
@@ -61,28 +84,33 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
     private boolean Point_SALT_FLAG = false;
     private final String filename;
     private final FEDecomposition fedecomposition;
-    
-    // Art der Funktion der Randwertebeschreibung Art_Rndfkt
-    //  0 konstant (nicht implementiert)
-    //  1 Summe aus mehreren Cosinus-Funktionen  (nicht implementiert)
-    //  2 stueckweise lineare
-    //  3 kubische Spline-Interpolation zwischen nicht Aequidistanten Stuetzstellen (nicht implementiert)
-    //  4 stueckweise lineare Interpolation bei der H-Q-gesteurten Randbedingung
-    //  5 stueckweise lineare Interpolation bei der H-Qmax-gesteurten Randbedingung
 
-    /** Creates a new instance of RndwerteBAWReader
+    // Art der Funktion der Randwertebeschreibung Art_Rndfkt
+    // 0 konstant (nicht implementiert)
+    // 1 Summe aus mehreren Cosinus-Funktionen (nicht implementiert)
+    // 2 stueckweise lineare
+    // 3 kubische Spline-Interpolation zwischen nicht Aequidistanten Stuetzstellen
+    // (nicht implementiert)
+    // 4 stueckweise lineare Interpolation bei der H-Q-gesteurten Randbedingung
+    // 5 stueckweise lineare Interpolation bei der H-Qmax-gesteurten Randbedingung
+
+    /**
+     * Creates a new instance of RndwerteBAWReader
+     * 
      * @param name
-     * @param fedecomp */
+     * @param fedecomp
+     */
     public RndwerteBAWReader(String name, FEDecomposition fedecomp) {
         filename = name;
         fedecomposition = fedecomp;
     }
 
+    @SuppressWarnings("unused")
     @Override
     public BoundaryCondition[] readBoundaryConditions(String[] boundary_condition_key_mask) throws Exception {
         ArrayList<BoundaryCondition> bc = new ArrayList<>();
 
-        //Flags false setzen  
+        // Flags false setzen
         qx_FLAG = false;
         qy_FLAG = false;
         H_FLAG = false;
@@ -101,7 +129,7 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
         Point_SALT_FLAG = false;
 
         for (String boundary_condition_key : boundary_condition_key_mask) {
-            //todo evtl HashMap verwenden
+            // todo evtl HashMap verwenden
             if (boundary_condition_key.equals(BoundaryCondition.specific_flowrate_x)) {
                 qx_FLAG = true;
             }
@@ -138,7 +166,7 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
             if (boundary_condition_key.equals(BoundaryCondition.absolute_flowrate_y)) {
                 Qy_FLAG = true;
             }
-            if (boundary_condition_key.equals(BoundaryCondition.concentration_oxygen)){
+            if (boundary_condition_key.equals(BoundaryCondition.concentration_oxygen)) {
                 Qxygen_FLAG = true;
             }
             if (boundary_condition_key.equals(BoundaryCondition.pointbased_Q_source)) {
@@ -152,7 +180,7 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
             }
         }
 
-        //Implementierung der Einleselogik fuer das BAW-Format
+        // Implementierung der Einleselogik fuer das BAW-Format
 
         System.out.println("\tReading BoundaryCondition-File (in BAW-Format): " + filename);
         DataLine dataLine;
@@ -164,14 +192,14 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
         int pointer = 0;
         int anz_identische_Knoten = 0, i1 = 0, K;
         int Art_Rndwrt = 0, Art_Rndfkt = 2, Gesamtzahl = 0, Anz_Periode = 0;
-        double Translation=0., Spreizung, Ordinaten=1.;
+        double Translation = 0., Spreizung, Ordinaten = 1.;
 
         double feld[][];
         int KnotenNr[];
 
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filename))){
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filename))) {
 
-            //Anzahl der Randknoten einlesen
+            // Anzahl der Randknoten einlesen
             dataLine = readNextDataLine(bufferedReader, lineNumber);
             lineNumber = dataLine.nr;
 
@@ -179,9 +207,11 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
             countToken = stringTokenizer.countTokens();
             if (countToken != 1) {
                 System.out.println("Error in line " + lineNumber + "!");
-                //System.out.println("Fehler in Zeile "+ lineNumber +"!");
-                System.out.println("Wrong number of arguments in specification the number of nodes for boundary condition timeseries. ");
-                //System.out.println("Falsche Anzahl Argumente bei der Angabe der Knotenanzahl fuer Randwertzeitreihen.");
+                // System.out.println("Fehler in Zeile "+ lineNumber +"!");
+                System.out.println(
+                        "Wrong number of arguments in specification the number of nodes for boundary condition timeseries. ");
+                // System.out.println("Falsche Anzahl Argumente bei der Angabe der Knotenanzahl
+                // fuer Randwertzeitreihen.");
                 System.out.println("> " + dataLine.line);
                 throw new Exception("Error in line " + lineNumber + "!\n"
                         + "Wrong number of arguments in specification the number of nodes for boundary condition timeseries.\n"
@@ -192,16 +222,18 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                 anzrndwrt = Integer.parseInt(stringTokenizer.nextToken());
             } catch (NumberFormatException e) {
                 System.out.println("Error in line " + lineNumber + "!");
-                //System.out.println("Fehler in Zeile "+ lineNumber +"!");
-                System.out.println("Wrong format in specification the number of nodes for boundary condition timeseries (Integer format expected)  !");
-                //System.out.println("Fehlerhaftes Format bei der Angabe der Knotenanzahl fuer Randwertzeitreihen (Integerformat erwartet) !");
+                // System.out.println("Fehler in Zeile "+ lineNumber +"!");
+                System.out.println(
+                        "Wrong format in specification the number of nodes for boundary condition timeseries (Integer format expected)  !");
+                // System.out.println("Fehlerhaftes Format bei der Angabe der Knotenanzahl fuer
+                // Randwertzeitreihen (Integerformat erwartet) !");
                 System.out.println("> " + dataLine.line);
                 throw new Exception();
             }
 
             KnotenNr = new int[anzrndwrt];
 
-            //Zeitintervall einlesen
+            // Zeitintervall einlesen
             dataLine = readNextDataLine(bufferedReader, lineNumber);
             lineNumber = dataLine.nr;
 
@@ -218,13 +250,14 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                 Double.parseDouble(stringTokenizer.nextToken());
             } catch (NumberFormatException e) {
                 System.out.println("Fehler in Zeile " + lineNumber + "!");
-                System.out.println("Fehlerhaftes Format bei der Angabe des Zeitintervalls fuer Randwertzeitreihen (Integer- oder Doubleformat erwartet) !");
+                System.out.println(
+                        "Fehlerhaftes Format bei der Angabe des Zeitintervalls fuer Randwertzeitreihen (Integer- oder Doubleformat erwartet) !");
                 System.out.println("> " + dataLine.line);
                 System.exit(0);
             }
 
             while (pointer < anzrndwrt) {
-                //Anzahl der identische Knoten einlesen
+                // Anzahl der identische Knoten einlesen
                 dataLine = readNextDataLine(bufferedReader, lineNumber);
                 lineNumber = dataLine.nr;
 
@@ -241,7 +274,8 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     anz_identische_Knoten = Integer.parseInt(stringTokenizer.nextToken());
                 } catch (NumberFormatException e) {
                     System.out.println("Fehler in Zeile " + lineNumber + "!");
-                    System.out.println("Fehlerhaftes Format bei der Angabe der Anzahl der Knoten mit identischen Randbedingungen (Integerformat erwartet) !");
+                    System.out.println(
+                            "Fehlerhaftes Format bei der Angabe der Anzahl der Knoten mit identischen Randbedingungen (Integerformat erwartet) !");
                     System.out.println("> " + dataLine.line);
                     System.exit(0);
                 }
@@ -257,13 +291,15 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     Art_Rndfkt = Integer.parseInt(stringTokenizer.nextToken());
                 } catch (NumberFormatException e) {
                     System.out.println("Fehler in Zeile " + lineNumber + "!");
-                    System.out.println("Fehlerhaftes Format bei der Angabe des Interpolationstyps (Integerformat erwartet) !");
+                    System.out.println(
+                            "Fehlerhaftes Format bei der Angabe des Interpolationstyps (Integerformat erwartet) !");
                     System.out.println("> " + dataLine.line);
                     System.exit(0);
                 }
-                if (Art_Rndfkt != 2 && (Art_Rndwrt!=14 || Art_Rndwrt!=15 )) {
+                if (Art_Rndfkt != 2 && (Art_Rndwrt != 14 || Art_Rndwrt != 15)) {
                     System.out.println("Warnung in Zeile " + lineNumber + "!");
-                    System.out.println("Warnung: Falscher Interpolationstyp (lineare Interpolation (ITYP=2) erwartet) !");
+                    System.out
+                            .println("Warnung: Falscher Interpolationstyp (lineare Interpolation (ITYP=2) erwartet) !");
                     System.out.println("> " + dataLine.line);
 
                 }
@@ -271,7 +307,8 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     Anz_Periode = Integer.parseInt(stringTokenizer.nextToken());
                 } catch (NumberFormatException e) {
                     System.out.println("Fehler in Zeile " + lineNumber + "!");
-                    System.out.println("Fehlerhaftes Format bei der Angabe der spezifizierten Intervalle (Integerformat erwartet) !");
+                    System.out.println(
+                            "Fehlerhaftes Format bei der Angabe der spezifizierten Intervalle (Integerformat erwartet) !");
                     System.out.println("> " + dataLine.line);
                     System.exit(0);
                 }
@@ -279,7 +316,8 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     Gesamtzahl = Integer.parseInt(stringTokenizer.nextToken());
                 } catch (NumberFormatException e) {
                     System.out.println("Fehler in Zeile " + lineNumber + "!");
-                    System.out.println("Fehlerhaftes Format bei der Angabe der zu erzeugenden Intervalle (Integerformat erwartet) !");
+                    System.out.println(
+                            "Fehlerhaftes Format bei der Angabe der zu erzeugenden Intervalle (Integerformat erwartet) !");
                     System.out.println("> " + dataLine.line);
                     System.exit(0);
                 }
@@ -310,20 +348,21 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
 
                 int ip = 0;
                 do {
-                    //identische Randknotennummern einlesen
+                    // identische Randknotennummern einlesen
                     dataLine = readNextDataLine(bufferedReader, lineNumber);
                     lineNumber = dataLine.nr;
 
                     stringTokenizer = new StringTokenizer(dataLine.line);
                     countToken = stringTokenizer.countTokens();
                     if (ip + countToken > anz_identische_Knoten) {
-//                    if (countToken!=anz_identische_Knoten) {
+                        // if (countToken!=anz_identische_Knoten) {
                         System.out.println("Fehler in Zeile " + lineNumber + "!");
-                        System.out.println("Anzahl der Knoten mit identischen Randbedingungen stimmt nicht mit Vorgabe ueberein!");
+                        System.out.println(
+                                "Anzahl der Knoten mit identischen Randbedingungen stimmt nicht mit Vorgabe ueberein!");
                         System.out.println("> " + dataLine.line);
                         System.exit(0);
                     }
-                    //Auslesen der Knoten aus StringTokenizer
+                    // Auslesen der Knoten aus StringTokenizer
                     for (K = pointer + ip; K < pointer + ip + countToken; K++) {
                         try {
                             i1 = Integer.parseInt(stringTokenizer.nextToken());
@@ -338,12 +377,11 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     ip += countToken;
                 } while (ip < anz_identische_Knoten);
 
-
                 feld = new double[2][Anz_Periode + 1];
 
                 for (K = 0; K <= Anz_Periode; K++) {
 
-                    //hole naechste Zeitreihenzeile
+                    // hole naechste Zeitreihenzeile
                     dataLine = readNextDataLine(bufferedReader, lineNumber);
                     lineNumber = dataLine.nr;
 
@@ -395,7 +433,8 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     if (Art_Rndwrt == Qx_GESETZT) {
                         QSteuerung Qx = new QSteuerung(boundcond, knotennummern, fedecomposition);
                         Qx.setPeriodic(Gesamtzahl > 0);
-                        if(Art_Rndfkt==4) Qx = new H_Q_Steuerung(boundcond, knotennummern, fedecomposition);
+                        if (Art_Rndfkt == 4)
+                            Qx = new H_Q_Steuerung(boundcond, knotennummern, fedecomposition);
                         for (K = pointer; K < pointer + anz_identische_Knoten; K++) {
                             if (Qx_FLAG) {
                                 bc.add(new BoundaryCondition(BoundaryCondition.absolute_flowrate_x, KnotenNr[K], Qx));
@@ -407,7 +446,8 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     if (Art_Rndwrt == Qy_GESETZT) {
                         QSteuerung Qy = new QSteuerung(boundcond, knotennummern, fedecomposition);
                         Qy.setPeriodic(Gesamtzahl > 0);
-                        if(Art_Rndfkt==4) Qy = new H_Q_Steuerung(boundcond, knotennummern, fedecomposition);
+                        if (Art_Rndfkt == 4)
+                            Qy = new H_Q_Steuerung(boundcond, knotennummern, fedecomposition);
                         for (K = pointer; K < pointer + anz_identische_Knoten; K++) {
                             if (Qy_FLAG) {
                                 bc.add(new BoundaryCondition(BoundaryCondition.absolute_flowrate_y, KnotenNr[K], Qy));
@@ -423,17 +463,20 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                         switch (Art_Rndwrt) {
                             case qx_GESETZT:
                                 if (qx_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.specific_flowrate_x, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.specific_flowrate_x, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case qy_GESETZT:
                                 if (qy_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.specific_flowrate_y, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.specific_flowrate_y, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case H_GESETZT:
                                 if (H_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.free_surface, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.free_surface, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case U_GESETZT:
@@ -448,27 +491,32 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                                 break;
                             case Q_Source:
                                 if (Point_Q_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.pointbased_Q_source, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.pointbased_Q_source, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case H_Source:
                                 if (Point_H_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.pointbased_h_source, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.pointbased_h_source, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case TEMPERATURE_GESETZT:
                                 if (TEMPERATURE_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.water_temperature, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.water_temperature, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case SALT_GESETZT:
                                 if (SALT_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.concentration_salt, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.concentration_salt, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case SALT_Source:
                                 if (Point_SALT_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.pointbased_salt_source, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.pointbased_salt_source, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case BOTTOM_GESETZT:
@@ -478,12 +526,14 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                                 break;
                             case CONCENTRATION_GESETZT:
                                 if (CONCENTRATION_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.concentration_sediment, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.concentration_sediment, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case QxygenConcentration:
                                 if (Qxygen_FLAG) {
-                                    bc.add(new BoundaryCondition(BoundaryCondition.concentration_oxygen, KnotenNr[K], boundcond));
+                                    bc.add(new BoundaryCondition(BoundaryCondition.concentration_oxygen, KnotenNr[K],
+                                            boundcond));
                                 }
                                 break;
                             case D50_GESETZT:
@@ -495,18 +545,17 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                     }
                     pointer += anz_identische_Knoten;
 
-                }//else
+                } // else
 
-
-            }//while(pointer < anzrndwrt)
+            } // while(pointer < anzrndwrt)
 
         } catch (java.io.FileNotFoundException e) {
             System.out.println("Randwertedatei nicht gefunden!");
             System.exit(0);
         } catch (Exception e) {
             if (pointer < anzrndwrt) {
-                System.out.println("pointer="+pointer);
-                System.out.println("anzrndwrt="+anzrndwrt);
+                System.out.println("pointer=" + pointer);
+                System.out.println("anzrndwrt=" + anzrndwrt);
                 System.out.println("Fehlende Anzahl an Datensaetze!");
                 System.out.println(e);
             }
@@ -514,12 +563,12 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
             System.exit(0);
         }
 
-//        System.out.println("\tRandwertedatei <"+filename+"> gelesen");
+        // System.out.println("\tRandwertedatei <"+filename+"> gelesen");
 
         return bc.toArray(new BoundaryCondition[bc.size()]);
     } // end readBoundCond
 
-    //ueberliest alle Kommentarzeilen und gibt naechste relevante Zeile zurueck
+    // ueberliest alle Kommentarzeilen und gibt naechste relevante Zeile zurueck
     DataLine readNextDataLine(BufferedReader bufferedReader, int currentLineNr) throws IOException {
         String line;
         int cnt = 0;

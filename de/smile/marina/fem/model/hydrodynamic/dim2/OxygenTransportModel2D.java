@@ -1,5 +1,5 @@
 /* ----- AGPL ------------------------------------------------------------------
- * Copyright (C) Peter Milbradt, 1996-2025
+ * Copyright (C) Peter Milbradt, 1996-2026
 
  * This file is part of Marina.
 
@@ -136,6 +136,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
      * @return the vector of start solution
      * @throws java.lang.Exception
      */
+    @SuppressWarnings("unused")
     public double[] initialSolutionFromTicadErgFile(String oxygenerg, int record) throws Exception {
 
         System.out.println("\t Read inital values from result file " + oxygenerg);
@@ -351,6 +352,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
      * @return
      * @throws java.lang.Exception
      */
+    @SuppressWarnings("unused")
     public double[] initialOxygenConcentrationFromJanetBin(String filename, double time) throws Exception {
         int anzAttributes = 0;
         double skonc;

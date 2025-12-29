@@ -1,5 +1,5 @@
 /* ----- AGPL ------------------------------------------------------------------
- * Copyright (C) Peter Milbradt, 1996-2021
+ * Copyright (C) Peter Milbradt, 1996-2026
 
  * This file is part of Marina.
 
@@ -75,22 +75,23 @@ public class MarinaAVSExport {
         String datacsv = chooser.getSelectedFile().getAbsolutePath();
 
         String basedir = chooser.getSelectedFile().getParent();
-        String csvName = chooser.getSelectedFile().getName();                
+        String csvName = chooser.getSelectedFile().getName();
         String outputName = csvName.split("\\.")[0];
 
-        String exportavs = basedir+"/"+outputName+"_volume.inp";
-        String exportavslayer = basedir+"/"+outputName+"_layer.inp";
-        String exportavscores = basedir+"/"+outputName+"_cores.inp";
+        String exportavs = basedir + "/" + outputName + "_volume.inp";
+        String exportavslayer = basedir + "/" + outputName + "_layer.inp";
+        String exportavscores = basedir + "/" + outputName + "_cores.inp";
         double vertExFactor = 25d;
-        export_avs(systemjbf, datacsv, exportavs, exportavslayer,exportavscores, vertExFactor, false);
+        export_avs(systemjbf, datacsv, exportavs, exportavslayer, exportavscores, vertExFactor, false);
         System.exit(0);
     }
 
-    public static void export_avs(String systemjbf, String datacsv, String exportavsvolume, String exportavslayer, String exportavscores, double vertExFactor, boolean vonOben) throws Exception {
+    public static void export_avs(String systemjbf, String datacsv, String exportavsvolume, String exportavslayer,
+            String exportavscores, double vertExFactor, boolean vonOben) throws Exception {
         int richtung = vonOben ? -1 : +1;
         ArrayList<SimplePoint> simple_points = new ArrayList<>();
         String lastnr = "-1";
-        double ddd=0.002*vertExFactor;
+        double ddd = 0.002 * vertExFactor;
         try (FileReader freader = new FileReader(datacsv); BufferedReader reader = new BufferedReader(freader)) {
             reader.readLine();
             String line;
@@ -104,10 +105,10 @@ public class MarinaAVSExport {
                         if (temp_data_values.size() == 1) {
                             double[] get = temp_data_values.get(0).clone();
                             get[0] -= ddd;
-//                            get[7]=0;
+                            // get[7]=0;
                             temp_data_values.add(get);
                         }
-                        temp_data_values.sort((double[] o1, double[] o2) -> richtung*Double.compare(o1[0], o2[0]));
+                        temp_data_values.sort((double[] o1, double[] o2) -> richtung * Double.compare(o1[0], o2[0]));
                         double[][] data = new double[temp_data_values.size()][8];
                         for (int i = 0; i < temp_data_values.size(); i++) {
                             double[] temp = temp_data_values.get(i);
@@ -125,18 +126,19 @@ public class MarinaAVSExport {
                 lastnr = thisnr;
                 try {
                     double[] data_ = new double[8];
-                    //uebernehmen
-                    data_[0] = Double.parseDouble(split[3]) * -1; //zl
-                    data_[1] = Double.parseDouble(split[4]); //obergrenze, dmax
-                    data_[2] = Double.parseDouble(split[5]); //d50
-                    data_[3] = Double.parseDouble(split[6]); //untergrenze, dmin 
-                    data_[5] = Double.parseDouble(split[8]); //porosity
-                    //berechnen
+                    // uebernehmen
+                    data_[0] = Double.parseDouble(split[3]) * -1; // zl
+                    data_[1] = Double.parseDouble(split[4]); // obergrenze, dmax
+                    data_[2] = Double.parseDouble(split[5]); // d50
+                    data_[3] = Double.parseDouble(split[6]); // untergrenze, dmin
+                    data_[5] = Double.parseDouble(split[8]); // porosity
+                    // berechnen
                     final double initialSorting = Double.parseDouble(split[7]);
-                    final double  k = 1. / ((1. - ((data_[1] + data_[3]) / 2.) / data_[1]) * (1. - data_[3] / ((data_[1] + data_[3]) / 2.)));
+                    final double k = 1. / ((1. - ((data_[1] + data_[3]) / 2.) / data_[1])
+                            * (1. - data_[3] / ((data_[1] + data_[3]) / 2.)));
                     data_[4] = initialSorting * (1. - data_[2] / data_[1]) * (1. - data_[3] / data_[2]) * k; // sorting
-                    data_[6] = (1. - (data_[4] / (1. + data_[4]))) * 0.25 / data_[5]; //??
-                    data_[7] = Double.parseDouble(split[9]); //consolidation
+                    data_[6] = (1. - (data_[4] / (1. + data_[4]))) * 0.25 / data_[5]; // ??
+                    data_[7] = Double.parseDouble(split[9]); // consolidation
                     temp_data_values.add(data_);
                 } catch (Exception e) {
                 }
@@ -154,7 +156,7 @@ public class MarinaAVSExport {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        simple_points.removeIf(p -> p.data == null||p.data.length==0);
+        // simple_points.removeIf(p -> p.data == null||p.data.length==0);
         FEDecomposition jbf = SmileIO.readFEDfromJanetBin(systemjbf);
         for (DOF point : jbf.getDOFs()) {
             double x = point.x;
@@ -176,7 +178,8 @@ public class MarinaAVSExport {
                 points[0] = simple_points.get(element.getDOF(0).number);
                 points[1] = simple_points.get(element.getDOF(1).number);
                 points[2] = simple_points.get(element.getDOF(2).number);
-                if (points[0].data == null || points[0].data.length == 0 || points[1].data == null || points[1].data.length == 0 || points[2].data == null || points[2].data.length == 0) {
+                if (points[0].data == null || points[0].data.length == 0 || points[1].data == null
+                        || points[1].data.length == 0 || points[2].data == null || points[2].data.length == 0) {
                     continue;
                 }
                 tri.points = points;
@@ -185,7 +188,7 @@ public class MarinaAVSExport {
             }
         }
 
-        //ab hier
+        // ab hier
         ArrayList<String> _punkte = new ArrayList<>();
         ArrayList<String> _lines = new ArrayList<>();
         ArrayList<String> _attribute = new ArrayList<>();
@@ -193,7 +196,8 @@ public class MarinaAVSExport {
         SimpleTriangle.addAVSLinesToLists(tris, _punkte, _lines, _attribute, vertExFactor);
 
         String head = _punkte.size() + " " + _lines.size() + " " + _punkte.size() + " 0 0";
-        try (FileWriter fwriter = new FileWriter(new File(exportavscores)); BufferedWriter writer = new BufferedWriter(fwriter)) {
+        try (FileWriter fwriter = new FileWriter(new File(exportavscores));
+                BufferedWriter writer = new BufferedWriter(fwriter)) {
             writer.append(head).append("\n");
             for (String string : _punkte) {
                 writer.append(string).append("\n");
@@ -226,7 +230,8 @@ public class MarinaAVSExport {
         int prismenzahl = prismen.size();
 
         head = punktzahl + " " + prismenzahl + " " + punktzahl + " 0 0";
-        try (FileWriter fwriter = new FileWriter(new File(exportavsvolume)); BufferedWriter writer = new BufferedWriter(fwriter)) {
+        try (FileWriter fwriter = new FileWriter(new File(exportavsvolume));
+                BufferedWriter writer = new BufferedWriter(fwriter)) {
             writer.append(head).append("\n");
             for (String string : punkte) {
                 writer.append(string).append("\n");
@@ -256,7 +261,8 @@ public class MarinaAVSExport {
         }
         head = punkte_.size() + " " + dreiecke_.size() + " " + punkte_.size() + " 0 0";
 
-        try (FileWriter fwriter = new FileWriter(new File(exportavslayer)); BufferedWriter writer = new BufferedWriter(fwriter)) {
+        try (FileWriter fwriter = new FileWriter(new File(exportavslayer));
+                BufferedWriter writer = new BufferedWriter(fwriter)) {
             writer.append(head).append("\n");
             for (String string : punkte_) {
                 writer.append(string).append("\n");
@@ -298,10 +304,6 @@ public class MarinaAVSExport {
             }
             return res;
         }
-
-        public boolean fastEqualsEps(SimplePoint q) {
-            return Math.abs(this.x - q.x) < 1e-3 || Math.abs(this.y - q.y) < 1e-3;
-        }
     }
 
     private static class SimpleTriangle {
@@ -312,7 +314,8 @@ public class MarinaAVSExport {
             return Math.max(Math.max(points[0].data.length, points[1].data.length), points[2].data.length);
         }
 
-        public static void addAVSLinesToLists(ArrayList<SimpleTriangle> tris, ArrayList<String> punkte, ArrayList<String> lines, ArrayList<String> attribute, double vertExFactor) {
+        public static void addAVSLinesToLists(ArrayList<SimpleTriangle> tris, ArrayList<String> punkte,
+                ArrayList<String> lines, ArrayList<String> attribute, double vertExFactor) {
             HashSet<SimplePoint> uniques = new HashSet<>();
             for (SimpleTriangle tri : tris) {
                 uniques.addAll(Arrays.asList(tri.points));
@@ -323,15 +326,20 @@ public class MarinaAVSExport {
             for (SimplePoint point : uniques) {
                 for (int i = 0; i < point.data.length - 1; i++) {
                     String line = linenr + " 1 line";
-                    String punkt = pointnr + " " + point.x + " " + point.y + " " + (point.getDataAt(i)[0] * vertExFactor);
+                    String punkt = pointnr + " " + point.x + " " + point.y + " "
+                            + (point.getDataAt(i)[0] * vertExFactor);
                     punkte.add(punkt);
-                    String attribut = pointnr + " " + point.getDataAt(i)[1] + " " + point.getDataAt(i)[2] + " " + point.getDataAt(i)[3] + " " + point.getDataAt(i)[4] + " " + point.getDataAt(i)[5] + " " + point.getDataAt(i)[6];
+                    String attribut = pointnr + " " + point.getDataAt(i)[1] + " " + point.getDataAt(i)[2] + " "
+                            + point.getDataAt(i)[3] + " " + point.getDataAt(i)[4] + " " + point.getDataAt(i)[5] + " "
+                            + point.getDataAt(i)[6];
                     attribute.add(attribut);
                     line += " " + pointnr;
                     pointnr++;
                     punkt = pointnr + " " + point.x + " " + point.y + " " + (point.getDataAt(i + 1)[0] * vertExFactor);
                     punkte.add(punkt);
-                    attribut = pointnr + " " + point.getDataAt(i + 1)[1] + " " + point.getDataAt(i + 1)[2] + " " + point.getDataAt(i + 1)[3] + " " + point.getDataAt(i + 1)[4] + " " + point.getDataAt(i + 1)[5] + " " + point.getDataAt(i + 1)[6];
+                    attribut = pointnr + " " + point.getDataAt(i + 1)[1] + " " + point.getDataAt(i + 1)[2] + " "
+                            + point.getDataAt(i + 1)[3] + " " + point.getDataAt(i + 1)[4] + " "
+                            + point.getDataAt(i + 1)[5] + " " + point.getDataAt(i + 1)[6];
                     attribute.add(attribut);
                     line += " " + pointnr;
                     pointnr++;
@@ -341,19 +349,24 @@ public class MarinaAVSExport {
             }
         }
 
-        public void addAVSLayersToLists(ArrayList<String> punkte, ArrayList<String> dreiecke, ArrayList<String> attribute, double vertExFactor) {
+        public void addAVSLayersToLists(ArrayList<String> punkte, ArrayList<String> dreiecke,
+                ArrayList<String> attribute, double vertExFactor) {
             int maxlength = this.getMaxDataLength();
             int pointnr = punkte.size();
             int trinr = dreiecke.size();
             for (int i = 0; i < maxlength; i++) {
-                if(points[0].getDataAt(i)[7]==0||points[1].getDataAt(i)[7]==0||points[2].getDataAt(i)[7]==0){
+                if (points[0].getDataAt(i)[7] == 0 || points[1].getDataAt(i)[7] == 0
+                        || points[2].getDataAt(i)[7] == 0) {
                     continue;
                 }
                 String tri = trinr + " 1 tri";
                 for (int j = 0; j <= 2; j++) {
-                    String punkt = pointnr + " " + points[j].x + " " + points[j].y + " " + (points[j].getDataAt(i)[0] * vertExFactor);
+                    String punkt = pointnr + " " + points[j].x + " " + points[j].y + " "
+                            + (points[j].getDataAt(i)[0] * vertExFactor);
                     punkte.add(punkt);
-                    String attribut = pointnr + " " + points[j].getDataAt(i)[1] + " " + points[j].getDataAt(i)[2] + " " + points[j].getDataAt(i)[3] + " " + points[j].getDataAt(i)[4] + " " + points[j].getDataAt(i)[5] + " " + points[j].getDataAt(i)[6];
+                    String attribut = pointnr + " " + points[j].getDataAt(i)[1] + " " + points[j].getDataAt(i)[2] + " "
+                            + points[j].getDataAt(i)[3] + " " + points[j].getDataAt(i)[4] + " "
+                            + points[j].getDataAt(i)[5] + " " + points[j].getDataAt(i)[6];
                     attribute.add(attribut);
                     tri += " " + pointnr;
                     pointnr++;
@@ -363,24 +376,32 @@ public class MarinaAVSExport {
             }
         }
 
-        public void addAVSVolumesToLists(ArrayList<String> punkte, ArrayList<String> prismen, ArrayList<String> attribute, double vertExFactor) {
+        public void addAVSVolumesToLists(ArrayList<String> punkte, ArrayList<String> prismen,
+                ArrayList<String> attribute, double vertExFactor) {
             int maxlength = this.getMaxDataLength();
             int pointnr = punkte.size();
             int prismnr = prismen.size();
             for (int i = 0; i < maxlength - 1; i++) {
                 String prism = prismnr + " 1 prism";
                 for (int j = 0; j <= 2; j++) {
-                    String punkt = pointnr + " " + points[j].x + " " + points[j].y + " " + (points[j].getDataAt(i)[0] * vertExFactor);
+                    String punkt = pointnr + " " + points[j].x + " " + points[j].y + " "
+                            + (points[j].getDataAt(i)[0] * vertExFactor);
                     punkte.add(punkt);
-                    String attribut = pointnr + " " + points[j].getDataAt(i)[1] + " " + points[j].getDataAt(i)[2] + " " + points[j].getDataAt(i)[3] + " " + points[j].getDataAt(i)[4] + " " + points[j].getDataAt(i)[5] + " " + points[j].getDataAt(i)[6];
+                    String attribut = pointnr + " " + points[j].getDataAt(i)[1] + " " + points[j].getDataAt(i)[2] + " "
+                            + points[j].getDataAt(i)[3] + " " + points[j].getDataAt(i)[4] + " "
+                            + points[j].getDataAt(i)[5] + " " + points[j].getDataAt(i)[6];
                     attribute.add(attribut);
                     prism += " " + pointnr;
                     pointnr++;
                 }
                 for (int j = 0; j <= 2; j++) {
-                    String punkt = pointnr + " " + points[j].x + " " + points[j].y + " " + (points[j].getDataAt(i + 1)[0] * vertExFactor);
+                    String punkt = pointnr + " " + points[j].x + " " + points[j].y + " "
+                            + (points[j].getDataAt(i + 1)[0] * vertExFactor);
                     punkte.add(punkt);
-                    String attribut = pointnr + " " + points[j].getDataAt(i + 1)[1] + " " + points[j].getDataAt(i + 1)[2] + " " + points[j].getDataAt(i + 1)[3] + " " + points[j].getDataAt(i + 1)[4] + " " + points[j].getDataAt(i + 1)[5] + " " + points[j].getDataAt(i + 1)[6];
+                    String attribut = pointnr + " " + points[j].getDataAt(i + 1)[1] + " "
+                            + points[j].getDataAt(i + 1)[2] + " " + points[j].getDataAt(i + 1)[3] + " "
+                            + points[j].getDataAt(i + 1)[4] + " " + points[j].getDataAt(i + 1)[5] + " "
+                            + points[j].getDataAt(i + 1)[6];
                     attribute.add(attribut);
                     prism += " " + pointnr;
                     pointnr++;

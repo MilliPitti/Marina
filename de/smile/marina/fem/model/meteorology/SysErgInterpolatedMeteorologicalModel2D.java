@@ -1,8 +1,8 @@
 /* ----- AGPL ------------------------------------------------------------------
  * Copyright (C) Peter Milbradt, 1996-2026
- *
+
  * This file is part of Marina.
- *
+
  * Marina is free software: you can redistribute it and/or modify              
  * it under the terms of the GNU Affero General Public License as               
  * published by the Free Software Foundation version 3.
@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License     
  * along with Marina.  If not, see <http://www.gnu.org/licenses/>.             
  *                                                                               
- * contact: milbradt@smileconsult.de                                         
- * smile consult GmbH                                                            
+ * contact: milbradt@smileconsult.de                                        
+ * smile consult GmbH                                                           
  * Schiffgraben 11                                                                 
  * 30159 Hannover, Germany 
  * 
@@ -247,6 +247,7 @@ public class SysErgInterpolatedMeteorologicalModel2D extends MeteorologicalModel
         double time = 0;
         int record = 0;
 
+        @SuppressWarnings("unused")
         FEMeteorologicalModel2D(String meteoergPath, int record) throws IOException {
 
             File sysergFile = new File(meteoergPath);

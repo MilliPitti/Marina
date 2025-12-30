@@ -78,6 +78,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     private final SedimentDat sedimentdat;
 
     protected static double morphFactor = 1.; // morphological Factor
+    @SuppressWarnings("unused")
     private double morphologicalTime; // ist startTime + dt*morphFactor
 
     private double previousTimeStep = 0.0; // Speichert den vorherigen Zeitschritt fuer das gesamte Modell
@@ -662,6 +663,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             // bis zum record-Satz springen
             inStream.skip((4L + anzKnoten * anzWerte * 4L) * record);
 
+            @SuppressWarnings("unused")
             float t = inStream.readFloat();
             for (int i = 0; i < fenet.getNumberofDOFs(); i++) {
 
@@ -825,17 +827,25 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
      * @throws java.lang.Exception
      */
     public double[] initialConcentrationFromJanetBin(String filename, double time) throws Exception {
+        @SuppressWarnings("unused")
         int anzAttributes = 0;
         double skonc;
 
         boolean hasValidValues = true;
         int nr;
+        @SuppressWarnings("unused")
         short status, kennung;
+        @SuppressWarnings("unused")
         int anzPolys, anzEdges, anzPoints = 0, pointsize, trisize, swapMode;
+        @SuppressWarnings("unused")
         short sets;
+        @SuppressWarnings("unused")
         boolean active, protectBorder, protectConstraints, noPolygon, inPolygon, makeHoles, processFlagsActive;
+        @SuppressWarnings("unused")
         boolean noZoom, inZoom, noActive, processActive, processSelected, inPolygonProp, inZoomProp, protectInnerPoints;
+        @SuppressWarnings("unused")
         boolean noSelected, closed;
+        @SuppressWarnings("unused")
         boolean read_status_byte = false;
 
         FileIO bin_in = new FileIO();
@@ -859,19 +869,27 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
             // zunaechst den FileHeader lesen
             boolean writePointNumbers = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writePointAttributes = bin_in.fbinreadboolean();
             anzAttributes = bin_in.fbinreadint();
             boolean writePointStatus = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintPolygons = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintEdges = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElements = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementNumbers = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementKennung = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeAlphaTestRadius = bin_in.fbinreadboolean();
 
             // Layertyp ueberlesen
             int filetype = bin_in.fbinreadint();
             // liegt UnTRIM-Gitetr mit diskreten Kantentiefen vor??
+            @SuppressWarnings("unused")
             boolean is_untrim = (filetype == 2);
 
             // Anzahl der Punkte lesen
@@ -1058,7 +1076,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 ;
                 localResC += 1. / 3. * (smd.dsCdt + terms_C[j]) * cmd.wlambda; // mean local elementresiduum
 
-                terms_z[j] = -1. / (1. - smd.porosity) * dQgd * smd.lambda;
+                terms_z[j] = -1. / (1. - smd.porosity) * (dQgd < 0 ? dQgd * cmd.wlambda : dQgd * smd.lambda);
                 localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
                 // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive
                 // Projektion in die Ebene
@@ -1328,17 +1346,27 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     private double[] readMaxErosionFromJanetBinAsdoubleArray(String filename) {
         double[] rvalue = null;
 
+        @SuppressWarnings("unused")
         int anzAttributes = 0;
+        @SuppressWarnings("unused")
         double x, y, dz;
 
         boolean hasValidValues = true;
+        @SuppressWarnings("unused")
         int nr;
+        @SuppressWarnings("unused")
         short status, kennung;
+        @SuppressWarnings("unused")
         int anzPolys, anzEdges, anzPoints = 0, pointsize, trisize, swapMode;
+        @SuppressWarnings("unused")
         short sets;
+        @SuppressWarnings("unused")
         boolean active, protectBorder, protectConstraints, noPolygon, inPolygon, makeHoles, processFlagsActive;
+        @SuppressWarnings("unused")
         boolean noZoom, inZoom, noActive, processActive, processSelected, inPolygonProp, inZoomProp, protectInnerPoints;
+        @SuppressWarnings("unused")
         boolean noSelected, closed;
+        @SuppressWarnings("unused")
         boolean read_status_byte = false;
 
         FileIO bin_in = new FileIO();
@@ -1362,19 +1390,27 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
             // zunaechst den FileHeader lesen
             boolean writePointNumbers = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writePointAttributes = bin_in.fbinreadboolean();
             anzAttributes = bin_in.fbinreadint();
             boolean writePointStatus = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintPolygons = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintEdges = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElements = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementNumbers = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementKennung = bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeAlphaTestRadius = bin_in.fbinreadboolean();
 
             // Layertyp ueberlesen
             int filetype = bin_in.fbinreadint();
             // liegt UnTRIM-Gitetr mit diskreten Kantentiefen vor??
+            @SuppressWarnings("unused")
             boolean is_untrim = (filetype == 2);
 
             // Anzahl der Punkte lesen
@@ -1437,6 +1473,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     public void readDuneHightFromSysDat(String filename) {
         int knoten_nr;
 
+        @SuppressWarnings("unused")
         double x, y, dh;
 
         String line;
@@ -1530,10 +1567,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
      * 
      * @param filename name of the file to be open
      */
+
+    @SuppressWarnings("unused")
     public void readDuneHightFromJanetBin(String filename) {
         int anzAttributes = 0;
         double x, y, dh;
-
         boolean hasValidValues = true;
         int nr;
         short status, kennung;
@@ -1815,6 +1853,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
      * 
      * @param nam name of the file to be open
      */
+    @SuppressWarnings("unused")
     private void readInitalValueFromJanetBin(String filename, InitialValues initValue) {
         int anzAttributes = 0;
         double x, y, value;

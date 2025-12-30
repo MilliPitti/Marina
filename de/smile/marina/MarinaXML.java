@@ -2208,7 +2208,7 @@ public class MarinaXML {
         java.io.BufferedReader br;
         // Windows
         try {
-            Process proc = Runtime.getRuntime().exec("ipconfig /all");
+            Process proc = new ProcessBuilder("ipconfig", "/all").start();
             br = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()));
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -2217,7 +2217,7 @@ public class MarinaXML {
         // Linux
         if (br == null) {
             try {
-                Process proc = Runtime.getRuntime().exec("ifconfig");
+                Process proc = new ProcessBuilder("ifconfig").start();
                 br = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()));
             } catch (IOException ex) {
                 ex.printStackTrace();

@@ -355,6 +355,7 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
      * @return is always null and not used
      * @throws java.lang.Exception
      */
+    @SuppressWarnings("unused")
     public double[] initialSaltConcentrationFromJanetBin(String filename, double time) throws Exception {
         int anzAttributes = 0;
         double skonc;

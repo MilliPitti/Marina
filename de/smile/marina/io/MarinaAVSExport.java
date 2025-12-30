@@ -304,10 +304,6 @@ public class MarinaAVSExport {
             }
             return res;
         }
-
-        public boolean fastEqualsEps(SimplePoint q) {
-            return Math.abs(this.x - q.x) < 1e-3 || Math.abs(this.y - q.y) < 1e-3;
-        }
     }
 
     private static class SimpleTriangle {

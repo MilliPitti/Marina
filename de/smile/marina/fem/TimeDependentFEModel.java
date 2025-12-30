@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License     
  * along with Marina.  If not, see <http://www.gnu.org/licenses/>.             
  *                                                                               
- * contact: milbradt@smileconsult.de                                         
- * smile consult GmbH                                                            
+ * contact: milbradt@smileconsult.de                                        
+ * smile consult GmbH                                                           
  * Schiffgraben 11                                                                 
  * 30159 Hannover, Germany 
  * 

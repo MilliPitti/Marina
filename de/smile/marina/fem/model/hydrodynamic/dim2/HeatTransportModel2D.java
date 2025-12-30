@@ -1,5 +1,5 @@
 /* ----- AGPL ------------------------------------------------------------------
- * Copyright (C) Peter Milbradt, 1996-2025
+ * Copyright (C) Peter Milbradt, 1996-2026
 
  * This file is part of Marina.
 
@@ -35,19 +35,23 @@ import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 
-/** this TimeDependentFEApproximation describe heat-transport model for depth integrated simulations
+/**
+ * this TimeDependentFEApproximation describe heat-transport model for depth
+ * integrated simulations
+ * 
  * @version 4.7.0
  * @author Peter Milbradt
  */
-public class HeatTransportModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
+public class HeatTransportModel2D extends TimeDependentFEApproximation
+        implements FEModel, TicadModel, TimeDependentModel {
 
     private HeatTransportModel2DData[] dof_data = null;
     private DataOutputStream xf_os = null;
-    
+
     private Vector<DOF> initsc = new Vector<>();
     private Vector<BoundaryCondition> bsc = new Vector<>();
     private HeatTransportDat temperaturedat;
-    static final double SpecificHeatCapacity = 4183.;   //[J kg-1 K-1]
+    static final double SpecificHeatCapacity = 4183.; // [J kg-1 K-1]
     static final double astTemp = 1.4E-6; // Austausch zwischen Luft und wasser
     static final double kw = 0.597; // Waermeleitfaehigkeit [W/mK]
     private double airTemperature = Double.NaN;
@@ -80,13 +84,13 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
 
         try {
             xf_os = new DataOutputStream(new FileOutputStream(temperaturedat.xferg_name));
-            // Setzen der Ergebnismaske 
-            TicadIO.write_xf(xf_os, this );
+            // Setzen der Ergebnismaske
+            TicadIO.write_xf(xf_os, this);
         } catch (FileNotFoundException e) {
-            System.out.println("The file "+ temperaturedat.xferg_name + " cannot be opened");
+            System.out.println("The file " + temperaturedat.xferg_name + " cannot be opened");
             System.out.println(e.getMessage());
             throw new RuntimeException(e);
-        } 
+        }
     }
 
     @Override
@@ -131,17 +135,21 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         return null;
     }
 
-    /** Read the start solution from file
+    /**
+     * Read the start solution from file
+     * 
      * @param heaterg file with simulation results
-     * @param record record in the file
+     * @param record  record in the file
      * @return the vector of start solution
      */
+    @SuppressWarnings("unused")
     public double[] initialSolutionFromTicadErgFile(String heaterg, int record) throws Exception {
 
         System.out.println("\tRead inital values from result file " + heaterg);
-        //erstes Durchscannen
+        // erstes Durchscannen
         File sysergFile = new File(heaterg);
-        try (FileInputStream stream = new FileInputStream(sysergFile); DataInputStream inStream = new DataInputStream(stream)) {
+        try (FileInputStream stream = new FileInputStream(sysergFile);
+                DataInputStream inStream = new DataInputStream(stream)) {
 
             // Kommentar lesen, bis ASCII-Zeichen 7 kommt
             int c;
@@ -150,7 +158,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             } while (c != 7);
             // Ende Kommentar
 
-            //Anzahl Elemente, Knoten und Rand lesen
+            // Anzahl Elemente, Knoten und Rand lesen
             int anzKnoten = inStream.readInt();
             if (fenet.getNumberofDOFs() != anzKnoten) {
                 System.out.println("Die Datei mit den Startwerten hat andere Anzahl von Knoten");
@@ -160,10 +168,10 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             int anzr = inStream.readInt();
             int anzElemente = inStream.readInt();
 
-            //Ueberlesen folgende Zeilen
+            // Ueberlesen folgende Zeilen
             inStream.skip(9 * 4);
 
-            //Ergebnismaske lesen und auswerten
+            // Ergebnismaske lesen und auswerten
             int ergMaske = inStream.readInt();
             int anzWerte = TicadIO.ergMaskeAuswerten(ergMaske);
 
@@ -182,8 +190,8 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
 
             inStream.readInt();
 
-            //Elemente, Rand und Knoten überlesen
-            inStream.skip((anzElemente * 4L + anzr + 3L * anzKnoten) * 4L); //4 Bytes je float und int
+            // Elemente, Rand und Knoten überlesen
+            inStream.skip((anzElemente * 4L + anzr + 3L * anzKnoten) * 4L); // 4 Bytes je float und int
 
             // bis zum record-Satz springen
             inStream.skip((4L + anzKnoten * anzWerte * 4L) * record);
@@ -246,9 +254,11 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         return null;
     }
 
-    /** initialisiert die Temperaturverteilung mit einem konstanten Wert
+    /**
+     * initialisiert die Temperaturverteilung mit einem konstanten Wert
+     * 
      * @param initalvalue initial temperature
-     * @return 
+     * @return
      */
     public double[] constantInitialSolution(double initalvalue) {
         System.out.println("\tSet initial value " + initalvalue);
@@ -260,18 +270,20 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         return null;
     }
 
-    /** the method  initialTemperatureFromSysDat read the datas for temperature 
-     *  from a sysdat-file named filename
-     *  @param filename  name of the file to be open
+    /**
+     * the method initialTemperatureFromSysDat read the datas for temperature
+     * from a sysdat-file named filename
+     * 
+     * @param filename name of the file to be open
      * @param time
-     * @return 
-     * @throws java.lang.Exception */
+     * @return
+     * @throws java.lang.Exception
+     */
     public double[] initialTemperatureFromSysDat(String filename, double time) throws Exception {
         this.time = time;
         int rand_knoten = 0;
         int gebiets_knoten = 0;
         int knoten_nr;
-
 
         double temperature;
 
@@ -293,7 +305,6 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                 line = systemfile.freadLine();
             } while (line.startsWith("C"));
 
-
             strto = new StringTokenizer(line, " \t\n\r\f,");
             gebiets_knoten = Integer.parseInt(strto.nextToken());
 
@@ -301,7 +312,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                 throw new Exception("Fehler");
             }
 
-            //System.out.println(""+rand_knoten+" "+gebiets_knoten);
+            // System.out.println(""+rand_knoten+" "+gebiets_knoten);
 
             // Knoten einlesen
             // DOF[] dof= new DOF[rand_knoten+gebiets_knoten];
@@ -310,7 +321,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                 line = systemfile.freadLine();
                 strto = new StringTokenizer(line, " \t\n\r\f,");
 
-                //System.out.println(""+line+"\n");
+                // System.out.println(""+line+"\n");
                 if (!line.startsWith("C")) {
                     knoten_nr = Integer.parseInt(strto.nextToken());
                     strto.nextToken();
@@ -324,28 +335,32 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                     // Plausibilitaetskontrolle
                     if (Double.isNaN(temperature) || temperature <= -273. || temperature >= 100.) {
 
-
                         System.out.println("");
 
-                        System.out.println("********************************       ERROR         ***********************************");
-                        System.out.println("Invalid temperature-value (temp=NaN or temp<-273 or temp>100) in Temperature-File: <" + filename + "> node number <" + p_count + ">");
-                        System.out.println("To correct this problem ensure that node nr <" + p_count + "> has a correct floating point ");
+                        System.out.println(
+                                "********************************       ERROR         ***********************************");
+                        System.out.println(
+                                "Invalid temperature-value (temp=NaN or temp<-273 or temp>100) in Temperature-File: <"
+                                        + filename + "> node number <" + p_count + ">");
+                        System.out.println("To correct this problem ensure that node nr <" + p_count
+                                + "> has a correct floating point ");
                         System.out.println("Temperature  value");
-                        System.out.println("*****************************************************************************************");
+                        System.out.println(
+                                "*****************************************************************************************");
                         System.out.println("");
                         System.exit(0);
                     }
                     DOF dof = fenet.getDOF(knoten_nr);
                     HeatTransportModel2DData.extract(dof).temperature = temperature;
 
-                    //if(p_count%1000==0) System.out.println(p_count);
+                    // if(p_count%1000==0) System.out.println(p_count);
                     p_count++;
                 }
 
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("\t\tcannot open file: "+filename);
+            System.out.println("\t\tcannot open file: " + filename);
             System.exit(0);
         }
 
@@ -353,12 +368,16 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
 
     }
 
-    /** the method initialTemperatureFromJanetBin read the datas for temperature
-     *  from  a JanetBinary-file named filename
-     *  @param filename  name of the file to be open
+    /**
+     * the method initialTemperatureFromJanetBin read the datas for temperature
+     * from a JanetBinary-file named filename
+     * 
+     * @param filename name of the file to be open
      * @param time
-     * @return 
-     * @throws java.lang.Exception */
+     * @return
+     * @throws java.lang.Exception
+     */
+    @SuppressWarnings("unused")
     public double[] initialTemperatureFromJanetBin(String filename, double time) throws Exception {
         int anzAttributes = 0;
         double temperature;
@@ -383,7 +402,8 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             // Version auslesen
             float version = bin_in.fbinreadfloat();
             if (version < 1.5f) {
-                throw new Exception("Deprecated version of Janet-Binary-Format, version found: " + version + ", current version: 1.8");
+                throw new Exception("Deprecated version of Janet-Binary-Format, version found: " + version
+                        + ", current version: 1.8");
             }
 
             if (version < 1.79) {
@@ -458,13 +478,12 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("\t\tcannot open file: "+filename);
+            System.out.println("\t\tcannot open file: " + filename);
             System.exit(0);
         }
 
         return null;
     }
-
 
     @Deprecated
     @Override
@@ -472,13 +491,13 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         return null;
     } // end getRateofChange
 
-    //------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // ElementApproximation
-    //------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     @Override
     public double ElementApproximation(FElement element) {
 
-        double timeStep=Double.POSITIVE_INFINITY;
+        double timeStep = Double.POSITIVE_INFINITY;
 
         FTriangle ele = (FTriangle) element;
 
@@ -506,22 +525,23 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                 // dispersion
                 final double astx = eleCurrentData.astx * eleCurrentData.wlambda + kw;
                 final double asty = eleCurrentData.asty * eleCurrentData.wlambda + kw;
-                
-                double nonZeroDeepestTotalDepth = Math.max(eleCurrentData.deepestTotalDepth,1);
-                
+
+                double nonZeroDeepestTotalDepth = Math.max(eleCurrentData.deepestTotalDepth, 1);
+
                 double Koeq1_mean = 0.;
                 // Elementfehler berechnen
                 for (int j = 0; j < 3; j++) {
                     DOF dof = ele.getDOF(j);
                     HeatTransportModel2DData heattransportmodel2Ddata = dof_data[dof.number];
                     CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-                    
+
                     terms_T[j] = (cmd.u * dTemperaturedx + cmd.v * dTemperaturedy)
-                                    - heattransportmodel2Ddata.sourceSink
-                                        // turbulence term
-                                    - (astx * eleCurrentData.ddepthdx * dTemperaturedx + asty * eleCurrentData.ddepthdy * dTemperaturedy)/nonZeroDeepestTotalDepth * eleCurrentData.wlambda
-                                    + 3. * (koeffmat[j][1] * astx * dTemperaturedx + koeffmat[j][2] * asty * dTemperaturedy)
-                            ;
+                            - heattransportmodel2Ddata.sourceSink
+                            // turbulence term
+                            - (astx * eleCurrentData.ddepthdx * dTemperaturedx
+                                    + asty * eleCurrentData.ddepthdy * dTemperaturedy) / nonZeroDeepestTotalDepth
+                                    * eleCurrentData.wlambda
+                            + 3. * (koeffmat[j][1] * astx * dTemperaturedx + koeffmat[j][2] * asty * dTemperaturedy);
 
                     if ((heattransportmodel2Ddata.bc == null))// && !heattransportmodel2Ddata.extrapolate)
                         Koeq1_mean += 1. / 3. * (heattransportmodel2Ddata.temperaturedt + terms_T[j]) * cmd.wlambda;
@@ -530,23 +550,27 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                 double tau_konc = 0.;
                 if (current_mean > 1.E-5) {
                     tau_konc = 0.5 * elementsize / current_mean;
-                    timeStep=tau_konc;
+                    timeStep = tau_konc;
                 }
 
-                
                 for (int j = 0; j < 3; j++) {
                     HeatTransportModel2DData heattransportmodel2Ddata = dof_data[ele.getDOF(j).number];
-                    CurrentModel2DData  cmd  = CurrentModel2DData.extract(ele.getDOF(j));
+                    CurrentModel2DData cmd = CurrentModel2DData.extract(ele.getDOF(j));
                     synchronized (heattransportmodel2Ddata) {
                         // Fehlerkorrektur durchfuehren
-                        heattransportmodel2Ddata.rtemperature -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean) * cmd.wlambda * ele.area;
+                        heattransportmodel2Ddata.rtemperature -= tau_konc
+                                * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean)
+                                * cmd.wlambda * ele.area;
                     }
 
                     for (int l = 0; l < 3; l++) {
-                    final double vorfak =  ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
-                        final double gl = (l == j) ? 1. :  Math.min(CurrentModel2DData.extract(ele.getDOF(l)).wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
+                        final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
+                        final double gl = (l == j) ? 1.
+                                : Math.min(CurrentModel2DData.extract(ele.getDOF(l)).wlambda,
+                                        CurrentModel2DData.extract(ele.getDOF(l)).totaldepth
+                                                / Math.max(CurrentModel2D.WATT, cmd.totaldepth)); // Peter 21.01.2016
                         synchronized (heattransportmodel2Ddata) {
-                            heattransportmodel2Ddata.rtemperature -= vorfak * terms_T[l]*gl;
+                            heattransportmodel2Ddata.rtemperature -= vorfak * terms_T[l] * gl;
                         }
                     }
                 }
@@ -556,8 +580,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                     HeatTransportModel2DData heat2Ddata = dof_data[ele.getDOF(j).number];
                     synchronized (heat2Ddata) {
                         heat2Ddata.rtemperature += 1. / 3. * heat2Ddata.sourceSink
-                                - (koeffmat[j][1] * kw * dTemperaturedx + koeffmat[j][2] * kw * dTemperaturedy)
-                                ;
+                                - (koeffmat[j][1] * kw * dTemperaturedx + koeffmat[j][2] * kw * dTemperaturedy);
                     }
                 }
             }
@@ -565,9 +588,9 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         return timeStep;
     } // end ElementApproximation
 
-    //------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // setBoundaryCondition
-    //------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     @Override
     public void setBoundaryCondition(DOF dof, double t) {
 
@@ -583,100 +606,115 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
 
         if (heattransportmodel2Ddata.bc != null) {
             heattransportmodel2Ddata.temperature = heattransportmodel2Ddata.bc.getValue(t);
-//            heattransportmodel2Ddata.temperaturedt = heattransportmodel2Ddata.bc.getDifferential(t);
+            // heattransportmodel2Ddata.temperaturedt =
+            // heattransportmodel2Ddata.bc.getDifferential(t);
         }
 
         CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-//        if (heattransportmodel2Ddata.extrapolate && (cmd.totaldepth >= CurrentModel2D.WATT)) {
-//            HeatTransportModel2DData tmpdata;
-//            FElement[] felem = dof.getFElements();
-//            for (int j = 0; j < felem.length; j++) {
-//                FElement elem = felem[j];
-//                for (int ll = 0; ll < 3; ll++) {
-//                    if (elem.getDOF(ll) == dof) {
-//                        for (int ii = 1; ii < 3; ii++) {
-//                            CurrentModel2DData tmpcmd = CurrentModel2DData.extract(elem.getDOF((ll + ii) % 3));
-//                            if (tmpcmd.totaldepth > CurrentModel2D.WATT) {
-//                                tmpdata = dof_data[elem.getDOF((ll + ii) % 3).number];
-//                                double dt = (heattransportmodel2Ddata.temperature - tmpdata.temperature) / 10.;
-//                                if (tmpdata.extrapolate) {
-//                                    dt /= 100.;
-//                                }
-//                                double lambda = Math.min(1., tmpcmd.totaldepth/cmd.totaldepth);
-//                                synchronized (heattransportmodel2Ddata) {
-//                                    heattransportmodel2Ddata.temperature -= dt*lambda;
-//                                }
-//                                synchronized (tmpdata) {
-//                                    tmpdata.temperature += dt / elem.getDOF((ll + ii) % 3).getNumberofFElements() * dof.getNumberofFElements();
-//                                }
-//                            }
-//                        }
-//                    }
-//                    break;
-//                }
-//            }
-//        }
+        // if (heattransportmodel2Ddata.extrapolate && (cmd.totaldepth >=
+        // CurrentModel2D.WATT)) {
+        // HeatTransportModel2DData tmpdata;
+        // FElement[] felem = dof.getFElements();
+        // for (int j = 0; j < felem.length; j++) {
+        // FElement elem = felem[j];
+        // for (int ll = 0; ll < 3; ll++) {
+        // if (elem.getDOF(ll) == dof) {
+        // for (int ii = 1; ii < 3; ii++) {
+        // CurrentModel2DData tmpcmd = CurrentModel2DData.extract(elem.getDOF((ll + ii)
+        // % 3));
+        // if (tmpcmd.totaldepth > CurrentModel2D.WATT) {
+        // tmpdata = dof_data[elem.getDOF((ll + ii) % 3).number];
+        // double dt = (heattransportmodel2Ddata.temperature - tmpdata.temperature) /
+        // 10.;
+        // if (tmpdata.extrapolate) {
+        // dt /= 100.;
+        // }
+        // double lambda = Math.min(1., tmpcmd.totaldepth/cmd.totaldepth);
+        // synchronized (heattransportmodel2Ddata) {
+        // heattransportmodel2Ddata.temperature -= dt*lambda;
+        // }
+        // synchronized (tmpdata) {
+        // tmpdata.temperature += dt / elem.getDOF((ll + ii) % 3).getNumberofFElements()
+        // * dof.getNumberofFElements();
+        // }
+        // }
+        // }
+        // }
+        // break;
+        // }
+        // }
+        // }
 
-//        if (cmd.totaldepth < CurrentModel2D.WATT) { // Peter 28.04.2010
-//            int anz = 0;
-//            double meanTemperature = 0.;
-//            FElement[] felem = dof.getFElements();
-//            for (int j = 0; j < felem.length; j++) {
-//                FElement elem = felem[j];
-//                for (int ll = 0; ll < 3; ll++) {
-//                    if (elem.getDOF(ll) == dof) {
-//                        for (int ii = 1; ii < 3; ii++) {
-//                            if (CurrentModel2DData.extract(elem.getDOF((ll + ii) % 3)).totaldepth > CurrentModel2D.WATT) {
-//                                meanTemperature += dof_data[elem.getDOF((ll + ii) % 3).number].temperature;
-//                                anz++;
-//                            }
-//                        }
-//                    }
-//                    break;
-//                }
-//            }
-//            double aTemp = bottomTemperature;
-//            MeteorologyData2D meteorologyData = MeteorologyData2D.extract(dof);
-//            if (meteorologyData != null) {
-//                aTemp = meteorologyData.temperature;
-//            } else if (!Double.isNaN(airTemperature)) {
-//                aTemp = airTemperature;
-//            }
-//            if (anz > 0) {
-//                heattransportmodel2Ddata.temperature = cmd.w1_lambda * (1 * aTemp + 0. * bottomTemperature) + cmd.wlambda * meanTemperature / anz;
-//            } else {
-//                heattransportmodel2Ddata.temperature = cmd.w1_lambda * (1 * aTemp + 0. * bottomTemperature) + cmd.wlambda * heattransportmodel2Ddata.temperature;
-//            }
-//        }  // Peter 09.08.2010
+        // if (cmd.totaldepth < CurrentModel2D.WATT) { // Peter 28.04.2010
+        // int anz = 0;
+        // double meanTemperature = 0.;
+        // FElement[] felem = dof.getFElements();
+        // for (int j = 0; j < felem.length; j++) {
+        // FElement elem = felem[j];
+        // for (int ll = 0; ll < 3; ll++) {
+        // if (elem.getDOF(ll) == dof) {
+        // for (int ii = 1; ii < 3; ii++) {
+        // if (CurrentModel2DData.extract(elem.getDOF((ll + ii) % 3)).totaldepth >
+        // CurrentModel2D.WATT) {
+        // meanTemperature += dof_data[elem.getDOF((ll + ii) % 3).number].temperature;
+        // anz++;
+        // }
+        // }
+        // }
+        // break;
+        // }
+        // }
+        // double aTemp = bottomTemperature;
+        // MeteorologyData2D meteorologyData = MeteorologyData2D.extract(dof);
+        // if (meteorologyData != null) {
+        // aTemp = meteorologyData.temperature;
+        // } else if (!Double.isNaN(airTemperature)) {
+        // aTemp = airTemperature;
+        // }
+        // if (anz > 0) {
+        // heattransportmodel2Ddata.temperature = cmd.w1_lambda * (1 * aTemp + 0. *
+        // bottomTemperature) + cmd.wlambda * meanTemperature / anz;
+        // } else {
+        // heattransportmodel2Ddata.temperature = cmd.w1_lambda * (1 * aTemp + 0. *
+        // bottomTemperature) + cmd.wlambda * heattransportmodel2Ddata.temperature;
+        // }
+        // } // Peter 09.08.2010
 
-        // Rechte Seite initialisieren  //
+        // Rechte Seite initialisieren //
         heattransportmodel2Ddata.rtemperature = 0.;
 
         // bestimmen der Quellen und Senken
         MeteorologyData2D meteorologyData = MeteorologyData2D.extract(dof);
         if (meteorologyData != null) {
-            heattransportmodel2Ddata.sourceSink = astTemp * (meteorologyData.temperature - heattransportmodel2Ddata.temperature) / Function.max(cmd.totaldepth, CurrentModel2D.WATT) - meteorologyData.insolation / (SpecificHeatCapacity * Function.max(cmd.totaldepth, CurrentModel2D.WATT) * PhysicalParameters.RHO_WATER);
+            heattransportmodel2Ddata.sourceSink = astTemp
+                    * (meteorologyData.temperature - heattransportmodel2Ddata.temperature)
+                    / Function.max(cmd.totaldepth, CurrentModel2D.WATT)
+                    - meteorologyData.insolation / (SpecificHeatCapacity
+                            * Function.max(cmd.totaldepth, CurrentModel2D.WATT) * PhysicalParameters.RHO_WATER);
         } else {
             if (!Double.isNaN(airTemperature)) {
-                heattransportmodel2Ddata.sourceSink = astTemp * (airTemperature - heattransportmodel2Ddata.temperature) / Function.max(cmd.totaldepth, CurrentModel2D.WATT);
+                heattransportmodel2Ddata.sourceSink = astTemp * (airTemperature - heattransportmodel2Ddata.temperature)
+                        / Function.max(cmd.totaldepth, CurrentModel2D.WATT);
             } else {
-                heattransportmodel2Ddata.sourceSink = astTemp * (bottomTemperature - heattransportmodel2Ddata.temperature) / Function.max(cmd.totaldepth, CurrentModel2D.WATT) * cmd.w1_lambda; // Peter 15.05.2013
+                heattransportmodel2Ddata.sourceSink = astTemp
+                        * (bottomTemperature - heattransportmodel2Ddata.temperature)
+                        / Function.max(cmd.totaldepth, CurrentModel2D.WATT) * cmd.w1_lambda; // Peter 15.05.2013
             }
         }
     }
 
-    //------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     // genData
-    //------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     @Override
     public ModelData genData(DOF dof) {
         HeatTransportModel2DData data = new HeatTransportModel2DData();
         int dofnumber = (int) dof.number;
         dof_data[dofnumber] = data;
 
-        Enumeration b = bsc.elements();
+        Enumeration<BoundaryCondition> b = bsc.elements();
         while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+            BoundaryCondition bcond = b.nextElement();
             if (dofnumber == bcond.pointnumber) {
                 data.bc = bcond.function;
                 bsc.removeElement(bcond);
@@ -686,7 +724,9 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         CurrentModel2DData currentmodeldata = CurrentModel2DData.extract(dof);
 
         // nicht vollstaendig spezifizierte Randbedingungen schaetzen
-        data.extrapolate = ((data.bc == null) && ((currentmodeldata.bh != null) || (currentmodeldata.bu != null) || (currentmodeldata.bv != null) || (currentmodeldata.bqx != null) || (currentmodeldata.bqy != null) || (currentmodeldata.bQx != null) || (currentmodeldata.bQy != null)));
+        data.extrapolate = ((data.bc == null) && ((currentmodeldata.bh != null) || (currentmodeldata.bu != null)
+                || (currentmodeldata.bv != null) || (currentmodeldata.bqx != null) || (currentmodeldata.bqy != null)
+                || (currentmodeldata.bQx != null) || (currentmodeldata.bQy != null)));
 
         return data;
     }
@@ -704,7 +744,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             DOF[] dof = fenet.getDOFs();
             for (int j = 0; j < dof.length; j++) {
 
-                setBoundaryCondition(dof[j], time);  // Peter 12.03.10
+                setBoundaryCondition(dof[j], time); // Peter 12.03.10
 
                 double erg1 = dof_data[j].temperature;
 
@@ -718,13 +758,14 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
                             for (int ll = 0; ll < 3; ll++) {
                                 if (elem.getDOF(ll) == dof[j]) {
                                     for (int ii = 1; ii < 3; ii++) {
-                                        if (CurrentModel2DData.extract(elem.getDOF((ll + ii) % 3)).totaldepth > CurrentModel2D.WATT) {
+                                        if (CurrentModel2DData
+                                                .extract(elem.getDOF((ll + ii) % 3)).totaldepth > CurrentModel2D.WATT) {
                                             meanTemperature += dof_data[elem.getDOF((ll + ii) % 3).number].temperature;
                                             anz++;
                                         }
                                     }
+                                    break;
                                 }
-                                break;
                             }
                         }
                         if (anz > 0) {
@@ -737,13 +778,15 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             }
             xf_os.flush();
         } catch (Exception e) {
-            System.out.println(this.getClass()+"\n\ttime="+time+"\n");
+            System.out.println(this.getClass() + "\n\ttime=" + time + "\n");
             e.printStackTrace();
             System.exit(0);
         }
     }
 
-    /** compute the eklidian vectornorm
+    /**
+     * compute the eklidian vectornorm
+     * 
      * @param x first component of the vector
      * @param y the second component of the vector
      * @return norm of the vector (x,y)
@@ -759,18 +802,22 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         return null;
     }
 
-    /** Neue Einleseroutine readBoundCond 
-     * liest die spezifizierten Datensaetze (Randbedingungen) in der boundary_condition_key_mask 
+    /**
+     * Neue Einleseroutine readBoundCond
+     * liest die spezifizierten Datensaetze (Randbedingungen) in der
+     * boundary_condition_key_mask
      * aus entsprechenden Randwertedatei (temperaturedat.temperaturerndwerte_name)
-     * nach der jeweiligen Einleselogik (spezifiziert in temperaturedat.rndwerteReader)
+     * nach der jeweiligen Einleselogik (spezifiziert in
+     * temperaturedat.rndwerteReader)
      */
     public final void readBoundCond() {
-        
+
         String[] boundary_condition_key_mask = new String[1];
         boundary_condition_key_mask[0] = BoundaryCondition.water_temperature;
-        
-        try {            
-            for (BoundaryCondition bc : temperaturedat.rndwerteReader.readBoundaryConditions(boundary_condition_key_mask)) {
+
+        try {
+            for (BoundaryCondition bc : temperaturedat.rndwerteReader
+                    .readBoundaryConditions(boundary_condition_key_mask)) {
                 if (bc.boundary_condition_key.equals(BoundaryCondition.water_temperature)) {
                     bsc.add(bc);
                 }
@@ -778,7 +825,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         } catch (Exception e) {
             System.exit(1);
         }
-        
+
     } // end readBoundCond
 
     @Override
@@ -791,8 +838,9 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
 
         // Elementloop
         performElementLoop();
-        
-        // Berechne omega und die Koeffizienten fuer Variable Adams-Bashforth 2. Ordnung einmal vor dem parallelen Stream
+
+        // Berechne omega und die Koeffizienten fuer Variable Adams-Bashforth 2. Ordnung
+        // einmal vor dem parallelen Stream
         final double beta0, beta1;
         if (previousTimeStep == 0.0) {
             // Erster Schritt: Euler-Integration (beta0=1, beta1=0)
@@ -803,7 +851,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
             beta0 = 1.0 + omega;
             beta1 = -omega;
         }
-        
+
         Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> {
             final int j = dof.number;
             HeatTransportModel2DData smd = dof_data[j];
@@ -837,7 +885,3 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation implement
         }
     }
 }
-
-
-
-

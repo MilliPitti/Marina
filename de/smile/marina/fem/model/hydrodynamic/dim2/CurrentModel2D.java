@@ -1041,8 +1041,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                                                                                            // shallow
                                                                                                            // water wave
                                                                                                            // velocity
-            // Operatornorm fuer JEDE Richtungskomponente und dann wiederum als euklidische
-            // Vektornorm
+            // Operatornorm for each direction component and then again as euclidean vector
+            // norm
             final double operatornorm_x = c0 + Math.abs(u_mean);
             final double operatornorm_y = c0 + Math.abs(v_mean);
             final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);

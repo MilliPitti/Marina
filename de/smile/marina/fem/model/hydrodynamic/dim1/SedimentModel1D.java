@@ -23,7 +23,6 @@
  */
 package de.smile.marina.fem.model.hydrodynamic.dim1;
 import de.smile.marina.fem.DOF;
-import de.smile.marina.fem.FEApproximation;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
 import de.smile.marina.fem.FEdge;
@@ -32,9 +31,8 @@ import de.smile.marina.fem.ModelData;
 import de.smile.marina.fem.TimeDependentFEApproximation;
 import java.awt.*;
 import java.util.*;
-import de.smile.math.ode.ivp.ODESystem;
 
-public class SedimentModel1D extends TimeDependentFEApproximation implements FEModel,ODESystem {
+public class SedimentModel1D extends TimeDependentFEApproximation implements FEModel {
     static final double G = 9.81;
     static final double AST=0.0012;	     	//0.0012 Austauschkoeffizient fuer Stroemung
 

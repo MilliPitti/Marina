@@ -192,9 +192,8 @@ public class SysErgInterpolatedBathymetricModel2D extends TimeDependentFEApproxi
         FEBathymetricModel2D(String bathymetrieErgPath, int record) throws IOException {
 
             File sysergFile = new File(bathymetrieErgPath);
-            try {
-                FileInputStream stream = new FileInputStream(sysergFile);
-                DataInputStream inStream = new DataInputStream(stream);
+            try (FileInputStream stream = new FileInputStream(sysergFile);
+                 DataInputStream inStream = new DataInputStream(stream)) {
 
                 // Kommentar lesen, bis ASCII-Zeichen 7 kommt
                 StringBuilder description = new StringBuilder();
@@ -205,6 +204,7 @@ public class SysErgInterpolatedBathymetricModel2D extends TimeDependentFEApproxi
                 } while (c != 7);
                 // Ende Kommentar
                 // sind Offset-Koordianten gespeichert
+                @SuppressWarnings("unused")
                 String model_component = "";
                 double offset_x = 0.0, offset_y = 0.0;
                 try {

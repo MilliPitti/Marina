@@ -29,16 +29,16 @@ import bijava.marina.spectra.*;
 
 public class Shepard2D {
     
-    private Vector area;
+    private Vector<Dat> area;
     private SpectralWaveDat	wavedat;
     
     public Shepard2D(SpectralWaveDat wd) {
-        area = new Vector();
+        area = new Vector<Dat>();
         wavedat = wd;
     }
     
     public void addPoint(Point2D.Double p, DiscreteSpectrum2D v) {
-        dat d = new dat(p, v);
+        Dat d = new Dat(p, v);
         area.add(d);
     }
     
@@ -49,10 +49,9 @@ public class Shepard2D {
         wavedat.frequenzminimum, wavedat.frequenzmaximum,
         wavedat.directionminimum, wavedat.directionmaximum);
         
-        for (Enumeration e = area.elements(); e.hasMoreElements();) {
-            dat Dat=(dat)e.nextElement();
-            Point2D.Double isP = Dat.getPoint();
-            DiscreteSpectrum2D is = Dat.getValue();
+        for(Dat dat: area) {
+            Point2D.Double isP = dat.getPoint();
+            DiscreteSpectrum2D is = dat.getValue();
             double d = isP.distanceSq(P);
             if(d==0.) {
                 return  new DiscreteSpectrum2D(
@@ -76,12 +75,13 @@ public class Shepard2D {
     }
 }
 
-class dat{
+class Dat{
     private Point2D.Double 		p;
     private DiscreteSpectrum2D	value;
+    @SuppressWarnings("unused")
     private int			num;
     
-    public dat(Point2D.Double P, DiscreteSpectrum2D v) {
+    public Dat(Point2D.Double P, DiscreteSpectrum2D v) {
         p 	= (Point2D.Double)P.clone();
         value	= v;
         

@@ -23,7 +23,6 @@
  */
 package de.smile.marina.fem.model.hydrodynamic.wave;
 
-import bijava.math.ifunction.*;
 import bijava.marina.spectra.*;
 
 public class  TimeSpectrum2D {

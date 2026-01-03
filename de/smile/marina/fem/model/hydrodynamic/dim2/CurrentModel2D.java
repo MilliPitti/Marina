@@ -38,7 +38,6 @@ import de.smile.marina.io.TicadIO;
 import de.smile.math.Function;
 import de.smile.xml.marina.weirs.*;
 import java.io.*;
-import static java.lang.Math.max;
 import java.util.*;
 import javax.xml.bind.*;
 
@@ -292,8 +291,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     inStream.skip(4);
                 }
             }
-            inStream.close();
-            stream.close();
         }
         return null;
     }
@@ -981,7 +978,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 - cmd.v * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.u * (1+Math.abs(dzdx)) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.u * (1+10.*Math.abs(dzdx)) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windx / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
@@ -1002,7 +999,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 + cmd.u * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.v * (1+Math.abs(dzdy)) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.v * (1+10.*Math.abs(dzdy)) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windy / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses

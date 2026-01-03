@@ -311,6 +311,7 @@ public class SoilModel3DData extends SedimentModel2DData {
         String startDatum = "2012-01-01 00:00:00 UTC+1";
         SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
         long timeOffSetInSeconds = parser.parse(startDatum).getTime() / 1000l;
+        @SuppressWarnings("unused")
         int morphologischerFaktor = 10;
         
         SoilModel3DData.exportDatum=true;

@@ -5,7 +5,7 @@
 MARINA_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CLASSPATH=$CLASSPATH:$MARINA_PATH
 # Compile output path (if compiled via IDE/Command line previously)
-CLASSPATH=$CLASSPATH:$MARINA_PATH/.
+CLASSPATH=$CLASSPATH:$MARINA_PATH/bin
 
 # ----- Libraries -----
 # Using local lib directory where we copied the jars

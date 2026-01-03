@@ -981,7 +981,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 - cmd.v * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.u * max(0.1, 1 - dzdx) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.u * (1+Math.abs(dzdx)) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windx / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
@@ -1002,7 +1002,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 + cmd.u * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.v * max(0.1, 1 - dzdy) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.v * (1+Math.abs(dzdy)) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windy / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses

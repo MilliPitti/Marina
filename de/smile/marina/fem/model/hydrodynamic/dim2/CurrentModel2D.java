@@ -883,11 +883,11 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double u_star = Function.norm(u_mean, v_mean) * PhysicalParameters.sqrtG /
                     (eleCurrentData.meanStricklerCoefficient * Math.pow(depth_mean, 1.0 / 6.0));
             // Elder-Koeffizient kappa (ca. 0.6): nu_t = kappa * u* * h
-            final double nu_elder = 0.6 / 2. * u_star * depth_mean;
+           final double nu_elder = 0.6 / 2. * u_star * depth_mean;
 
             double asty = astx;
-            astx += nu_elder/(1+10*Math.abs(dzdx));
-            asty += nu_elder/(1+10*Math.abs(dzdy));
+            astx += nu_elder/(1+Math.abs(dzdx));
+            asty += nu_elder/(1+Math.abs(dzdy));
 
             eleCurrentData.asty = asty;
             eleCurrentData.astx = astx;
@@ -978,7 +978,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 - cmd.v * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.u * (1+10.*Math.abs(dzdx)) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.u * Math.max(0.1, 1.-dzdx) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windx / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
@@ -999,7 +999,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 + cmd.u * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.v * (1+10.*Math.abs(dzdy)) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.v * Math.max(0.1, 1.-dzdy) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windy / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses

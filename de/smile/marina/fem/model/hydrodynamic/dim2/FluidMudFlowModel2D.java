@@ -1280,100 +1280,90 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             data.ks = CurrentModel2DData.Strickler2Nikuradse(data.kst);
         }
 
-        Enumeration<BoundaryCondition> b = bsc.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = b.nextElement();
+        for (BoundaryCondition bcond : bsc) {
             if (dofnumber == bcond.pointnumber) {
-                data.bconc = bcond.function;
-                bsc.removeElement(bcond);
+            data.bconc = bcond.function;
+            bsc.remove(bcond);
+            break;
             }
         }
 
-        b = bqx.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = b.nextElement();
+        for (BoundaryCondition bcond : bqx) {
             if (dofnumber == bcond.pointnumber) {
-                data.bqx = bcond.function;
-                bqx.removeElement(bcond);
-                data.boundary = true;
+            data.bqx = bcond.function;
+            bqx.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
 
-        b = bqy.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : bqy) {
             if (dofnumber == bcond.pointnumber) {
-                data.bqy = bcond.function;
-                bqy.removeElement(bcond);
-                data.boundary = true;
+            data.bqy = bcond.function;
+            bqy.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
 
-        b = bu.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : bu) {
             if (dofnumber == bcond.pointnumber) {
-                data.bu = bcond.function;
-                bu.removeElement(bcond);
-                data.boundary = true;
+            data.bu = bcond.function;
+            bu.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
 
-        b = bv.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : bv) {
             if (dofnumber == bcond.pointnumber) {
-                data.bv = bcond.function;
-                bv.removeElement(bcond);
-                data.boundary = true;
+            data.bv = bcond.function;
+            bv.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
 
-        b = bh.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : bh) {
             if (dofnumber == bcond.pointnumber) {
-                data.bh = bcond.function;
-                bh.removeElement(bcond);
-                data.boundary = true;
+            data.bh = bcond.function;
+            bh.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
 
-        b = bQx.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : bQx) {
             if (dofnumber == bcond.pointnumber) {
-                // System.out.println("Qx gesetzt bei "+ dofnumber);
-                data.bQx = (QSteuerung) bcond.function;
-                bQx.removeElement(bcond);
-                data.boundary = true;
+            // System.out.println("Qx gesetzt bei "+ dofnumber);
+            data.bQx = (QSteuerung) bcond.function;
+            bQx.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
-        b = bQy.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : bQy) {
             if (dofnumber == bcond.pointnumber) {
-                data.bQy = (QSteuerung) bcond.function;
-                bQy.removeElement(bcond);
-                data.boundary = true;
-            }
-        }
-
-        b = sQ.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
-            if (dofnumber == bcond.pointnumber) {
-                data.sourceQ = bcond.function;
-                sQ.removeElement(bcond);
+            data.bQy = (QSteuerung) bcond.function;
+            bQy.remove(bcond);
+            data.boundary = true;
+            break;
             }
         }
 
-        b = sh.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+        for (BoundaryCondition bcond : sQ) {
             if (dofnumber == bcond.pointnumber) {
-                data.sourceh = bcond.function;
-                sh.removeElement(bcond);
+            data.sourceQ = bcond.function;
+            sQ.remove(bcond);
+            break;
+            }
+        }
+
+        for (BoundaryCondition bcond : sh) {
+            if (dofnumber == bcond.pointnumber) {
+            data.sourceh = bcond.function;
+            sh.remove(bcond);
+            break;
             }
         }
 

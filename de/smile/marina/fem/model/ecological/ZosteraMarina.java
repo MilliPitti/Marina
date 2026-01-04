@@ -30,14 +30,12 @@ import de.smile.marina.fem.ModelData;
 import de.smile.marina.fem.TicadModel;
 import de.smile.marina.fem.TimeDependentFEApproximation;
 import de.smile.marina.io.TicadIO;
-import java.io.DataOutputStream;
 
 /** Das Gewoehnliche Seegras (Zostera marina) ist eine Pflanzenart in der Familie der Seegrasgewaechse (Zosteraceae).
  *
  * @author Peter
  */
 public class ZosteraMarina  extends TimeDependentFEApproximation implements FEModel, TicadModel {
-    private DataOutputStream xf_os = null;
 
     @Override
     public void setBoundaryCondition(DOF dof, double t) {

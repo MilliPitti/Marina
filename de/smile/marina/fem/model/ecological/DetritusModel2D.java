@@ -29,7 +29,6 @@ import bijava.math.ifunction.DiscretScalarFunction1d;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.fem.model.hydrodynamic.dim2.Current2DElementData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2DData;
-import de.smile.marina.fem.TicadModel;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2D;
 import de.smile.marina.fem.model.meteorology.MeteorologyData2D;
 import de.smile.marina.io.FileIO;
@@ -55,7 +54,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     
     private DataOutputStream xf_os = null;
     
-    private Vector initsc = new Vector();
+    private Vector<DOF> initsc = new Vector<>();
     
     private Vector<BoundaryCondition> bsc  = new Vector<>();
     
@@ -85,12 +84,9 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
         
         readBoundCond(detritdat.detrit_rndwerteName);
         
-        BoundaryCondition bcond;
-        Enumeration be = bsc.elements();
-        while (be.hasMoreElements()) {
-            bcond = (BoundaryCondition) be.nextElement();
-            initsc.addElement(fenet.getDOF(bcond.pointnumber));
-        }
+        bsc.forEach((bcond) -> {
+            initsc.add(fenet.getDOF(bcond.pointnumber));
+        });
         
         // DOFs initialisieren
         initialDOFs();

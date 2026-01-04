@@ -3,8 +3,6 @@
 # ----- Globale Einstellungen -----
 # Determine the absolute path of the script directory
 MARINA_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CLASSPATH=$CLASSPATH:$MARINA_PATH
-# Compile output path (if compiled via IDE/Command line previously)
 CLASSPATH=$CLASSPATH:$MARINA_PATH/bin
 
 # ----- Libraries -----

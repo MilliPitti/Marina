@@ -42,7 +42,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
 
     private final static double dmax = 1.E-3;
     private final static double doubledmax = 2 * dmax;
-    private final static double e_s = 0.02, e_b = 0.1; // constants, default e_s = 0.02,  e_b = 0.1 // Peter 27.11.2014 in Anlehnung an den Koeffizienten von vanRijn1984
+    private final static double e_s = 0.02, e_b = 0.1; // constants, default e_s = 0.02,  e_b = 0.1 // in Anlehnung an den Koeffizienten von vanRijn1984
 
     /**
      * Computes the concentration of sediment at a given location based on the provided degree of freedom (DOF).
@@ -62,7 +62,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         }
 
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        if (cmd.totaldepth < CurrentModel2D.WATT || cmd.cv <= 1e-10) return 0.;
+        if (cmd.totaldepth < CurrentModel2D.WATT /*|| cmd.cv <= 1e-10*/) return 0.;
 
         double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
@@ -79,7 +79,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         
         double c_vol = e_s * (1. - e_b) * cmd.cv / smd.wc * tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho)* PhysicalParameters.G * cmd.totaldepth); // [m**3/m**3]
         c_vol += c_wbreaking;
-        c_vol *= smd.lambda;  // not erodible bottom // Peter 04.07.2025
+//        c_vol *= smd.lambda;  // not erodible bottom // Peter 04.07.2025
         c_vol *= Math.min(1, (cmd.totaldepth - CurrentModel2D.WATT) / SedimentModel2D.WATT); // Abminderung bei trockenem Knoten
         return Math.min(cmax, c_vol * lambda);
     }

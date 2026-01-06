@@ -56,10 +56,10 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
     private DataOutputStream xf_os = null;
     private FileOutputStream xf_fs = null;
     
-    private Vector initsc = new Vector();
+    private Vector<DOF> initsc = new Vector<>();
     
     private int n,SKonc,numberofdofs;
-    private Vector bskonc  = new Vector();
+    private Vector<BoundaryCondition> bskonc  = new Vector<>();
     
     private NitrogenDat nitratdat;
     
@@ -88,11 +88,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         
         readBoundCond(nitratdat.rndwerte_name);
         
-        BoundaryCondition bcond;
-        Enumeration be = bskonc.elements();
-        while (be.hasMoreElements()) {
-            bcond = (BoundaryCondition) be.nextElement();
-            //and???????
+        for (BoundaryCondition bcond : bskonc) {
             initsc.addElement(fenet.getDOF(bcond.pointnumber));
         }
         
@@ -142,16 +138,15 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         if (nitratdata.bsc != null)
             sc = nitratdata.bsc.getValue(time);
         else {
-            for (Enumeration e = initsc.elements(); e.hasMoreElements();){
-                DOF ndof= (DOF) e.nextElement();
+            for (DOF ndof : initsc) {
                 NitrogenModel2DData nitrat = NitrogenModel2DData.extract(ndof);
-                if ((dof!=ndof) & ( nitrat.bsc != null )){
+                if ((dof != ndof) && (nitrat.bsc != null)) {
                     d = dof.distance(ndof);
                     sc += nitrat.bsc.getValue(time) / d;
-                    R += 1./d;
+                    R += 1. / d;
                 }
             }
-            if( R != 0. )
+            if (R != 0.)
                 sc /= R;
             else
                 sc = 0.;
@@ -499,14 +494,15 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         NitrogenModel2DData data = new NitrogenModel2DData();
         
         int dofnumber = (int) dof.number;
-        Enumeration b = bskonc.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
-            if ( dofnumber == bcond.pointnumber ){
-                data.bsc = bcond.function;
-                bskonc.removeElement(bcond);
+        final ScalarFunction1d[] found = new ScalarFunction1d[1];
+        bskonc.removeIf(bcond -> {
+            if (dofnumber == bcond.pointnumber) {
+                found[0] = bcond.function;
+                return true;
             }
-        }
+            return false;
+        });
+        data.bsc = found[0];
         
         return data;
     }//end genData
@@ -711,6 +707,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
      *  from  a JanetBinary-file named filename
      *  @param nam  name of the file to be open */
     //  NEU TINO 14.06.2007    
+    @SuppressWarnings("unused")
     private void readConcentrationFromJanetBin(String filename) {
         int anzAttributes=0;
         double x,y,skonc;        
@@ -880,8 +877,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
             DiscretScalarFunction1d boundcond = new DiscretScalarFunction1d(feld);
             boundcond.setPeriodic(true);
             for ( K = pointer; K < pointer+anz_identische_Knoten; K++ ){
-                Point3d pt = (fenet.getDOF(KnotenNr[K]));
-                bskonc.addElement(new BoundaryConditionOld(KnotenNr[K], boundcond));
+                bskonc.addElement(new BoundaryConditionOld(KnotenNr[K], boundcond).getBoundaryCondition("AD CONCENTRATION"));
                // bskonc.addElement(new BoundaryCondition(KnotenNr[K], boundcond));
             }
             pointer += anz_identische_Knoten;

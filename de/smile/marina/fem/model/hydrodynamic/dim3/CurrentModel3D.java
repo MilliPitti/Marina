@@ -39,7 +39,6 @@ import de.smile.marina.fem.model.hydrodynamic.dim2.QSteuerung;
 import de.smile.marina.fem.model.hydrodynamic.dim2.SedimentElementData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.SedimentModel2DData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.SurfaceWaterModel;
-import static de.smile.marina.fem.model.hydrodynamic.dim2.SurfaceWaterModel.WATT;
 import de.smile.marina.fem.model.hydrodynamic.dim2.WaveHYPModel2DData;
 import static de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3DData._du2dz2;
 import static de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3DData._dudt;
@@ -238,7 +237,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         
         return null;
     }
-    
+    @SuppressWarnings("unused")
     public double[] initialHfromJanetBin(String filename, double time) {
         this.time=time;
         
@@ -397,6 +396,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
      * @param sysDatZ is true if the z-Value of the Net is using else the z-Value stored in the result file is used
      * @return the vector of start solution = null, if depricated interface
      */
+    @SuppressWarnings("unused")
     public double[] initialSolutionfromErgFile(String currentergPath, int record, boolean sysDatZ) {
 
         System.out.println("\tRead inital values from Current3DErg-result file " + currentergPath);
@@ -485,6 +485,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
      * @param sysDatZ is true if the z-Value of the Net is using else the z-Value stored in the result file is used
      * @return the vector of start solution
      */
+    @SuppressWarnings("unused")
     public double[] initialSolutionFromTicadErgFile(String currentergPath, int record, boolean sysDatZ) {
 
         double u_mean,v_mean;
@@ -1659,6 +1660,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
     /** the method readStricklerCoeff read the datas for strickler coefficients
      *  from a JanetBinary-file named filename
      *  @param nam  name of the file to be open */
+    @SuppressWarnings("unused")
     private void readStricklerCoeffFromJanetBin(String filename) {
         int anzAttributes = 0;
         double kst;
@@ -1769,6 +1771,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
     /** the method read Nikuradse Coeff read the datas for Nikuradse coefficients
      *  from a JanetBinary-file named filename
      *  @param nam  name of the file to be open */
+    @SuppressWarnings("unused")
     private void readNikuradseCoeffFromJanetBin(String filename) {
 
         nikuradse=true;
@@ -2160,8 +2163,6 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
         Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> {
 
             final CurrentModel3DData currentdata = dof_data[dof.number];
-
-            final int gamma = dof.getNumberofFElements();
 
             double u=0., v=0., w=0.;
             double dudt=0., dvdt=0.;

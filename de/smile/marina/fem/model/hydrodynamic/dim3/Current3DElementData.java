@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim3;
 
 import de.smile.marina.fem.FElement;
 import de.smile.marina.fem.ModelData;
-import static de.smile.marina.fem.ModelData.NO_MODEL_DATA;
 import java.util.Iterator;
 
 /**

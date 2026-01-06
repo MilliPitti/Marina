@@ -93,8 +93,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
     /** Die Transportformel nach Engelund-Hansen basiert auf Energiebetrachtungen
      * und berechnet hinreichend genau den totalen Transport fuer sandige Fluesse mit betraechtlichem Schwebstofftransport. 
      * (Engelund & Hansen, 1967)
-     * Originalformulierung mit 
-     * Welleneinfluss und 
+     * Originalformulierung mit Welleneinfluss und 
      * drehen der Transportvektoren in Richtung der Bodenschubspannungen
      * @param dof
      * @return Vektor des Sedimenttransportes
@@ -125,13 +124,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
                 * Math.sqrt((PhysicalParameters.RHO_SEDIM/cmd.rho-1.) * PhysicalParameters.G * Math.pow(smd.d50, 3.));
         smd.bedload *= smd.lambda;
         smd.bedload /= PhysicalParameters.RHO_SEDIM * PhysicalParameters.G;
-        
-//        if (smd.d50 < dmin) {// Abminderung auf Grund zu kleiner Koerner
-//            smd.bedload *= Math.max(0., (smd.d50 - dminTenth) / (dmin - dminTenth));
-//        }
-        // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
-        
+          
         // Extrahieren des Bedload-Anteils durch Engelund-Fredsøe-Partitionierung (1976)
         final double T = (tauB - smd.tau_cr)/smd.tau_cr;
         if(T>0){
@@ -144,6 +137,9 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
             smd.bedload = 0.;
             return smd.bedloadVector;
         }
+        // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
+        smd.bedload = Math.min(cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        
         double norm = Function.norm(cmd.tauBx, cmd.tauBy);
         smd.bedloadVector[0] = smd.bedload * cmd.tauBx / norm;
         smd.bedloadVector[1] = smd.bedload * cmd.tauBy / norm;

@@ -38,7 +38,6 @@ import de.smile.marina.io.TicadIO;
 import de.smile.math.Function;
 import de.smile.xml.marina.weirs.*;
 import java.io.*;
-import static java.lang.Math.max;
 import java.util.*;
 import javax.xml.bind.*;
 
@@ -131,6 +130,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         if (currentdat.weirsFileType == CurrentDat.WeirFileType.weirXML) {
             readWeirXML(currentdat.weirsFileName);
         }
+        initializeWeirRoughness();
 
         try {
             xf_os = new DataOutputStream(new FileOutputStream(currentdat.xferg_name));
@@ -291,8 +291,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     inStream.skip(4);
                 }
             }
-            inStream.close();
-            stream.close();
         }
         return null;
     }
@@ -325,6 +323,28 @@ public class CurrentModel2D extends SurfaceWaterModel {
         inith = null;
 
         return null;
+    }
+
+    private void initializeWeirRoughness() {
+        for (DOF dof : fenet.getDOFs()) {
+            final CurrentModel2DData cmd = dof_data[dof.number];
+            if (cmd.bWeir != null) {
+                for (FElement element : dof.getFElements()) {
+            final FTriangle ele = (FTriangle) element;
+            final DOF[] dofs = ele.getDOFs();
+            final Current2DElementData eleCurrentData = element_data[ele.number];
+
+                    // Wir müssen über alle Knoten des Elements iterieren, um Konsistenz zu gewährleisten
+                    // (Anlog zur ursprünglichen Logik innerhalb der Elementschleife)
+                    eleCurrentData.meanStricklerCoefficient = 20.;
+                    for (int j = 0; j < 3; j++) {
+                        CurrentModel2DData nodeCmd = dof_data[dofs[j].number];
+                        nodeCmd.kst = 20.;
+                        nodeCmd.ks = CurrentModel2DData.Strickler2Nikuradse(20.); // in mm
+                    }
+                }
+            }
+        }
     }
 
     private class initalSolutionLoop extends Thread {
@@ -586,17 +606,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     dry++;
                 }
             }
-
-            if (cmd.bWeir != null) { // TODO muss das wirklich in jedem Zeitschritt gemacht werden oder kann dies
-                                     // nicht beim einlesen der Wehre geschehen
-                eleCurrentData.meanStricklerCoefficient = 20.;
-                cmd.kst = 20.;
-                dof_data[dofs[(j + 1) % 3].number].kst = 20.;
-                dof_data[dofs[(j + 2) % 3].number].kst = 20.;
-                cmd.ks = CurrentModel2DData.Strickler2Nikuradse(20.); // in mm
-                dof_data[dofs[(j + 1) % 3].number].kst = cmd.ks;
-                dof_data[dofs[(j + 2) % 3].number].kst = cmd.ks;
-            }
         }
 
         // caculate Bottomslope
@@ -611,9 +620,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final CurrentModel2DData cmd = dof_data[ele.getDOF(j).number];
                 final double w1_lambda = 1. - cmd.totaldepth / halfWATT;
                 synchronized (cmd) {
-                    cmd.reta -= (1.E-7 + infiltrationRate) * w1_lambda * bottomslope; // kuenstliches Versickeren auf
-                                                                                      // trockenen Elementen zur
-                                                                                      // Modellstabilisierung
+                    cmd.reta -= (1.E-7 + infiltrationRate) * w1_lambda * bottomslope; // kuenstliches Versickeren auf trockenen Elementen zur Modellstabilisierung
                 }
             }
 
@@ -854,6 +861,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             }
 
+            final double dzdx = (eleSedimentData != null) ? eleSedimentData.dzdx : ele.dzdx;
+            final double dzdy = (eleSedimentData != null) ? eleSedimentData.dzdy : ele.dzdy;
+
             // eddy viscosity
             // -----------------------------------------
             // konstant
@@ -862,21 +872,25 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double Cs = 0.1 / 2.; // Smagorinsky Konstante
             astx += (Cs * elementsize) * (Cs * elementsize)
                     * Math.sqrt(2. * udx * udx + (udy + vdx) * (udy + vdx) + 2. * vdy * vdy);
-            /*
-             * isotropher Elder - Anteil mit Strickler Bodenschubspannung approximiert - ca.
-             * 0.06
-             */
-            final double u_star = Function.norm(u_mean, v_mean) * PhysicalParameters.sqrtG /
-                    (eleCurrentData.meanStricklerCoefficient * Math.pow(depth_mean, 1.0 / 6.0));
-            // Elder-Koeffizient kappa (ca. 0.6): nu_t = kappa * u* * h
-            final double nu_elder = 0.6 / 2. * u_star * depth_mean;
-            astx += nu_elder;
 
             // Battjes-Ansatz turbulence by wavebreaking
             if (wavebreaking > 0.)
                 astx += BATTJESKOEFF * depth_mean * Math.cbrt(wavebreaking / PhysicalParameters.RHO_WATER);
             // wave induced turbulence by Radiation-Stresses
             astx += Function.norm((dsxxdx + dsxydy), (dsxydx + dsyydy)) / PhysicalParameters.RHO_WATER;
+
+            // isotropher Elder - Anteil mit Strickler Bodenschubspannung approximiert - ca. 0.06
+            final double u_star = Function.norm(u_mean, v_mean) * PhysicalParameters.sqrtG /
+                    (eleCurrentData.meanStricklerCoefficient * Math.pow(depth_mean, 1.0 / 6.0));
+            // Elder-Koeffizient kappa (ca. 0.6): nu_t = kappa * u* * h
+           final double nu_elder = 0.6 / 2. * u_star * depth_mean;
+
+            double asty = astx;
+            astx += nu_elder/(1+Math.abs(dzdx));
+            asty += nu_elder/(1+Math.abs(dzdy));
+
+            eleCurrentData.asty = asty;
+            eleCurrentData.astx = astx;
 
             if (eleCurrentData.withWeir) {
                 int iUnderFlowTopoWeir = 0;
@@ -938,13 +952,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double cureq2_mean = 0.;
             double cureq3_mean = 0.;
 
-            final double dzdx = (eleSedimentData != null) ? eleSedimentData.dzdx : ele.dzdx;
-            final double dzdy = (eleSedimentData != null) ? eleSedimentData.dzdy : ele.dzdy;
-
-            double asty = astx;
-            eleCurrentData.asty = asty;
-            eleCurrentData.astx = astx;
-
             // Elementfehler der Kontigleichung berechnen
             for (int j = 0; j < 3; j++) {
                 final CurrentModel2DData cmd = dof_data[dofs[j].number];
@@ -971,17 +978,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 - cmd.v * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.u * max(0.1, 1 - dzdx) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.u * Math.max(0.1, 1.-dzdx) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windx / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
                                 + (dsxxdx + dsxydy) / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
-                                + cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der
-                                                                                    // Dammbruchsimulation / wlamda
-                                                                                    // skaliert nonZeroTotalDepth gegen
-                                                                                    // Null, falls der Knoten trocken
-                                                                                    // faellt
+                                + cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
                 /* if (!cmd.boundary) */cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
@@ -996,31 +999,23 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Coriolis
                                 + cmd.u * Coriolis
                                 // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.v * max(0.1, 1 - dzdy) / nonZeroTotalDepth
+                                + cmd.bottomFrictionCoefficient * cmd.v * Math.max(0.1, 1.-dzdy) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windy / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
                                 + (dsxydx + dsyydy) / cmd.rho / nonZeroTotalDepth * cmd.wlambda
-                                // KopplungsTerm aus der Herleitung der Formulierung von q -> v
-                                + cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der
-                                                                                    // Dammbruchsimulation / cmd.wlamda
-                                                                                    // skaliert nonZeroTotalDepth gegen
-                                                                                    // Null, falls der Knoten trocken
-                                                                                    // faellt
+                                // CouplingTerm from the derivation of the Formulation q -> v
+                                + cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
                 /* if (!cmd.boundary) */cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
                 // ToDo ins Sedimentmodell
-                if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear
-                                                                                            // stress only in wett
-                                                                                            // elements
+                if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements
                     double reduceFactor = (Math.abs(cureq1_mean * cmd.totaldepth) + 1.) * bottomslope;
                     reduceFactor *= reduceFactor * reduceFactor;
                     // reduceFactor *= reduceFactor; // hoch 6
                     // final double chezy = cmd.kst * Math.pow(cmd.totaldepth, 1./6.);
-                    final double chezy = Math.sqrt(PhysicalParameters.G / smd.grainShearStress); // siehe Berechnung des
-                                                                                                 // grainShearStress
-                    final double alphaStar = 1; // 1 nach MIKE 21C mit gravitationellem Transport; 0.5 ohne grav.
-                                                // Transport;
+                    final double chezy = Math.sqrt(PhysicalParameters.G / smd.grainShearStress); // siehe Berechnung des grainShearStress
+                    final double alphaStar = 1; // 1 nach MIKE 21C mit gravitationellem Transport; 0.5 ohne grav. Transport;
                     final double beta = alphaStar * 2. / PhysicalParameters.KARMANCONSTANT
                             / PhysicalParameters.KARMANCONSTANT * Function.max(0.,
                                     1. - PhysicalParameters.sqrtG / PhysicalParameters.KARMANCONSTANT / chezy);
@@ -1037,12 +1032,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
             }
 
-            final double c0 = Math.sqrt(PhysicalParameters.G * ((depth_mean < WATT) ? WATT : depth_mean)); // the
-                                                                                                           // shallow
-                                                                                                           // water wave
-                                                                                                           // velocity
-            // Operatornorm fuer JEDE Richtungskomponente und dann wiederum als euklidische
-            // Vektornorm
+            final double c0 = Math.sqrt(PhysicalParameters.G * ((depth_mean < WATT) ? WATT : depth_mean)); // the shallow water wave velocity
+            // Operatornorm for each direction component and then again as euclidean vector norm
             final double operatornorm_x = c0 + Math.abs(u_mean);
             final double operatornorm_y = c0 + Math.abs(v_mean);
             final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
@@ -1054,7 +1045,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final CurrentModel2DData cmd = dof_data[ele.getDOF(j).number];
                 final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
 
-                // Fehlerkorrektur berechhnen
+                // Error correction calculation
                 double uCorrect = -tau_cur * (koeffmat[j][1] * u_mean * cureq2_mean
                         + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean
                         + koeffmat[j][2] * v_mean * cureq2_mean);

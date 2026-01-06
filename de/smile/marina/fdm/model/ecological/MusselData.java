@@ -55,8 +55,7 @@ public class MusselData implements ModelData {
     double covering = 0.; // 0 - 1
     int abundanz = 0; // Individuen/m**2 - was ist die maximale Abundanz fuer Miesmuschel und Austern?
     // !! meanSizeDistributionCumulativeCurve of mussels in the representativ area;
-    public ScalarFunction1d meanSizeDistributionCumulativeCurveLiving = null; // Lebend MuschelgroeszenKurve in mm
-                                                                              // verwendet
+    public ScalarFunction1d meanSizeDistributionCumulativeCurveLiving = null; // Lebend MuschelgroeszenKurve in mm verwendet
     public ScalarFunction1d meanSizeDistributionCumulativeCurveDeath = null; // Tod MuschelgroeszenKurve in mm verwendet
     // !! parametrisiert beschrieben
     double minSize;

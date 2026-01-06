@@ -33,7 +33,7 @@ import de.smile.math.Function;
  * @author milbradt
  * @version 1.8.13
  */
-public class BroadCrestedTopoWeir extends BroadCrestedWeir implements TimeDependentWeir {
+public class BroadCrestedTopoWeir extends BroadCrestedWeir {
 
     /** Creates a new instance of Weir */
     public BroadCrestedTopoWeir(double crestLevel, int[] knotennummern, FEDecomposition sysdat) {

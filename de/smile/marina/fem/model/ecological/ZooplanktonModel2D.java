@@ -64,9 +64,9 @@ import javax.vecmath.Point3d;
 public class ZooplanktonModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel {
     private DataOutputStream xf_os = null;
     
-    private Vector initsc = new Vector();
+    private Vector<DOF> initsc = new Vector<>();
     
-    private Vector bsc  = new Vector();
+    private Vector<BoundaryConditionOld> bsc  = new Vector<>();
     
     private int n,ZooConc,numberofdofs;
     
@@ -92,12 +92,9 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         setNumberOfThreads(zoodat.numberOfThreads);
         
         readBoundCond(zoodat.zoo_rndwerteName);
-        BoundaryCondition bcond;
-        Enumeration be = bsc.elements();
-        while (be.hasMoreElements()) {
-            bcond = (BoundaryCondition) be.nextElement();
-            initsc.addElement(fenet.getDOF(bcond.pointnumber));
-        }
+        bsc.forEach((bcond) -> {
+            initsc.add(fenet.getDOF(bcond.pointnumber));
+        });
         
         // DOFs initialisieren
         initialDOFs();

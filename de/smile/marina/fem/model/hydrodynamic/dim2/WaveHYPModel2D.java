@@ -127,7 +127,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                 | TicadIO.HRES_H        // wave hight
                 | TicadIO.HRES_SALT     // wavebreaking-Energy
                 | TicadIO.HRES_EDDY     // wave period
-//                | TicadIO.HRES_SHEAR    // vector max wave orbial velocity in wavepropagation direction // Peter 27.01.2025
                 | TicadIO.HRES_SHEAR    // vector mean wave bottom shear stress in wavepropagation direction // Peter 27.01.2025
                 ;
     }

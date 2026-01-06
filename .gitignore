@@ -3,5 +3,4 @@
 *.bin
 *.log
 *.tmp
-sources.txt
 bin/

@@ -43,7 +43,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.StreamTokenizer;
-import java.util.Enumeration;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -152,6 +151,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
      * @return the vector of start solution
      * @throws java.lang.Exception
      */
+    @SuppressWarnings("unused")
     public double[] initialSolutionFromTicadErgFile(String detriterg, int record) throws Exception {
     	
         System.out.println("\t Read inital values from result file "+detriterg);

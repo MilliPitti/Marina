@@ -44,24 +44,21 @@ import bijava.marina.spectra.*;
 import bijava.math.ifunction.ShepardVectorFunction2D;
 import bijava.math.ifunction.TimeVectorFunktion2D;
 import de.smile.marina.fem.TimeDependentFEApproximation;
-import de.smile.math.ode.ivp.ODESystem;
 
 
 /** this ODE describe a spectral wave Model based on action density
  * @version 1.2
  * @author Peter Milbradt
  */
-public class  SpectralWaveModel extends TimeDependentFEApproximation implements ODESystem,FEModel {
+public class  SpectralWaveModel extends TimeDependentFEApproximation implements FEModel {
     
     private DataOutputStream xf_os = null;
-    private FileOutputStream xf_fs = null;
     private DataOutputStream sp_os = null;
     private FileOutputStream sp_fs = null;
     
     
     private Vector<WBoundaryCondition> bcs = new Vector<>(); // temp boundary conditions
     
-    private int numberofNodes;
     private double MaxTimeStep;
     int n;
     double[] result;

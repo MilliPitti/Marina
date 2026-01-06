@@ -26,6 +26,7 @@ package de.smile.marina.fem.model.ecological;
 import de.smile.marina.fem.*;
 import de.smile.math.Function;
 import bijava.math.ifunction.DiscretScalarFunction1d;
+import bijava.math.ifunction.ScalarFunction1d;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.fem.model.hydrodynamic.dim2.Current2DElementData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2DData;
@@ -129,16 +130,15 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
         if (detritdata.bsc != null)
             sc = detritdata.bsc.getValue(time);
         else {
-            for (Enumeration e = initsc.elements(); e.hasMoreElements();){
-                DOF ndof= (DOF) e.nextElement();
+            for (DOF ndof : initsc) {
                 DetritusModel2DData detrit = DetritusModel2DData.extract(ndof);
-                if ((dof!=ndof) & ( detrit.bsc != null )){
+                if ((dof != ndof) && (detrit.bsc != null)) {
                     d = dof.distance(ndof);
                     sc += detrit.bsc.getValue(time) / d;
-                    R += 1./d;
+                    R += 1. / d;
                 }
             }
-            if( R != 0. )
+            if (R != 0.)
                 sc /= R;
             else
                 sc = 0.;
@@ -611,14 +611,15 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     public ModelData genData(DOF dof){
         DetritusModel2DData data = new DetritusModel2DData();
         int dofnumber = dof.number;
-        Enumeration<BoundaryCondition> b = bsc.elements();
-        while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
-            if ( dofnumber == bcond.pointnumber ){
-                data.bsc = bcond.function;
-                bsc.removeElement(bcond);
+        final ScalarFunction1d[] found = new ScalarFunction1d[1];
+        bsc.removeIf(bcond -> {
+            if (dofnumber == bcond.pointnumber) {
+                found[0] = bcond.function;
+                return true;
             }
-        }
+            return false;
+        });
+        data.bsc = found[0];
         
         CurrentModel2DData  currentmodeldata = CurrentModel2DData.extract(dof);
         
@@ -750,6 +751,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
      *  from  a JanetBinary-file named filename
      *  @param nam  name of the file to be open */
     //  NEU TINO 14.06.2007    
+    @SuppressWarnings("unused")
     private void readConcentrationFromJanetBin(String filename) {
         int anzAttributes=0;
         double x,y,skonc;        

@@ -64,9 +64,9 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
     private DataOutputStream xf_os = null;
     private FileOutputStream xf_fs = null;
     
-    private Vector initsc = new Vector();
+    private Vector<DOF> initsc = new Vector<>();
     
-    private Vector bsc  = new Vector();
+    private Vector<BoundaryCondition> bsc  = new Vector<>();
     
     private int n,PhytoConc,numberofdofs;
     
@@ -93,12 +93,9 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         
         readBoundCond(phytodat.phyto_rndwerteName);
         
-        BoundaryCondition bcond;
-        Enumeration be = bsc.elements();
-        while (be.hasMoreElements()) {
-            bcond = (BoundaryCondition) be.nextElement();
-            initsc.addElement(fenet.getDOF(bcond.pointnumber));
-        }
+        bsc.forEach((bcond) -> {
+            initsc.add(fenet.getDOF(bcond.pointnumber));
+        });
         
         // DOFs initialisieren
         initialDOFs();
@@ -960,7 +957,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                 boundcond.setPeriodic(true);
                 for (K = pointer; K < pointer + anz_identische_Knoten; K++) {
                     Point3d pt = (fenet.getDOF(KnotenNr[K]));
-                    bsc.addElement(new BoundaryConditionOld(KnotenNr[K], boundcond));
+                    bsc.addElement(new BoundaryConditionOld(KnotenNr[K], boundcond).getBoundaryCondition(""));
                     //bsc.addElement(new BoundaryCondition(KnotenNr[K], boundcond));
                 }
                 pointer += anz_identische_Knoten;

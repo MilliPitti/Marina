@@ -56,10 +56,10 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
     private DataOutputStream xf_os = null;
     private FileOutputStream xf_fs = null;
     
-    private Vector initsc = new Vector();
+    private Vector<DOF> initsc = new Vector<>();
     
     private int n,SKonc,numberofdofs;
-    private Vector bskonc  = new Vector();
+    private Vector<BoundaryCondition> bskonc  = new Vector<>();
     
     private NitrogenDat nitratdat;
     
@@ -88,11 +88,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         
         readBoundCond(nitratdat.rndwerte_name);
         
-        BoundaryCondition bcond;
-        Enumeration be = bskonc.elements();
-        while (be.hasMoreElements()) {
-            bcond = (BoundaryCondition) be.nextElement();
-            //and???????
+        for (BoundaryCondition bcond : bskonc) {
             initsc.addElement(fenet.getDOF(bcond.pointnumber));
         }
         
@@ -881,7 +877,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
             boundcond.setPeriodic(true);
             for ( K = pointer; K < pointer+anz_identische_Knoten; K++ ){
                 Point3d pt = (fenet.getDOF(KnotenNr[K]));
-                bskonc.addElement(new BoundaryConditionOld(KnotenNr[K], boundcond));
+                bskonc.addElement(new BoundaryConditionOld(KnotenNr[K], boundcond).getBoundaryCondition("AD CONCENTRATION"));
                // bskonc.addElement(new BoundaryCondition(KnotenNr[K], boundcond));
             }
             pointer += anz_identische_Knoten;

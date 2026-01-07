@@ -118,7 +118,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
             tauB += cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
         }
         final double T = (tauB - smd.tau_cr)/smd.tau_cr;
-        
+
         // Chollet-Cunge-ähnlicher Korrekturfaktor
         final double f_CC = computeFCC(T);
 
@@ -162,21 +162,24 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         if (T <= 0.0) {
             return 0.0;
         }
-
-        // Referenzbereich für "optimales" Regime (hier: T_ref ~ 3)
+        
+        // Logarithmische Skala für T, da Transportregime oft über mehrere Größenordnungen läuft
         final double logT = Math.log10(T);
-        final double logT_ref = Math.log10(3.0);   // Zentrum der Glocke
-        final double sigma = 0.5;                  // Breite der Glocke (in log10-Raum)
-
-        // Gauss-artige Funktion: max ~1 bei T ~ T_ref, kleiner bei sehr kleinen / großen T
-        double fCC = Math.exp(-Math.pow((logT - logT_ref) / sigma, 2.0));
-
-        // Optional: Minimalwert begrenzen, damit EH nicht komplett "weg" ist
-        final double fCC_min = 0.2;
-        if (fCC < fCC_min) {
-            fCC = fCC_min;
-        }
-
-        return fCC;
+        
+        // Doppelt asymmetrische Glocke: Optimum bei logT_ref ≈ 0.48 (T ≈ 3)
+        // Linke Seite: steil ansteigend zu 1 bei T ≈ 1-3
+        // Rechte Seite: langsamer fallend für T > 3
+        final double logT_ref = 0.48;     // Optimum bei T_ref ≈ 3
+        final double sigma_left = 0.4;    // Engere linke Seite (schneller Anstieg bei kleinen T)
+        final double sigma_right = 1.2;   // Breitere rechte Seite (langsamer Abfall bei großen T)
+        
+        double f_left = Math.exp(-Math.pow((logT - logT_ref) / sigma_left, 2.0));
+        double f_right = Math.exp(-Math.pow((logT - logT_ref) / sigma_right, 2.0));
+        
+        // Kombination: Produkt oder Minimum beider Anteile
+        double fCC = Math.min(f_left, f_right);
+        
+        // Optional: Absolutminimum gegen vollständigen Kollaps (z.B. 0.1 statt 0)
+        return Math.max(fCC, 0.1);
     }
 }

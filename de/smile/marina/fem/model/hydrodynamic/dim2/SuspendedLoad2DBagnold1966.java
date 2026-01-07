@@ -42,7 +42,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
 
     private final static double dmax = 1.E-3;
     private final static double doubledmax = 2 * dmax;
-    private final static double e_s = 0.02, e_b = 0.1; // constants, default e_s = 0.02,  e_b = 0.1 // in Anlehnung an den Koeffizienten von vanRijn1984
+    private final static double e_s = 0.015, e_b = 0.1; // constants, e_s = 0.01-0.02,  e_b = 0.05-0.15 als obere Grenze fuer den Anteil des Geschiebes am Total Load
 
     /**
      * Computes the concentration of sediment at a given location based on the provided degree of freedom (DOF).

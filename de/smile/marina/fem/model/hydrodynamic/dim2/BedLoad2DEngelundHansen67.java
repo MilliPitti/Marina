@@ -117,8 +117,15 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         if (wmd != null) {
             tauB += cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
         }
+        final double T = (tauB - smd.tau_cr)/smd.tau_cr;
         
-        smd.bedload = 0.05 * cmd.rho * cmd.cv * cmd.cv / tauB
+        // Chollet-Cunge-ähnlicher Korrekturfaktor
+        final double f_CC = computeFCC(T);
+
+        // Engelund-Hansen-Vorfaktor mit CC-Korrektur
+        double prefactor = 0.05 * f_CC;
+
+        smd.bedload = prefactor * cmd.rho * cmd.cv * cmd.cv / tauB
                 * Math.pow(tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho) * PhysicalParameters.G * smd.d50),2.5)
                 * PhysicalParameters.RHO_SEDIM * PhysicalParameters.G 
                 * Math.sqrt((PhysicalParameters.RHO_SEDIM/cmd.rho-1.) * PhysicalParameters.G * Math.pow(smd.d50, 3.));
@@ -126,7 +133,6 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedload /= PhysicalParameters.RHO_SEDIM * PhysicalParameters.G;
           
         // Extrahieren des Bedload-Anteils durch Engelund-Fredsøe-Partitionierung (1976)
-        final double T = (tauB - smd.tau_cr)/smd.tau_cr;
         if(T>0){
             //Suspension multiplier
             double R = 0.3/Math.pow(T,1.5);
@@ -145,5 +151,32 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedloadVector[1] = smd.bedload * cmd.tauBy / norm;
         
         return smd.bedloadVector;
+    }
+
+    /** Chollet-Cunge-ähnlicher Korrekturfaktor für Engelund-Hansen-Formel
+     * Abhängigkeit vom Shields-Parameter T = (tauB - tau_cr) / tau_cr
+     * @param T Shields-Parameter
+     * @return Korrekturfaktor f_CC
+     */
+    private double computeFCC(final double T) {
+        if (T <= 0.0) {
+            return 0.0;
+        }
+
+        // Referenzbereich für "optimales" Regime (hier: T_ref ~ 3)
+        final double logT = Math.log10(T);
+        final double logT_ref = Math.log10(3.0);   // Zentrum der Glocke
+        final double sigma = 0.5;                  // Breite der Glocke (in log10-Raum)
+
+        // Gauss-artige Funktion: max ~1 bei T ~ T_ref, kleiner bei sehr kleinen / großen T
+        double fCC = Math.exp(-Math.pow((logT - logT_ref) / sigma, 2.0));
+
+        // Optional: Minimalwert begrenzen, damit EH nicht komplett "weg" ist
+        final double fCC_min = 0.2;
+        if (fCC < fCC_min) {
+            fCC = fCC_min;
+        }
+
+        return fCC;
     }
 }

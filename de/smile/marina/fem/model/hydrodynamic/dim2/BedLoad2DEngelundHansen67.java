@@ -110,20 +110,22 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedloadVector[1] = 0.;
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);        
-        if(tauB<1e-10) return smd.bedloadVector;
+        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         if (wmd != null) {
             tauB += cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
         }
-        final double T = (tauB - smd.tau_cr)/smd.tau_cr;
+                
+        if(tauB<1e-10) return smd.bedloadVector;
 
-        // Chollet-Cunge-ähnlicher Korrekturfaktor
-        final double f_CC = computeFCC(T);
+        double uStar = Math.sqrt(tauB / cmd.rho);
+        // Energie-basierter Bedload-Anteil
+        final double beta = 1.0; // physikalisch motiviert, nicht "frei"
+        double fBed = Math.exp(-beta * smd.wc / uStar);
 
-        // Engelund-Hansen-Vorfaktor mit CC-Korrektur
-        double prefactor = 0.05 * f_CC;
+        // Engelund-Hansen-Vorfaktor mit Korrektur
+        double prefactor = 0.05 * fBed;
 
         smd.bedload = prefactor * cmd.rho * cmd.cv * cmd.cv / tauB
                 * Math.pow(tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho) * PhysicalParameters.G * smd.d50),2.5)
@@ -133,6 +135,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedload /= PhysicalParameters.RHO_SEDIM * PhysicalParameters.G;
           
         // Extrahieren des Bedload-Anteils durch Engelund-Fredsøe-Partitionierung (1976)
+        final double T = (tauB - smd.tau_cr)/smd.tau_cr;
         if(T>0){
             //Suspension multiplier
             double R = 0.3/Math.pow(T,1.5);
@@ -151,35 +154,5 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedloadVector[1] = smd.bedload * cmd.tauBy / norm;
         
         return smd.bedloadVector;
-    }
-
-    /** Chollet-Cunge-ähnlicher Korrekturfaktor für Engelund-Hansen-Formel
-     * Abhängigkeit vom Shields-Parameter T = (tauB - tau_cr) / tau_cr
-     * @param T Shields-Parameter
-     * @return Korrekturfaktor f_CC
-     */
-    private double computeFCC(final double T) {
-        if (T <= 0.0) {
-            return 0.0;
-        }
-        
-        // Logarithmische Skala für T, da Transportregime oft über mehrere Größenordnungen läuft
-        final double logT = Math.log10(T);
-        
-        // Doppelt asymmetrische Glocke: Optimum bei logT_ref ≈ 0.48 (T ≈ 3)
-        // Linke Seite: steil ansteigend zu 1 bei T ≈ 1-3
-        // Rechte Seite: langsamer fallend für T > 3
-        final double logT_ref = 0.48;     // Optimum bei T_ref ≈ 3
-        final double sigma_left = 0.4;    // Engere linke Seite (schneller Anstieg bei kleinen T)
-        final double sigma_right = 1.2;   // Breitere rechte Seite (langsamer Abfall bei großen T)
-        
-        double f_left = Math.exp(-Math.pow((logT - logT_ref) / sigma_left, 2.0));
-        double f_right = Math.exp(-Math.pow((logT - logT_ref) / sigma_right, 2.0));
-        
-        // Kombination: Produkt oder Minimum beider Anteile
-        double fCC = Math.min(f_left, f_right);
-        
-        // Optional: Absolutminimum gegen vollständigen Kollaps (z.B. 0.1 statt 0)
-        return Math.max(fCC, 0.1);
     }
 }

@@ -49,7 +49,7 @@ public class MarinaXML {
 
     public final static int majorversion = 4;
     public final static int minorversion = 9;
-    public final static String update = "3.2";
+    public final static String update = "3.0";
 
     public final static boolean release = true;
 

@@ -24,7 +24,8 @@
 package de.smile.math;
 
 /** Utility-Klasse f&uuml;r elementare mathematische Funktionen */
-public class Function {
+public abstract class Function {
+
     private Function() {
     }
     public static double abs(double a){

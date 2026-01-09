@@ -47,15 +47,6 @@ import java.util.*;
 public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         implements FEModel, TicadModel, TimeDependentModel {
 
-    // variable for fast approximation of the third root
-    private int anzwerte = 301;
-    private double increment = 0.1;
-    private double[] mathvalues = new double[anzwerte]; // Werte der 3. Wurzel
-    {
-        for (int i = 0; i < anzwerte; i++) {
-            mathvalues[i] = Math.pow(i * increment, 1. / 3.);
-        }
-    }
     FluidMudFlowModel2DData[] dof_data = null;
 
     private DataOutputStream xf_os = null;
@@ -833,7 +824,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             // Battjes-Ansatz turbulence by wavebreaking
             if (wavebreaking != 0.)
                 astx += CurrentModel2D.BATTJESKOEFF * thickness_mean
-                        * thirdroot(wavebreaking / PhysicalParameters.RHO_WATER);
+                        * Math.cbrt(wavebreaking / PhysicalParameters.RHO_WATER);
 
             double asty = astx;
 
@@ -1226,8 +1217,8 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         // bottom friction coefficient
         // Strickler
         fluidmuddata.tau_b = PhysicalParameters.G
-                / thirdroot((fluidmuddata.thickness < WATT) ? WATT : fluidmuddata.thickness) * fluidmuddata.cv
-                / Function.sqr(kst); // with fast approximation
+            / Math.cbrt((fluidmuddata.thickness < WATT) ? WATT : fluidmuddata.thickness) * fluidmuddata.cv
+            / Function.sqr(kst); // with fast approximation
 
         fluidmuddata.p = fluidmuddata.m;// * fluidmuddata.rho;
         /* current stress koeffizient in anlehnung an wind stress */
@@ -1583,25 +1574,6 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             rvalue /= ((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth);
         }
         return rvalue;
-    }
-
-    // third root approximation
-    private double thirdroot(double a) {
-        double result;
-        if ((a < 0.) || (a > (anzwerte - 2) * increment)) {
-            result = Math.pow(a, 1. / 3.);
-        } else {
-            if (a % increment == 0.) {
-                result = mathvalues[(int) (a / increment)];
-            } else {
-                result = mathvalues[(int) (a / increment)]
-                        + (mathvalues[(int) (a / increment) + 1] - mathvalues[(int) (a / increment)])
-                                * ((a % increment) / increment);
-            }
-        }
-        // if (Math.abs(result-Math.pow(a,1./3.))>1E-2)
-        // System.out.println(result-Math.pow(a,1./3.));
-        return result;
     }
 
     /**

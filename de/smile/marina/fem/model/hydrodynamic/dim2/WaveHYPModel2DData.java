@@ -29,6 +29,7 @@ import bijava.math.ifunction.*;
 import de.smile.marina.PhysicalParameters;
 import static de.smile.marina.PhysicalParameters.G;
 import de.smile.marina.fem.model.ground.Pair;
+import de.smile.math.Function;
 
 /**
  * @author Peter Milbradt
@@ -120,7 +121,7 @@ public class WaveHYPModel2DData implements ModelData{
     public static Pair<Double,Double> getFetchBased(double windSpeed, double fetchLength){
         final double ufPOW2 = 0.001*(1.1 + 0.035*windSpeed)*windSpeed*windSpeed;
         var wh = Math.min(211.5, 0.0413*Math.sqrt(G*fetchLength/ufPOW2))*ufPOW2/G;
-        var period = Math.min(239.8, 0.651*Math.pow(G*fetchLength/ufPOW2,1./3.))*Math.sqrt(ufPOW2)/G;
+        var period = Math.min(239.8, 0.651*Math.cbrt(G*fetchLength/ufPOW2))*Math.sqrt(ufPOW2)/G;
         return new Pair<>(wh, period);
 }
     
@@ -148,7 +149,7 @@ public class WaveHYPModel2DData implements ModelData{
     public static Pair<Double,Double> getFetchBasedDepthRestricted(double windSpeed, double fetchLength, double depth){
         final double ufPOW2 = 0.001*(1.1 + 0.035*windSpeed)*windSpeed*windSpeed;
         var wh = Math.min(211.5, 0.0413*Math.sqrt(G*fetchLength/ufPOW2))*ufPOW2/G;
-        var period = Math.min(9.78*Math.sqrt(depth/G), Math.min(239.8, 0.651*Math.pow(G*fetchLength/ufPOW2,1./3.))*Math.sqrt(ufPOW2)/G);
+        var period = Math.min(9.78*Math.sqrt(depth/G), Math.min(239.8, 0.651*Math.cbrt(G*fetchLength/ufPOW2))*Math.sqrt(ufPOW2)/G);
         return new Pair<>(wh, period);
     }
     /** Significant Wave Height from Bretschneider Empirical Relationships Solution

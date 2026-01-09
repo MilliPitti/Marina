@@ -83,7 +83,7 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
         double d90 = smd.dmax; // oder 4 * d50 wie dies bei Delft3D vorgeschlagen wird
         
         final double del = (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER;
-        final double dstar = smd.d50*Math.pow(del*PhysicalParameters.G/PhysicalParameters.KINVISCOSITY_WATER/PhysicalParameters.KINVISCOSITY_WATER,1./3.);
+        final double dstar = smd.d50*Math.cbrt(del*PhysicalParameters.G/PhysicalParameters.KINVISCOSITY_WATER/PhysicalParameters.KINVISCOSITY_WATER);
         final double rmuc = Math.pow(Math.log10(12.*cmd.totaldepth/rksc)/Math.log10(12.*cmd.totaldepth/3./d90),2.);
         final double fc = .24*Math.pow(Math.log10(12.*cmd.totaldepth/rksc), -2);
         final double tbc = .125*PhysicalParameters.RHO_WATER*fc*Math.pow(cmd.cv,2);

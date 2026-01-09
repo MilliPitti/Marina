@@ -1393,7 +1393,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             if (fmuddata != null)
                 ks = Math.max(0., ks - fmuddata.thickness);
             // Strickler
-            currentdata.bottomFrictionCoefficient += PhysicalParameters.G / Math.cbrt(depthForFriction) / Function
+                currentdata.bottomFrictionCoefficient += PhysicalParameters.G / Math.cbrt(depthForFriction) / Function
                     .sqr(Function.min(kst, CurrentModel2DData.Nikuradse2Strickler(ks, currentdata.totaldepth)));
             // double kst_skin = 26 * Math.pow(d50, 1./6.);
             // double Chezy_skin = kst_skin * Math.pow(depthForFriction, 1./6.);

@@ -90,7 +90,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         final double f_tau = excess / (1. + excess);
 
         // Setzgeschwindigkeitsterm
-        final double u_turb = Math.cbrt(tauB / cmd.rho);
+        final double u_turb = Math.sqrt(tauB / cmd.rho);
         final double f_w = 1. / (1. + smd.wc / u_turb);
 
         final double es_max = 0.02;   // Bagnold/CERC typisch

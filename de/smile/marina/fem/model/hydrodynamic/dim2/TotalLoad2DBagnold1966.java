@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * Bagnold 1966 ist ein "Total Load"-Modell, das sowohl die "Bedload" (Geschiebefracht) als auch die "Suspended Load" (Schwebfracht) beruecksichtigt
@@ -53,7 +52,7 @@ public class TotalLoad2DBagnold1966 implements TotalLoad2DFormulation {
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         if (cmd.totaldepth < CurrentModel2D.WATT || cmd.cv <= 1e-10) return totalLoadVector;
 
-        final double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        final double tauB = smd.tauB;
         
         final double S = tauB / (cmd.rho * PhysicalParameters.G * cmd.totaldepth); // energy slope
         final double omega = cmd.rho * PhysicalParameters.G * cmd.totaldepth * S * cmd.cv; // total stream power

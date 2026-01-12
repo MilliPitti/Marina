@@ -127,7 +127,7 @@ public class BedLoad2DEngelundHansen implements BedLoad2DFormulation {
             sfwave = wlambda * (cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         }
 
-        smd.bedload = 0.05 * cmd.rho * cmd.cv * cmd.cv / Function.norm(cmd.tauBx, cmd.tauBy)
+        smd.bedload = 0.05 * cmd.rho * cmd.cv * cmd.cv / smd.tauB
                 * Math.pow(sf + sfwave,1.5)
                 * Math.sqrt((PhysicalParameters.RHO_SEDIM - cmd.rho) / cmd.rho * PhysicalParameters.G * Math.pow(smd.d50, 3.))
                 * wlambda   // Verringerung des Transports an tockenen Knoten
@@ -167,7 +167,7 @@ public class BedLoad2DEngelundHansen implements BedLoad2DFormulation {
         if(smd.lambda < Double.MIN_NORMAL) return smd.bedloadVector;
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        double tauB = smd.tauB;
         
         smd.bedload = 0.05 * cmd.rho * cmd.cv / tauB 
                 * Math.pow(tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho) * PhysicalParameters.G * smd.d50),2.5)

@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * Bei dieser Transportformel wird die Stroemungsleistung fuer die Bestimmung
@@ -78,7 +77,7 @@ public class SuspendedLoad2DYang_1973 implements SuspendedLoad2DFormulation {
         }
 
         final double depth = Math.max(cmd.totaldepth, 0.05);
-        final double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        final double tauB = smd.tauB;
         final double S = tauB / (cmd.rho * PhysicalParameters.G * depth);
         double logCt;
         final double uStar = cmd.cv;

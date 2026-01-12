@@ -1194,6 +1194,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         smd.u = cmd.u;
         smd.v = cmd.v;
         smd.cv = cmd.cv;
+        final double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        smd.uStar = (tauB <= 1e-10) ? 0.0 : Math.sqrt(tauB / cmd.rho);
+        smd.tauB = tauB;
         if (!basedOnCurrentModel3D) {
             final double normTauB = Function.norm(cmd.tauBx, cmd.tauBy);
             if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer
@@ -2176,11 +2179,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
         // nicht Null Wassertiefe
         double H = Math.max(cmd.totaldepth, SedimentModel2D.WATT);
-        // Schubgeschwindigkeit (aus kornbezogener Schubspannung)
-        double ustar = Math.sqrt(smd.grainShearStress); // sqrt(tau/rho)
         // Rouse-Zahl
         final double kappa = 0.41;
-        double P = smd.wc / (kappa * Math.max(ustar, 1e-5));
+        double P = smd.wc / (kappa * Math.max(smd.uStar, 1e-5));
         // Faktor f(P) nach van Rijn (1986): f = 1 + 0.3 * P^2
         double fP = 1.0 + 0.3 * P * P * (H / (H + 0.05));
         // Relaxationszeit (beeinflusst durch Turbulenz)

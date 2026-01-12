@@ -58,7 +58,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         final double nonTotalepth = (cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth;
 
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        double tauB = smd.tauB;
         final WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         double c_wbreaking = 0;
         if (wmd != null) {
@@ -90,8 +90,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         final double f_tau = excess / (1. + excess);
 
         // Setzgeschwindigkeitsterm
-        final double u_turb = Math.sqrt(tauB / cmd.rho);
-        final double f_w = 1. / (1. + smd.wc / u_turb);
+        final double f_w = 1. / (1. + smd.wc / smd.uStar);
 
         final double es_max = 0.02;   // Bagnold/CERC typisch
 //        double e_s = es_max * (f_tau * f_d * f_w); // Konservativ / ingenieurmäßig
@@ -121,7 +120,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         if (cmd.totaldepth < CurrentModel2D.WATT || cmd.cv <= 1e-10) return 0.;
 
-        final double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        final double tauB = smd.tauB;
 
         final double lambda = Function.min(1., Function.max(0., (doubledmax - smd.d50)) / (dmax)); // decreasing auf Grund zu grosser Koerner
         

@@ -67,7 +67,7 @@ public class TotalLoad2DEngelundHansen67 implements TotalLoad2DFormulation {
         smd.bedloadVector[1] = 0.;
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        double tauB = smd.tauB;
         if(tauB<1e-10) return smd.bedloadVector;
         
         smd.bedload = 0.05 * cmd.rho * cmd.cv / tauB 
@@ -110,7 +110,7 @@ public class TotalLoad2DEngelundHansen67 implements TotalLoad2DFormulation {
         double[] totalLoadVector = new double[2];
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);        
+        double tauB = smd.tauB;        
         if(tauB<1e-10) return smd.bedloadVector;
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);

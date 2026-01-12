@@ -67,7 +67,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedloadVector[1] = 0.;
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        double tauB = smd.tauB;
         if(tauB<1e-10) return smd.bedloadVector;
         
         smd.bedload = 0.05 * cmd.rho * cmd.cv / tauB 
@@ -110,7 +110,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         smd.bedloadVector[1] = 0.;
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
-        double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        double tauB = smd.tauB;
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         if (wmd != null) {
@@ -119,10 +119,9 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
                 
         if(tauB<1e-10) return smd.bedloadVector;
 
-        double uStar = Math.sqrt(tauB / cmd.rho);
         // Energie-basierter Bedload-Anteil
         final double beta = 1.0; // physikalisch motiviert, nicht "frei"
-        double fBed = Math.exp(-beta * smd.wc / uStar);
+        double fBed = Math.exp(-beta * smd.wc / smd.uStar);
 
         // Engelund-Hansen-Vorfaktor mit Korrektur
         double prefactor = 0.05 * fBed;

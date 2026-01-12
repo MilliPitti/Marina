@@ -81,7 +81,7 @@ public class BedLoadYang_1973  implements BedLoad2DFormulation {
         }
 
         final double depth = Math.max(cmd.totaldepth, 0.05);
-        final double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        final double tauB = smd.tauB;
         final double S = tauB / (cmd.rho * PhysicalParameters.G * depth); // energy slope
         double logCt;
         final double uStar = cmd.cv;
@@ -127,9 +127,9 @@ public class BedLoadYang_1973  implements BedLoad2DFormulation {
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
         smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
 
-        double norm = Math.max(1e-10,Function.norm(cmd.tauBx, cmd.tauBy));
-        smd.bedloadVector[0] = smd.bedload * cmd.tauBx / norm;
-        smd.bedloadVector[1] = smd.bedload * cmd.tauBy / norm;
+        double norm = Math.max(1e-10, smd.tauB);
+        smd.bedloadVector[0] = smd.bedload * (cmd.tauBx / norm);
+        smd.bedloadVector[1] = smd.bedload * (cmd.tauBy / norm);
             
         return smd.bedloadVector;
     }    

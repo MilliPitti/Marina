@@ -44,6 +44,10 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
                  // angepasst
     double cv;
 
+    double uStar; // Schubgeschwindigkeit // toDo nutzen in Bagnold und EngelundHanden, so dass keine mehrfachberechnungen notwenidg werden
+
+    public double tauB; // bed shear stress [N/m^2], set where u,v,cv are assigned
+
     public double sC; // depth integrated sediment concentration in [m^2/m^3]
     double dsCdt; // rate of change of the depth integrated sediment concentration in [m^2/m^3/s]
     public double sedimentSource; // source and sink of suspendet sediment
@@ -660,6 +664,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         rvalue.u = u;
         rvalue.v = v; // tiefenintegrierte Geschwindigkeiten, werden durch sekundaerstroemung
                       // angepasst
+        rvalue.tauB = tauB;
 
         rvalue.bedload = bedload; // bedload sedimenttransport
         rvalue.bedloadVector = new double[] { bedloadVector[0], bedloadVector[1] };

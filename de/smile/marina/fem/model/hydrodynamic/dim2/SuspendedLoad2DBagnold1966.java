@@ -68,9 +68,6 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
             if (wmd.epsilon_b > 0.01)
                 c_wbreaking = 8.9E-5 * WaveHYPModel2D.BATTJESKOEFF * Math.cbrt(wmd.epsilon_b / cmd.rho) / (PhysicalParameters.G * smd.wc);
         }
-        if(tauB<1e-10) return 0.;
-
-        final double excess = Math.max(0., (tauB - smd.tau_cr) / smd.tau_cr);
 
         //Variable Bedload-Effizienz
         final double eb_max = 0.15;   // Bagnold-Obergrenze
@@ -87,6 +84,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         final double f_d = Math.exp(-smd.d50 / d_ref);
 
         // Mobility Term
+        final double excess = Math.max(0., T);
         final double f_tau = excess / (1. + excess);
 
         // Setzgeschwindigkeitsterm

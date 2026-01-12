@@ -146,8 +146,8 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
 
         double CSF = sdata.CSF; // variable
 
-        double sfx = ((sdata.grainShearStress * currentmodeldata.u) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
-        double sfy = ((sdata.grainShearStress * currentmodeldata.v) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
+        double sfx = ((sdata.bedDragCoeff * currentmodeldata.u) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
+        double sfy = ((sdata.bedDragCoeff * currentmodeldata.v) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
 
         double sf = Function.norm(sfx, sfy);
         sf *= sdata.lambda; // decreasing depending on not erodible bottom

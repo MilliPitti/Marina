@@ -1014,14 +1014,14 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     reduceFactor *= reduceFactor * reduceFactor;
                     // reduceFactor *= reduceFactor; // hoch 6
                     // final double chezy = cmd.kst * Math.pow(cmd.totaldepth, 1./6.);
-                    final double chezy = Math.sqrt(PhysicalParameters.G / smd.grainShearStress); // siehe Berechnung des grainShearStress
+                    final double chezy = Math.sqrt(PhysicalParameters.G * smd.cv / smd.bedDragCoeff); // siehe Berechnung des grainShearStress
                     final double alphaStar = 1; // 1 nach MIKE 21C mit gravitationellem Transport; 0.5 ohne grav. Transport;
                     final double beta = alphaStar * 2. / PhysicalParameters.KARMANCONSTANT
                             / PhysicalParameters.KARMANCONSTANT * Function.max(0.,
                                     1. - PhysicalParameters.sqrtG / PhysicalParameters.KARMANCONSTANT / chezy);
                     // final double beta = 7.*0.75;
                     final double cv = (cmd.cv >= 0.1) ? cmd.cv : 0.1;// max(cmd.cv, 0.1);
-                    final double r = smd.grainShearStress / cv;
+                    final double r = smd.bedDragCoeff / cv;
                     final double coeff = beta * r / (ALPHA * cv * cv) * PhysicalParameters.G * cmd.totaldepth
                             * (cmd.u * detady - cmd.v * detadx)
                             / reduceFactor;
@@ -1320,7 +1320,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         currentdata.bottomFrictionCoefficient = PhysicalParameters.KINVISCOSITY_WATER; // Bodenreibungskoeffizient
 
-        // Effektive Wassertiefe fuer Reibungsberechnungen (wie in Ihrem Code)
+        // Effektive Wassertiefe fuer Reibungsberechnungen
         final double depthForFriction = (currentdata.totaldepth < 0.1) ? 0.1 : currentdata.totaldepth;
 
         // // bed roughness factor for dunes based on [Karim F. (1995): Bed
@@ -1397,11 +1397,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     .sqr(Function.min(kst, CurrentModel2DData.Nikuradse2Strickler(ks, currentdata.totaldepth)));
             // double kst_skin = 26 * Math.pow(d50, 1./6.);
             // double Chezy_skin = kst_skin * Math.pow(depthForFriction, 1./6.);
-            // currentdata.grainShearStress = PhysicalParameters.G /
-            // Function.sqr(Chezy_skin)*currentdata.cv; // * rho spaeter
+            // currentdata.grainShearStress = PhysicalParameters.G / Function.sqr(Chezy_skin)*currentdata.cv; // * rho spaeter
         }
-        currentdata.bottomFrictionCoefficient *= currentdata.cv; // * rho und Richtungsvektor der Geschwindigkeit
-                                                                 // spaeter
+        currentdata.bottomFrictionCoefficient *= currentdata.cv; // * rho und Richtungsvektor der Geschwindigkeit spaeter
 
         /* wind stress coeffizient */
         /* Smith and Banke (1975) */
@@ -2066,11 +2064,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     xf_os.writeFloat(0.f);
                     xf_os.writeFloat(0.f);
                 } else {
-                    double taux = (current.bottomFrictionCoefficient * current.u + current.tau_bx_extra) * current.rho; // ToDo
-                                                                                                                        // Schubspannung
-                                                                                                                        // aus
-                                                                                                                        // der
-                                                                                                                        // Orbitalgeschwindigkeit
+                    double taux = (current.bottomFrictionCoefficient * current.u + current.tau_bx_extra) * current.rho; // ToDo Schubspannung aus der Orbitalgeschwindigkeit
                     double tauy = (current.bottomFrictionCoefficient * current.v + current.tau_bx_extra) * current.rho;
                     xf_os.writeFloat((float) taux);
                     xf_os.writeFloat((float) tauy);
@@ -2450,8 +2444,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             cmd.setWaterLevel(cmd.eta + dt * reta);
             // ToDo Sedimentmodel?!
             if (smd != null) {
-                cmd.tauBx = cmd.rho * (smd.grainShearStress * cmd.u + cmd.tau_bx_extra);
-                cmd.tauBy = cmd.rho * (smd.grainShearStress * cmd.v + cmd.tau_by_extra);
+                cmd.tauBx = cmd.rho * (smd.bedDragCoeff * cmd.u + cmd.tau_bx_extra);
+                cmd.tauBy = cmd.rho * (smd.bedDragCoeff * cmd.v + cmd.tau_by_extra);
             } else {
                 cmd.tauBx = cmd.rho * cmd.tau_bx_extra;
                 cmd.tauBy = cmd.rho * cmd.tau_by_extra;

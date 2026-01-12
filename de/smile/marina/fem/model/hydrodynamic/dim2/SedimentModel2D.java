@@ -1199,10 +1199,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         smd.tauB = tauB;
         if (!basedOnCurrentModel3D) {
             final double normTauB = Function.norm(cmd.tauBx, cmd.tauBy);
-            if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer
-                                    // Stroemung
+            if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer Stroemung
                 final double lambda = Function.min(1,
-                        Function.norm(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.grainShearStress)); // ??? ToDo
+                        Function.norm(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
                 smd.u = (1. - lambda) * smd.u + lambda * cmd.tauBx / normTauB * cmd.cv;
                 smd.v = (1. - lambda) * smd.v + lambda * cmd.tauBy / normTauB * cmd.cv;
             }
@@ -1284,11 +1283,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // tau = rho * uStar**2
         // uStar = u_mean * 1/7 * (d50/d)**(1/7)
         // tau = rho * 1/49 * (d50/d)**(2/7) * u_mean * u_mean // Solsby
-        smd.grainShearStress = 1. / 49. * Math.pow(smd.d50 / Math.max(CurrentModel2D.WATT, cmd.totaldepth), 2. / 7.)
-                * smd.cv;
+        smd.bedDragCoeff = 1. / 49. * Math.pow(smd.d50 / Math.max(CurrentModel2D.WATT, cmd.totaldepth), 2. / 7.) * smd.cv;
         // Duenenhoehen beruecksichtigen einfacher Ansatz Van Rijn (1984b) und Engelund
         // & Fredsøe (1982)
-        smd.grainShearStress *= (1 + 2.5 * smd.duneHeight / Math.max(0.01, smd.duneLength));
+        smd.bedDragCoeff *= (1 + 2.5 * smd.duneHeight / Math.max(0.01, smd.duneLength));
 
     }
 
@@ -1545,7 +1543,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     smd.duneHeight = dh;
                     CurrentModel2DData currentmodeldata = dof_currentdata[knoten_nr];
                     double dunehight = SedimentModel2DData.getvanRijnDuneHeight(smd.d50,
-                            PhysicalParameters.RHO_WATER * smd.grainShearStress * currentmodeldata.cv,
+                            PhysicalParameters.RHO_WATER * smd.bedDragCoeff * currentmodeldata.cv,
                             currentmodeldata.totaldepth, smd.bottomslope);
                     double dhSource = smd.duneHeight / Function.max(0.01, Function.max(dunehight, smd.duneHeight));
                     smd.duneLength = SedimentModel2DData.getFlemmingDuneLength(dunehight) * dhSource;
@@ -1646,7 +1644,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     smd.duneHeight = dh;
                     CurrentModel2DData currentmodeldata = dof_currentdata[nr];
                     double dunehight = SedimentModel2DData.getvanRijnDuneHeight(smd.d50,
-                            PhysicalParameters.RHO_WATER * smd.grainShearStress * currentmodeldata.cv,
+                            PhysicalParameters.RHO_WATER * smd.bedDragCoeff * currentmodeldata.cv,
                             currentmodeldata.totaldepth, smd.bottomslope);
                     double dhSource = smd.duneHeight / Function.max(0.01, Function.max(dunehight, smd.duneHeight));
                     final double dunelength = SedimentModel2DData.getFlemmingDuneLength(dunehight) * dhSource;
@@ -2367,10 +2365,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             // Quell- und Senkterm zur Anpassung des d50
             double d50Source = smd.d50 * (1. - smd.porosity) * rZ * smd.initialSorting / smd.bottomslope;
             if (rZ < 0.) { // sedimentation
-                d50Source *= (1. - smd.dmin / smd.d50) / (1 - rZ * Function.norm(cmd.tauBx, cmd.tauBy));
+                d50Source *= (1. - smd.dmin / smd.d50) / (1 - rZ * smd.tauB);
             } else { // erosion
                 d50Source *= (1. - smd.d50 / smd.dmax) / smd.bottomslope
-                        * (1 + rZ * Function.norm(cmd.tauBx, cmd.tauBy) / (1 + Function.norm(cmd.tauBx, cmd.tauBy)));
+                        * (1 + rZ * smd.tauB / (1 + smd.tauB));
             }
             smd.setD50(smd.d50 + dt * d50Source * morphFactor);
 

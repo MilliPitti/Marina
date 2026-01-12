@@ -67,8 +67,8 @@ public class BedLoad2DWilson_1966 implements BedLoad2DFormulation {
 //        double CSF = smd.CSF; // variable
           double CSF = 0.047; // fest nach Meyer-Peter und Mueller (1948)
 
-        double sfx = ((smd.grainShearStress * cmd.u) * cmd.wlambda * PhysicalParameters.RHO_WATER + dzdx * PhysicalParameters.G * Math.PI*Math.pow(smd.d50,3.)/6.*(PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) + cmd.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
-        double sfy = ((smd.grainShearStress * cmd.v) * cmd.wlambda * PhysicalParameters.RHO_WATER + dzdy * PhysicalParameters.G * Math.PI*Math.pow(smd.d50,3.)/6.*(PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) + cmd.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
+        double sfx = ((smd.bedDragCoeff * cmd.u) * cmd.wlambda * PhysicalParameters.RHO_WATER + dzdx * PhysicalParameters.G * Math.PI*Math.pow(smd.d50,3.)/6.*(PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) + cmd.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
+        double sfy = ((smd.bedDragCoeff * cmd.v) * cmd.wlambda * PhysicalParameters.RHO_WATER + dzdy * PhysicalParameters.G * Math.PI*Math.pow(smd.d50,3.)/6.*(PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) + cmd.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
 
         sfx *= smd.lambda; // decreasing depending on not erodible bottom
         sfy *= smd.lambda; // decreasing depending on not erodible bottom

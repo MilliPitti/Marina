@@ -107,7 +107,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     double duneLengthY = 0;
     double duneLength;
 
-    double grainShearStress; // Schubspannung die auf die Koerner wirkt
+    double bedDragCoeff; //  = (f/8)|u|, Grain roughness according to Soulsby 1997 and Duenparameter
 
     public SedimentModel2DData() {
         super();

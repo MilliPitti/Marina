@@ -1045,27 +1045,26 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final CurrentModel2DData cmd = dof_data[ele.getDOF(j).number];
                 final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
 
-                // Error correction calculation
-                double uCorrect = -tau_cur * (koeffmat[j][1] * u_mean * cureq2_mean
+                // Fehlerkorrektur durchfuehren
+                double result_U_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq2_mean
                         + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean
-                        + koeffmat[j][2] * v_mean * cureq2_mean);
-                uCorrect -= (koeffmat[j][1] * astx * udx + koeffmat[j][2] * asty * udy);
+                                                + koeffmat[j][2] * v_mean * cureq2_mean) * ele.area;
+                        result_U_i -=  (koeffmat[j][1] * astx * udx + koeffmat[j][2] * asty * udy) * wlambda * ele.area
+                                        - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * udx + depthdy * asty * udy) * wlambda * ele.area;
 
-                double vCorrect = -tau_cur * (koeffmat[j][1] * u_mean * cureq3_mean
+                double result_V_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq3_mean
                         + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean
-                        + koeffmat[j][2] * v_mean * cureq3_mean);
-                vCorrect -= (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy);
+                                                + koeffmat[j][2] * v_mean * cureq3_mean) * ele.area;
+                        result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
+                                        - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;
 
-                double etaCorrect = -tau_cur * (koeffmat[j][1] * depth_mean * cureq2_mean * wlambda
+                double result_H_i = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean * wlambda
                         + koeffmat[j][1] * u_mean * cureq1_mean
                         + koeffmat[j][2] * depth_mean * cureq3_mean * wlambda
-                        + koeffmat[j][2] * v_mean * cureq1_mean);
+                                                + koeffmat[j][2] * v_mean * cureq1_mean) * ele.area;
 
                 double puddleLambda = cmd.puddleLambda;
 
-                double result_U_i = 0.;
-                double result_V_i = 0.;
-                double result_H_i = 0.;
                 // Begin standart Galerkin-step
                 for (int l = 0; l < 3; l++) {
 
@@ -1123,10 +1122,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                     cmd._dhdx += detadx;
                     cmd._dhdy += detady;
-
-                    cmd.ruCorrection += uCorrect * ele.area / 3.;
-                    cmd.rvCorrection += vCorrect * ele.area / 3.;
-                    cmd.retaCorrection += etaCorrect * ele.area / 3.;
                 }
             }
         }
@@ -1284,8 +1279,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         if (currentdata.bu != null) {
             currentdata.u = currentdata.bu.getValue(t);
-            currentdata.dudt = currentdata.bu.getDifferential(t); // besonders relevant an geschlossenen Raendern mit
-                                                                  // no-slip RB
+            currentdata.dudt = currentdata.bu.getDifferential(t);  // besonders relevant an geschlossenen Raendern mit no-slip RB
         }
         if (currentdata.bv != null) {
             currentdata.v = currentdata.bv.getValue(t);
@@ -1323,21 +1317,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
         // Effektive Wassertiefe fuer Reibungsberechnungen
         final double depthForFriction = (currentdata.totaldepth < 0.1) ? 0.1 : currentdata.totaldepth;
 
-        // // bed roughness factor for dunes based on [Karim F. (1995): Bed
-        // Configuration and Hydraulic Resistance in Alluvial-Channel Flows, Journal of
-        // Hydraulic Engineering, ASCE, Vol.121, No.1, January]
-        // double bedRoughnessFactor = 1.;
-        // if (sedimentmodeldata != null) {
-        // // ToDo vielleicht vorher noch das skalarprodukt mit dem
-        // Geschwindigkeitsvektor bilden?
-        // final double lambda = Math.min(1.,
-        // Function.norm(sedimentmodeldata.duneLengthX,sedimentmodeldata.duneLengthY)/(4.*dof.meanEdgeLength));
-        // // Verringerung der Rauheit aus Duehnen, wenn das Netz die Duene mit 4
-        // Stuetzstellen selbst Abbilden kann
-        // bedRoughnessFactor += (1. - lambda) *
-        // 8.92*sedimentmodeldata.duneHeight/((currentdata.totaldepth < 0.1) ? 0.1 :
-        // currentdata.totaldepth);
-        // }
+//        // bed roughness factor for dunes based on [Karim F. (1995): Bed Configuration and Hydraulic Resistance in Alluvial-Channel Flows, Journal of Hydraulic Engineering, ASCE, Vol.121, No.1, January]
+//        double bedRoughnessFactor = 1.;
+//        if (sedimentmodeldata != null) {        
+//        // ToDo vielleicht vorher noch das skalarprodukt mit dem Geschwindigkeitsvektor bilden?
+//            final double lambda = Math.min(1., Function.norm(sedimentmodeldata.duneLengthX,sedimentmodeldata.duneLengthY)/(4.*dof.meanEdgeLength)); // Verringerung der Rauheit aus Duehnen, wenn das Netz die Duene mit 4 Stuetzstellen selbst Abbilden kann
+//            bedRoughnessFactor += (1. - lambda) * 8.92*sedimentmodeldata.duneHeight/((currentdata.totaldepth < 0.1) ? 0.1 : currentdata.totaldepth);
+//        }
         double fmudLambda = 0.;
         final FluidMudFlowModel2DData fmuddata = FluidMudFlowModel2DData.extract(dof);
         if (fmuddata != null) {
@@ -1353,15 +1339,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
         double ks_dune = 0.; // in [m]
         double duneLength = 0.01;
         if (sedimentmodeldata != null) {
-            duneLength = Function.norm(sedimentmodeldata.duneLengthX, sedimentmodeldata.duneLengthY);
-            final double lambda = Math.min(1., duneLength / (4. * dof.meanEdgeLength)); // Verringerung der Rauheit aus
-                                                                                        // Duehnen, wenn das Netz die
-                                                                                        // Duene mit 4 Stuetzstellen
-                                                                                        // selbst Abbilden kann
-            // ToDo vielleicht vorher noch das Skalarprodukt mit dem Geschwindigkeitsvektor
-            // bilden um Lambda weiter zu verrringern
-            ks_dune = (1. - lambda) * 1.1 * 0.7 * sedimentmodeldata.duneHeight
-                    * (1. - Math.exp(-25 * sedimentmodeldata.duneHeight / Math.max(0.01, duneLength)));
+            duneLength = Function.norm(sedimentmodeldata.duneLengthX,sedimentmodeldata.duneLengthY);
+            final double lambda = Math.min(1., duneLength/(4.*dof.meanEdgeLength)); // Verringerung der Rauheit aus Duehnen, wenn das Netz die Duene mit 4 Stuetzstellen selbst Abbilden kann
+            // ToDo vielleicht vorher noch das Skalarprodukt mit dem Geschwindigkeitsvektor bilden um Lambda weiter zu verrringern
+            ks_dune = (1. - lambda) * 1.1 * 0.7 *sedimentmodeldata.duneHeight * (1.-Math.exp(-25*sedimentmodeldata.duneHeight/Math.max(0.01, duneLength)));
         }
 
         // Bewuchs
@@ -1374,11 +1355,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
         // minimaler Chezybeiwert wird zu 5 gesetzt
         if (nikuradse) {
 
-            double ks = Math.max(currentdata.ks, ks_grain_effective + ks_benthic + ks_dune); // in [m] // Peter
-                                                                                             // 16.01.2025
+            double ks = Math.max(currentdata.ks, ks_grain_effective + ks_benthic + ks_dune); // in [m]
             // Schlammauflage
             if (fmuddata != null)
-                ks = Math.max(0., ks - fmuddata.thickness); // Peter 16.01.2025
+                ks = Math.max(0., ks - fmuddata.thickness);
             // final double k=0.41;// Karman-Konstante (k=0,41)
             // z0 = 0.033*ks bei Re* > 3.3
             currentdata.bottomFrictionCoefficient += PhysicalParameters.G
@@ -1386,9 +1366,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         } else {
 
-            final double kst = (1. - fmudLambda) * currentdata.kst + fmudLambda * 60; // Erhoehung bei Schlammauflage
-                                                                                      // auf sehr glatt
-            double ks = ks_grain_effective + ks_benthic + ks_dune; // in [m]
+            final double kst = (1.-fmudLambda) * currentdata.kst + fmudLambda * 60; // Erhoehung bei Schlammauflage auf sehr glatt 
+            double ks = ks_grain_effective+ks_benthic+ks_dune; // in [m]
             // Schlammauflage
             if (fmuddata != null)
                 ks = Math.max(0., ks - fmuddata.thickness);
@@ -1752,20 +1731,17 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                         System.out.println("");
 
-                        System.out.println(
-                                "********************************       ERROR         ***********************************");
-                        System.out.println("Invalid z-value (z=NaN or z<0.0) in Bottom Friction-Mesh: <" + filename
-                                + "> node number <" + p_count + ">");
-                        System.out.println("To correct this problem ensure that node nr <" + p_count
-                                + "> has a correct floating point (greater zero)");
+                        System.out.println("********************************       ERROR         ***********************************");
+                        System.out.println("Invalid z-value (z=NaN or z<0.0) in Bottom Friction-Mesh: <" + filename + "> node number <" + p_count + ">");
+                        System.out.println("To correct this problem ensure that node nr <" + p_count + "> has a correct floating point (greater zero)");
                         System.out.println("bottom friction value");
-                        System.out.println(
-                                "*****************************************************************************************");
+                        System.out.println("*****************************************************************************************");
                         System.out.println("");
                         System.exit(1);
                     }
                     DOF dof = fenet.getDOF(knoten_nr);
-                    CurrentModel2DData currentdata = CurrentModel2DData.extract(dof);
+                    CurrentModel2DData currentdata =
+                            CurrentModel2DData.extract(dof);
                     currentdata.kst = kst;
                     currentdata.ks = CurrentModel2DData.Strickler2Nikuradse(kst);
 
@@ -1826,8 +1802,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // Version auslesen
             float version = bin_in.fbinreadfloat();
             if (version < 1.5f) {
-                throw new Exception("Deprecated version of Janet-Binary-Format, version found: " + version
-                        + ", current version: 1.8");
+                throw new Exception("Deprecated version of Janet-Binary-Format, version found: " + version + ", current version: 1.8");
             }
 
             if (version < 1.79) {
@@ -1982,23 +1957,19 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                         System.out.println("");
 
-                        System.out.println(
-                                "********************************       ERROR         ***********************************");
-                        System.out.println("Invalid z-value (z=NaN or z<0.0) in Bottom Friction-Mesh: <" + filename
-                                + "> node number <" + p_count + ">");
-                        System.out.println("To correct this problem ensure that node nr <" + p_count
-                                + "> has a correct floating point (greater zero)");
+                        System.out.println("********************************       ERROR         ***********************************");
+                        System.out.println("Invalid z-value (z=NaN or z<0.0) in Bottom Friction-Mesh: <" + filename + "> node number <" + p_count + ">");
+                        System.out.println("To correct this problem ensure that node nr <" + p_count + "> has a correct floating point (greater zero)");
                         System.out.println("bottom friction value");
-                        System.out.println(
-                                "*****************************************************************************************");
+                        System.out.println("*****************************************************************************************");
                         System.out.println("");
                         System.exit(1);
                     }
                     DOF dof = fenet.getDOF(knoten_nr);
-                    CurrentModel2DData currentdata = CurrentModel2DData.extract(dof);
+                    CurrentModel2DData currentdata =
+                            CurrentModel2DData.extract(dof);
                     currentdata.ks = ks; // [mm]
-                    currentdata.kst = CurrentModel2DData.Nikuradse2Strickler(ks); // nach
-                                                                                  // http://www.baw.de/vip/abteilungen/wbk/Publikationen/scn/sc1-99a/node21.htm
+                    currentdata.kst = CurrentModel2DData.Nikuradse2Strickler(ks); // nach http://www.baw.de/vip/abteilungen/wbk/Publikationen/scn/sc1-99a/node21.htm
 
                     p_count++;
                 }
@@ -2085,8 +2056,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             System.out.println("\tRead weirs parameter from " + wehrDateiName);
             JAXBContext jc = JAXBContext.newInstance("de.smile.xml.marina.weirs");
             Unmarshaller u = jc.createUnmarshaller();
-            de.smile.xml.marina.weirs.Weirs weirsList = (de.smile.xml.marina.weirs.Weirs) u
-                    .unmarshal(new FileInputStream(wehrDateiName));
+            de.smile.xml.marina.weirs.Weirs weirsList = (de.smile.xml.marina.weirs.Weirs) u.unmarshal(new FileInputStream(wehrDateiName));
             List<TWeir> list = weirsList.getWeir();
             for (TWeir w : list) {
                 List<Integer> nodes = w.getListofNodes().getNodeID();
@@ -2365,51 +2335,25 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             final int gamma = dof.getNumberofFElements();
 
-            cmd.dhdx = cmd._dhdx / gamma;
-            cmd._dhdx = 0.;
-            cmd.dhdy = cmd._dhdy / gamma;
-            cmd._dhdy = 0.;
+                cmd.dhdx = cmd._dhdx / gamma;   cmd._dhdx=0.;
+                cmd.dhdy = cmd._dhdy / gamma;   cmd._dhdy=0.;
 
             cmd.ru /= dof.lumpedMass;
             cmd.rv /= dof.lumpedMass;
             cmd.reta /= dof.lumpedMass;
-
-            cmd.ruCorrection /= dof.lumpedMass;
-            cmd.rvCorrection /= dof.lumpedMass;
-            cmd.retaCorrection /= dof.lumpedMass;
 
             cmd.tau_bx_extra = cmd._tau_bx_extra / gamma;
             cmd.tau_by_extra = cmd._tau_by_extra / gamma;
             cmd._tau_bx_extra = 0.;
             cmd._tau_by_extra = 0.;
 
-            double ru = beta0 * cmd.ru + beta1 * cmd.dudt; // zusaetzlichen Stabilisierung in Anlehnung am expliziten
-                                                           // Adams-Bashford 2. Ordnung mit variabler Schrittweite
-            double ruCorrection = beta0 * cmd.ruCorrection + beta1 * cmd.duCdt;
-            ru += ruCorrection;
-            double rv = beta0 * cmd.rv + beta1 * cmd.dvdt; // zusaetzlichen Stabilisierung in Anlehnung am expliziten
-                                                           // Adams-Bashford 2. Ordnung mit variabler Schrittweite
-            double rvCorrection = beta0 * cmd.rvCorrection + beta1 * cmd.dvCdt;
-            rv += rvCorrection;
-            double reta = beta0 * cmd.reta + beta1 * cmd.detadt; // zusaetzlichen Stabilisierung in Anlehnung am
-                                                                 // expliziten Adams-Bashford 2. Ordnung mit variabler
-                                                                 // Schrittweite
-            double retaCorrection = beta0 * cmd.retaCorrection + beta1 * cmd.detaCdt;
-            reta += retaCorrection;
+                final double ru = beta0 * cmd.ru + beta1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+                final double rv = beta0 * cmd.rv + beta1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+                double reta = beta0 * cmd.reta + beta1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
 
-            cmd.dudt = cmd.ru;
-            cmd.ru = 0.;
-            cmd.dvdt = cmd.rv;
-            cmd.rv = 0.;
-            cmd.detadt = cmd.reta;
-            cmd.reta = 0.;
-
-            cmd.duCdt = cmd.ruCorrection;
-            cmd.ruCorrection = 0.;
-            cmd.dvCdt = cmd.rvCorrection;
-            cmd.rvCorrection = 0.;
-            cmd.detaCdt = cmd.retaCorrection;
-            cmd.retaCorrection = 0.;
+                cmd.dudt = cmd.ru;  cmd.ru=0.;
+                cmd.dvdt = cmd.rv;  cmd.rv=0.;
+                cmd.detadt = cmd.reta;  cmd.reta=0.;
 
             // Quellen und Senken fuer das Oberflaechenwasser bestimmen
             double source_dhdt = 0;
@@ -2438,8 +2382,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             cmd.u += dt * ru;
             cmd.v += dt * rv;
-            cmd.u *= cmd.puddleLambda;
-            cmd.v *= cmd.puddleLambda; // in Pfuetzen keine Stroemung
+            cmd.u *= cmd.puddleLambda; cmd.v *= cmd.puddleLambda; // in Pfuetzen keine Stroemung
 
             cmd.setWaterLevel(cmd.eta + dt * reta);
             // ToDo Sedimentmodel?!
@@ -2453,8 +2396,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             boolean rIsNaN = Double.isNaN(ru) || Double.isNaN(rv) || Double.isNaN(reta);
             if (rIsNaN) {
-                System.out.println(
-                        "CurrentModel2D is NaN bei " + dof.number + " dh/dt=" + reta + " du/dt=" + ru + " dv/dt=" + rv);
+                    System.out.println("CurrentModel2D is NaN bei " + dof.number + " dh/dt=" + reta + " du/dt="+ru+" dv/dt="+rv);
             }
             resultIsNaN |= rIsNaN;
         });
@@ -2468,8 +2410,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             write_erg_xf();
             try {
                 xf_os.close();
-            } catch (IOException e) {
-            }
+            } catch (IOException e) {}
             System.exit(1);
         }
     }

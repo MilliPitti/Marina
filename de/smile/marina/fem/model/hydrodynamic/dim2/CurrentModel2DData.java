@@ -39,7 +39,7 @@ import java.util.*;
 /**
  * ModelDatas for shallow water equations
  *
- * @version 3.24.X zusaetzliche Variablen fuer die getrennte Berechnung der Residuumkorrektur
+ * @version 4.7.2
  * @author Peter Milbradt
  */
 public class CurrentModel2DData extends SurfaceWaterModelData {
@@ -65,8 +65,6 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
 
     // Zwischenergebnisse der rechte Seite
     double ru = 0., rv = 0., reta = 0.;
-    double ruCorrection = 0., rvCorrection = 0., retaCorrection = 0.;
-    double duCdt, dvCdt, detaCdt;
 
     // boudary conditions
     public ScalarFunction1d sourceQ = null;

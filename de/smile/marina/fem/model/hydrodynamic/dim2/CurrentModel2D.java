@@ -986,7 +986,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
                                 + cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
-                /* if (!cmd.boundary) */cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
+                if (!cmd.boundary) cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
                 // Impulsgleichung y
                 terms_v[j] =
@@ -1007,7 +1007,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // CouplingTerm from the derivation of the Formulation q -> v
                                 + cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
-                /* if (!cmd.boundary) */cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
+                if (!cmd.boundary) cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
+
                 // ToDo ins Sedimentmodell
                 if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements
                     double reduceFactor = (Math.abs(cureq1_mean * cmd.totaldepth) + 1.) * bottomslope;

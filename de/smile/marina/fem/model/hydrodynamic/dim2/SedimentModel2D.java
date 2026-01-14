@@ -54,9 +54,7 @@ import java.util.logging.Logger;
  */
 public class SedimentModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
 
-    public static enum InitialValues {
-        D50, DMIN, DMAX, SORTING, MAINTAINEDDEPTH, MAXEROSION, NOERODIBLEHORIZON
-    };
+    public static enum InitialValues {D50, DMIN, DMAX, SORTING, MAINTAINEDDEPTH, MAXEROSION, NOERODIBLEHORIZON};
 
     private boolean basedOnCurrentModel3D = false;
 
@@ -83,8 +81,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
     private double previousTimeStep = 0.0; // Speichert den vorherigen Zeitschritt fuer das gesamte Modell
 
-    public static double WATT = 0.05; // Wattgrenze des SedimentModell, eigentlich abhaengig von den
-                                      // Gueltigkeitsgrenzen der Transportformel
+    public static double WATT = 0.05; // Wattgrenze des SedimentModell, eigentlich abhaengig von den Gueltigkeitsgrenzen der Transportformel
 
     boolean withSoilModel3DData = false;
     int modulo = 1;
@@ -1077,10 +1074,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 localResC += 1. / 3. * (smd.dsCdt + terms_C[j]) * cmd.wlambda; // mean local elementresiduum
 
                 terms_z[j] = -1. / (1. - smd.porosity) * (dQgd < 0 ? dQgd * cmd.wlambda : dQgd * smd.lambda);
-                localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
-                // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive
-                // Projektion in die Ebene
-                nu_sed = Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3.;
+                if(!cmd.boundary) localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
+                // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
+                nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3.;
             }
             final double morph_mean = Function.norm(lambda_x, lambda_y);
             double tau_z;
@@ -1102,15 +1098,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 SedimentModel2DData smd = dof_data[i];
                 final CurrentModel2DData cmd = dof_currentdata[i];
                 // Fehlerkorrektur C
-                double sKoncCorrect = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC;
+                double result_SKonc_i = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC * ele.area;
                 // Diffusionsterm (entspricht ∇⋅(D∇c))
-                sKoncCorrect -= (koeffmat[j][1] * astx * dskoncdx + koeffmat[j][2] * asty * dskoncdy) * cmd.wlambda
-                        // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)):
-                        // korrigiert die Diffusion, wenn sich die Tiefe aendert.
-                        - 1. / 3. * (1. / Function.max(cmd.totaldepth, CurrentModel2D.WATT))
-                                * (eleCurrentData.ddepthdx * astx * dskoncdx
-                                        + eleCurrentData.ddepthdy * asty * dskoncdy)
-                                * cmd.wlambda;
+                result_SKonc_i -= (koeffmat[j][1] * astx * dskoncdx + koeffmat[j][2] * asty * dskoncdy) * cmd.wlambda
+                        // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)): korrigiert die Diffusion, wenn sich die Tiefe aendert.
+                        - 1. / 3. * (1. / Function.max(cmd.totaldepth, CurrentModel2D.WATT)) * (eleCurrentData.ddepthdx * astx * dskoncdx + eleCurrentData.ddepthdy * asty * dskoncdy) * cmd.wlambda * ele.area;
 
                 // Fehlerkorrektur Z
                 double resCorrect = -tau_z * (koeffmat[j][1] * lambda_x + koeffmat[j][2] * lambda_y)
@@ -1120,22 +1112,17 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 resCorrect -= (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed;
 
                 double result_Z_i = 0;
-                double result_SKonc_i = 0.;
                 for (int l = 0; l < 3; l++) {
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
 
-                    double gl = (l == j) ? 1.
-                            : Math.min(dof_currentdata[ele.getDOF(l).number].wlambda,
-                                    dof_currentdata[ele.getDOF(l).number].totaldepth
-                                            / Math.max(CurrentModel2D.WATT, cmd.totaldepth));
+                    double gl = (l == j) ? 1. :  Math.min(dof_currentdata[ele.getDOF(l).number].wlambda, dof_currentdata[ele.getDOF(l).number].totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth));
                     result_SKonc_i -= vorfak * terms_C[l] * gl;
 
                     gl = 1.;
                     if (l != j) { // ToDo siehe Marina-Version 2.8.9
                         if (terms_z[l] > 0) { // abgelegener Knoten sedimentiert
-                            if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
-                                gl = cmd.wlambda * Function.max(0.,
-                                        1. - (dof_data[ele.getDOF(l).number].z - smd.z) / ele.distance[l][j]);
+                            if(dof_data[ele.getDOF(l).number].z > smd.z){ // abgelegener Knoten liegt unterhalb
+                                gl = cmd.wlambda * Function.max(0., 1. - (dof_data[ele.getDOF(l).number].z-smd.z) / ele.distance[l][j]);
                             } else { // abgelegener Knoten liegt oberhalb
                                 gl = dof_currentdata[ele.getDOF(l).number].wlambda;
                             }
@@ -1143,8 +1130,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                             if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
                                 gl = smd.lambdaQs;
                             } else { // abgelegenen Knoten liegt oberhalb
-                                gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Function.max(0.,
-                                        1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]);
+                                gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Function.max(0., 1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]);
                             }
                         }
                     }
@@ -1157,13 +1143,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
                     smd._bottomslope += bottomslope * ele.area;
                     smd.rZCorrect += resCorrect * ele.area / 3.;
-                    smd.rSKoncCorrect += sKoncCorrect * ele.area / 3.;
 
                     // Test ob der Knoten tiefster / hoester im Patch ist
-                    smd._isDeepest &= ((smd.z > dof_data[ele.getDOF((j + 1) % 3).number].z + smd.bound)
-                            && (smd.z > dof_data[ele.getDOF((j + 2) % 3).number].z + smd.bound));
-                    smd._isHighest &= ((smd.z < dof_data[ele.getDOF((j + 1) % 3).number].z - smd.bound)
-                            && (smd.z < dof_data[ele.getDOF((j + 2) % 3).number].z - smd.bound));
+                    smd._isDeepest &= ((smd.z > dof_data[ele.getDOF((j + 1) % 3).number].z+smd.bound) && (smd.z > dof_data[ele.getDOF((j + 2) % 3).number].z+smd.bound));
+                    smd._isHighest &= ((smd.z < dof_data[ele.getDOF((j + 1) % 3).number].z-smd.bound) && (smd.z < dof_data[ele.getDOF((j + 2) % 3).number].z-smd.bound));
                 }
 
             }
@@ -1219,26 +1202,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         if (smd.bd50 != null)
             smd.d50 = smd.bd50.getValue(t);
 
-        if (smd.maintainedDepth > smd.z && smd.maintainedDepth < smd.zh && cmd.totaldepth > CurrentModel2D.WATT) { // einfache
-                                                                                                                   // Variante
-                                                                                                                   // des
-                                                                                                                   // Baggern
-                                                                                                                   // //
-                                                                                                                   // ToDo
-                                                                                                                   // Die
-                                                                                                                   // Einschraenkung
-                                                                                                                   // auf
-                                                                                                                   // nass
-                                                                                                                   // Knoten
-                                                                                                                   // ist
-                                                                                                                   // DOOF
-            final double dredge = (smd.maintainedDepth - smd.z);
-            final double lambda = Function.max(0., 1. - dredge / Function.max(smd.bound, smd.duneHeight));
+        if(smd.maintainedDepth>smd.z && smd.maintainedDepth<smd.zh && cmd.totaldepth>CurrentModel2D.WATT){ // einfache Variante des Baggern // ToDo Die Einschraenkung auf nass Knoten ist DOOF
+            final double dredge = (smd.maintainedDepth-smd.z);
+            final double lambda = Function.max(0., 1.-dredge/Function.max(smd.bound, smd.duneHeight));
             smd.duneLengthX *= lambda;
             smd.duneLengthY *= lambda;
             smd.duneHeight = Function.max(0., smd.duneHeight - dredge);
-            smd.d50 -= Math.min(1., dredge) * (smd.d50 - smd.d50init); // beim Baggern wird die Korngroesze auf die
-                                                                       // initiale zurueck verschoben
+            smd.d50 -= Math.min(1., dredge) * (smd.d50 - smd.d50init); // beim Baggern wird die Korngroesze auf die initiale zurueck verschoben
             smd.z = smd.maintainedDepth;
         }
 
@@ -1274,10 +1244,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // totaler Sedimenttransport
         smd.qTotal_x = (smd.bedloadVector[0] + smd.qsx);
         smd.qTotal_y = (smd.bedloadVector[1] + smd.qsy);
-
+if(!cmd.closedBoundary){
         smd.u_bank = 1. / (1. - smd.porosity) * smd.qTotal_x / Math.max(cmd.totaldepth, 0.1) * cmd.wlambda;
         smd.v_bank = 1. / (1. - smd.porosity) * smd.qTotal_y / Math.max(cmd.totaldepth, 0.1) * cmd.wlambda;
-
+}else{
+        smd.u_bank = 0.;
+        smd.v_bank = 0.;
+}
         smd.lambdaQs = Function.min(1., (smd.bedload + Function.norm(smd.qsx, smd.qsy)) / (1.E-5 * smd.bound));
 
         // tau = rho * uStar**2
@@ -2154,8 +2127,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             xf_os.flush();
 
             // Schreibe die Schichdaten
-            if (withSoilModel3DData && wrtInt % modulo == 0)
-                writeSoilModel3DData2CVS();
+            if (withSoilModel3DData && wrtInt % modulo == 0) writeSoilModel3DData2CVS();
 
         } catch (IOException e) {
             System.out.println(this.getClass() + "\n\ttime=" + time + "\n");
@@ -2190,8 +2162,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         if (diffC > 0.) { // Erosion
 
             // nicht mehr aufnehmen als ueber dem nicht erodierbarem Horizont vohanden ist
-            diffC = min(diffC, max(0., 1. / SedimentModel2D.morphFactor * (smd.zh - smd.z) * (1. - smd.porosity)
-                    / max(CurrentModel2D.WATT, cmd.totaldepth) * cmd.wlambda));
+            diffC = min(diffC, max(0.,1./SedimentModel2D.morphFactor * (smd.zh - smd.z) * (1. - smd.porosity) / max(CurrentModel2D.WATT,cmd.totaldepth)*cmd.wlambda));
 
             rvalue = diffC / Ts;
 
@@ -2264,8 +2235,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             }
             for (FElement felement : fenet.getFElements()) {
                 FTriangle ele = (FTriangle) felement;
-                element_currentdata[ele.number] = CurrentModel3DData.getCurrent2DElementData(ele,
-                        element_currentdata[ele.number]);
+                element_currentdata[ele.number] = CurrentModel3DData.getCurrent2DElementData(ele, element_currentdata[ele.number]);
             }
             // end of update
         }
@@ -2277,8 +2247,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // Elementloop
         performElementLoop();
 
-        // Berechne omega und die Koeffizienten fuer Variable Adams-Bashforth 2. Ordnung
-        // einmal vor dem parallelen Stream
+        // Berechne omega und die Koeffizienten fuer Variable Adams-Bashforth 2. Ordnung einmal vor dem parallelen Stream
         final double beta0, beta1;
         if (previousTimeStep == 0.0) {
             // Erster Schritt: Euler-Integration (beta0=1, beta1=0)
@@ -2301,7 +2270,6 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.rC /= dof.lumpedMass;
             smd.rZTransport /= dof.lumpedMass;
             smd.rZCorrect /= dof.lumpedMass;
-            smd.rSKoncCorrect /= dof.lumpedMass;
 
             smd.isDeepest = smd._isDeepest;
             smd._isDeepest = true;
@@ -2309,28 +2277,17 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.isHighest = smd._isHighest;
             smd._isHighest = true;
 
-            if (smd.isDeepest && smd.rZCorrect > 0.) // ist der Knoten der tiefste Knoten im Patch und ist der
-                                                     // Sedimenttransport fast 0 wird verhindert, dass der Knoten durch
-                                                     // Fehlerkorrektur weiter erodiert
+            if(smd.isDeepest && smd.rZCorrect>0.) // ist der Knoten der tiefste Knoten im Patch und ist der Sedimenttransport fast 0 wird verhindert, dass der Knoten durch Fehlerkorrektur weiter erodiert
                 smd.rZCorrect *= smd.lambdaQs;
-            if (smd.isHighest && smd.rZCorrect < 0.) // ist der Knoten der hoechste Knoten im Patch und ist der
-                                                     // Sedimenttransport fast 0 wird verhindert, dass der Knoten durch
-                                                     // Fehlerkorrektur weiter waechst
+            if(smd.isHighest && smd.rZCorrect<0.) // ist der Knoten der hoechste Knoten im Patch und ist der Sedimenttransport fast 0 wird verhindert, dass der Knoten durch Fehlerkorrektur weiter waechst
                 smd.rZCorrect *= smd.lambdaQs;
 
             // keine Fehlerkorrektur bei Boden will aufwachsen
-            if (smd.rZCorrect < 0.)
-                smd.rZCorrect *= smd.lambda // aber nichterodierbarer Knoten
+            if(smd.rZCorrect<0.) smd.rZCorrect *= smd.lambda // aber nichterodierbarer Knoten
                         * cmd.wlambda; // an trockenen Knoten
 
-            if (smd.rSKoncCorrect > 0)
-                smd.rSKoncCorrect *= cmd.wlambda; // aber Wattknoten
-
             // Variable Adams-Bashforth 2. Ordnung
-            double rC = beta0 * smd.rC + beta1 * smd.dsCdt; // zusaetzlichen Stabilisierung in Anlehnung am expliziten
-                                                            // Adams-Bashford 2. Ordnung mit variabler Schrittweite
-            rC += smd.rSKoncCorrect;
-            smd.rSKoncCorrect = 0;
+            double rC = beta0 * smd.rC + beta1 * smd.dsCdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
             double rZ = beta0 * smd.rZTransport + beta1 * smd.dzTransportdt;
             double rZCorrect = beta0 * smd.rZCorrect + beta1 * smd.dzCdt;
             rZ += rZCorrect;
@@ -2342,10 +2299,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.dzCdt = smd.rZCorrect;
             smd.rZCorrect = 0.;
 
-            if ((cmd.totaldepth < smd.bound) && (rC > 0.))
-                rC = 0.;
-            if (rC > 0.)
-                rC *= cmd.puddleLambda; // in Pfuetzen keine Zunahme der Konzentration
+            if ((cmd.totaldepth < smd.bound) && (rC > 0.)) rC = 0.;
+            if (rC > 0.) rC *= cmd.puddleLambda; // in Pfuetzen keine Zunahme der Konzentration
 
             // Quell- und Senkterm zur Anpassung der Gewaesserbettentwicklung
             // ich kenne den Zeitschritt und den morphologischen Faktor - kann also rZ so

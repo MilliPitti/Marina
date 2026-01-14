@@ -99,7 +99,6 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     double rC;
     double rZTransport; // for Transport
     double rZCorrect; // for Diffusion
-    double rSKoncCorrect;
     double dzCdt;
 
     double duneHeight = 0;

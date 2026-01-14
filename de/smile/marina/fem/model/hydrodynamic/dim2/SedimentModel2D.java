@@ -382,12 +382,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     }
 
     @Override
-    public int getTicadErgMask() {
-        // Setzen der Ergebnismaske (Tiefe, TotalSedimentTransport (qx,qy) ,
-        // Konzentration des suspendierten Sedimentes, Korndurchmesser d_50,
-        // DuenenHoehe, DuenenLaengenVektor, Porosity)
-        return TicadIO.HRES_Z | TicadIO.HRES_V | TicadIO.HRES_H | TicadIO.HRES_SALT | TicadIO.HRES_EDDY
-                | TicadIO.HRES_SHEAR | TicadIO.HRES_AH;
+    public int getTicadErgMask(){
+        // Setzen der Ergebnismaske (Tiefe, TotalSedimentTransport (qx,qy) , Konzentration des suspendierten Sedimentes, Korndurchmesser d_50, DuenenHoehe, DuenenLaengenVektor, Porosity)
+        return TicadIO.HRES_Z | TicadIO.HRES_V | TicadIO.HRES_H | TicadIO.HRES_SALT | TicadIO.HRES_EDDY | TicadIO.HRES_SHEAR | TicadIO.HRES_AH;
     }
 
     // ------------------------------------------------------------------------
@@ -432,9 +429,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     biggestDofNumber = Math.max(biggestDofNumber, dofNumber);
                     SoilModel3DData sm3d = (SoilModel3DData) dof_data[dofNumber];
                     SoilModel3DData.LayerValues layer = new SoilModel3DData.LayerValues(line);
-                    if (Double.isNaN(layer.sorting))
-                        layer.sorting = 1.;
-                    if (!Double.isNaN(layer.zl))
+                    if(Double.isNaN(layer.sorting)) layer.sorting=1.;
+                    if(!Double.isNaN(layer.zl))
                         sm3d.layerValues.push(layer);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
@@ -514,9 +510,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                         writer.write("\n" + nr + " ; " + dof.x + " ; " + dof.y + " ; " + layer.toString());
                         firstLayer = false;
                     } else {
-                        if (!(Math.abs(layer.zl - lastLayerZ) < Double.MIN_NORMAL * 128)) // wenn die Schicht nicht
-                                                                                          // doppelt ist
-                            writer.write("\n" + nr + " ; " + dof.x + " ; " + dof.y + " ; " + layer.toString());
+                                if(!(Math.abs(layer.zl - lastLayerZ)< Double.MIN_NORMAL*128)) // wenn die Schicht nicht doppelt ist
+                                        writer.write("\n" + nr + " ; "+ dof.x +" ; "+ dof.y +" ; " + layer.toString());
                     }
                     lastLayerZ = layer.zl;
                 }
@@ -721,8 +716,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     }
 
     /**
-     * the method initialConcentrationFromSysDat read the datas for sC
-     * from a sysdat-file named filename
+     * the method initialConcentrationFromSysDat read the datas for sC from a sysdat-file named filename
      * 
      * @param filename name of the file to be open
      * @param time
@@ -783,15 +777,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
                         System.out.println("");
 
-                        System.out.println(
-                                "********************************       ERROR         ***********************************");
+                        System.out.println("********************************       ERROR         ***********************************");
                         System.out.println("Invalid skonc-value (skonc=NaN or skonc<0.0) in Concentration-File: <"
                                 + filename + "> node number <" + p_count + ">");
                         System.out.println("To correct this problem ensure that node nr <" + p_count
                                 + "> has a correct floating point (greater zero)");
                         System.out.println("Concentration  value");
-                        System.out.println(
-                                "*****************************************************************************************");
+                        System.out.println("*****************************************************************************************");
                         System.out.println("");
                         System.exit(0);
                     }
@@ -977,7 +969,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             double u_mean = 0.;
             double v_mean = 0.;
 
-            double porosity_mean = 0.;
+//            double porosity_mean = 0.;
 
             final double astx = eleCurrentData.astx;
             final double asty = eleCurrentData.asty;
@@ -1003,7 +995,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final SedimentModel2DData smd = dof_data[ele.getDOF(j).number];
                 final CurrentModel2DData cmd = dof_currentdata[ele.getDOF(j).number];
 
-                porosity_mean += smd.porosity / 3.;
+//                porosity_mean += smd.porosity / 3.;
 
                 dzdx += smd.z * koeffmat[j][1];
                 dzdy += smd.z * koeffmat[j][2];
@@ -1029,8 +1021,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             eleSedimentData.dzdx = dzdx;
             eleSedimentData.dzdy = dzdy;
             // caculate Bottomslope
-            final double bs2 = dzdx * dzdx + dzdy * dzdy; // bs2 = (tan(beta))**2 bzw. beta = Math.atan(Math.sqrt(dzdx *
-                                                          // dzdx + dzdy * dzdy))
+            final double bs2 = dzdx * dzdx + dzdy * dzdy; // bs2 = (tan(beta))**2 bzw. beta = Math.atan(Math.sqrt(dzdx * dzdx + dzdy * dzdy))
             final double bs = Math.sqrt(bs2);
             final double bottomslope = bs + 1.;
             eleSedimentData.bottomslope = bottomslope;
@@ -1039,22 +1030,27 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
             final double dQgd = dQxdx + dQydy;
 
-            double lambda_x = -1. / (1. - porosity_mean) * dQgd * dzdx / bs2 * eleEro;
-            double lambda_y = -1. / (1. - porosity_mean) * dQgd * dzdy / bs2 * eleEro;
+//            double lambda_x = -1. / (1. - porosity_mean) * dQgd * dzdx / bs2 * eleEro;
+//            double lambda_y = -1. / (1. - porosity_mean) * dQgd * dzdy / bs2 * eleEro;
+//            lambda_x = lambda_x * eleSed + (1 - eleSed) * morph_x;
+//            lambda_y = lambda_y * eleSed + (1 - eleSed) * morph_y;
+//            final double uG = 1.E-7;
+//            final double oG = 1.E-6;
+//            if (bs2 < oG) {
+//                if (bs2 > uG) { // Morphen
+//                    final double lambda = (bs2 - uG) / (oG - uG);
+//                    lambda_x = lambda * lambda_x + (1 - lambda) * morph_x;
+//                    lambda_y = lambda * lambda_y + (1 - lambda) * morph_y;
+//                } else {
+//                    lambda_x = morph_x;
+//                    lambda_y = morph_y;
+//                }
+//            }
+
+            double lambda_x = morph_x * eleEro;
+            double lambda_y = morph_y * eleEro;
             lambda_x = lambda_x * eleSed + (1 - eleSed) * morph_x;
             lambda_y = lambda_y * eleSed + (1 - eleSed) * morph_y;
-            final double uG = 1.E-7;
-            final double oG = 1.E-6;
-            if (bs2 < oG) {
-                if (bs2 > uG) { // Morphen
-                    final double lambda = (bs2 - uG) / (oG - uG);
-                    lambda_x = lambda * lambda_x + (1 - lambda) * morph_x;
-                    lambda_y = lambda * lambda_y + (1 - lambda) * morph_y;
-                } else {
-                    lambda_x = morph_x;
-                    lambda_y = morph_y;
-                }
-            }
 
             final double current_mean = Function.norm(u_mean, v_mean);
             double localResC = 0., localResZTransport = 0.;
@@ -1237,28 +1233,23 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
         smd.sedimentSource = getSourceSunk(dof, smd.sC, sl.getConcentration(dof));
 
-        smd.qsx = smd.sC * cmd.u * cmd.totaldepth; // suspendet Load in Richtung der tiefenintegrierten
-                                                   // Stroemungsgeschwindigkeit
+        smd.qsx = smd.sC * cmd.u * cmd.totaldepth; // suspendet Load in Richtung der tiefenintegrierten Stroemungsgeschwindigkeit
         smd.qsy = smd.sC * cmd.v * cmd.totaldepth;
 
         // totaler Sedimenttransport
         smd.qTotal_x = (smd.bedloadVector[0] + smd.qsx);
         smd.qTotal_y = (smd.bedloadVector[1] + smd.qsy);
-if(!cmd.closedBoundary){
+
         smd.u_bank = 1. / (1. - smd.porosity) * smd.qTotal_x / Math.max(cmd.totaldepth, 0.1) * cmd.wlambda;
         smd.v_bank = 1. / (1. - smd.porosity) * smd.qTotal_y / Math.max(cmd.totaldepth, 0.1) * cmd.wlambda;
-}else{
-        smd.u_bank = 0.;
-        smd.v_bank = 0.;
-}
+
         smd.lambdaQs = Function.min(1., (smd.bedload + Function.norm(smd.qsx, smd.qsy)) / (1.E-5 * smd.bound));
 
         // tau = rho * uStar**2
         // uStar = u_mean * 1/7 * (d50/d)**(1/7)
         // tau = rho * 1/49 * (d50/d)**(2/7) * u_mean * u_mean // Solsby
-        smd.bedDragCoeff = 1. / 49. * Math.pow(smd.d50 / Math.max(CurrentModel2D.WATT, cmd.totaldepth), 2. / 7.) * smd.cv;
-        // Duenenhoehen beruecksichtigen einfacher Ansatz Van Rijn (1984b) und Engelund
-        // & Fredsøe (1982)
+        smd.bedDragCoeff = 1. / 49. * Math.pow(smd.d50 / Math.max(CurrentModel2D.WATT, cmd.totaldepth), 2. / 7.) * Math.max(0.001, smd.cv);
+        // Duenenhoehen beruecksichtigen einfacher Ansatz Van Rijn (1984b) und Engelung & Fredsøe (1982)
         smd.bedDragCoeff *= (1 + 2.5 * smd.duneHeight / Math.max(0.01, smd.duneLength));
 
     }
@@ -1268,8 +1259,7 @@ if(!cmd.closedBoundary){
     // ------------------------------------------------------------------------
     @Override
     public ModelData genData(DOF dof) {
-        SedimentModel2DData data = (withSoilModel3DData ? new SoilModel3DData() : new SedimentModel2DData()); // Peter
-                                                                                                              // 26.05.2020
+        SedimentModel2DData data = (withSoilModel3DData ? new SoilModel3DData() : new SedimentModel2DData());
         int dofnumber = dof.number;
         dof_data[dofnumber] = data;
         data.bottomslope = 1.;
@@ -1500,15 +1490,13 @@ if(!cmd.closedBoundary){
 
                         System.out.println("");
 
-                        System.out.println(
-                                "********************************       ERROR         ***********************************");
+                        System.out.println("********************************       ERROR         ***********************************");
                         System.out.println("Invalid DuneHight-value (dz=NaN or dz<0.0) in DuneHight-File: <" + filename
                                 + "> node number <" + p_count + ">");
                         System.out.println("To correct this problem ensure that node nr <" + p_count
                                 + "> has a correct floating point (greater zero)");
                         System.out.println("DuneHight value");
-                        System.out.println(
-                                "*****************************************************************************************");
+                        System.out.println("*****************************************************************************************");
                         System.out.println("");
                         System.exit(0);
                     }
@@ -2359,18 +2347,7 @@ if(!cmd.closedBoundary){
             final double taub = Function.norm(tauBx, tauBy);
 
             // Bodenformen // Yalin, vanRijn, Yalin80
-            double predictedDuneHeight = min(smd.getYalinDuneHeight(taub, cmd.totaldepth), max(0., smd.zh - smd.z)); // kann
-                                                                                                                     // nicht
-                                                                                                                     // hoeher
-                                                                                                                     // sein,
-                                                                                                                     // als
-                                                                                                                     // das
-                                                                                                                     // ueber
-                                                                                                                     // dem
-                                                                                                                     // erodierbaren
-                                                                                                                     // Horizont
-                                                                                                                     // verfuegbare
-                                                                                                                     // Material
+            double predictedDuneHeight = min(smd.getYalinDuneHeight(taub, cmd.totaldepth), max(0., smd.zh - smd.z)); // kann nicht hoeher sein, als das ueber dem erodierbaren Horizont verfuegbare Material
             if (rZ > 0)
                 predictedDuneHeight *= 1. / (1. + rZ); // bei starker Erosion verschwinden Bodenformen
             predictedDuneHeight *= 1. / (1. + waveBreaking); // bei wavebreaking verschwinden Bodenformen
@@ -2378,8 +2355,7 @@ if(!cmd.closedBoundary){
                     ? 1. / PhysicalParameters.G
                             * Math.min(smd.bedload / (1 + smd.bottomslope), (predictedDuneHeight - smd.duneHeight))
                             / smd.bottomslope
-                    : (taub + waveBreaking) / 86400 * smd.bottomslope * (predictedDuneHeight - smd.duneHeight); // Peter
-                                                                                                                // 28.01.2025
+                    : (taub + waveBreaking) / 86400 * smd.bottomslope * (predictedDuneHeight - smd.duneHeight);
             // Flemming, Yalin, vanRijn
             final double predictedDuneLength = SedimentModel2DData.getYalinDuneLength(smd.duneHeight);
 
@@ -2402,14 +2378,11 @@ if(!cmd.closedBoundary){
                 smd.duneHeight = Math.max(smd.duneHeight, 0.);
                 final double actualDuneLength = Function.norm(smd.duneLengthX, smd.duneLengthY);
                 final double newLength = actualDuneLength - (dhSource - taub * PhysicalParameters.KINVISCOSITY_WATER)
-                        * (predictedDuneLength - actualDuneLength) * dt * morphFactor; // Betrag von dhSource - deshalb
-                                                                                       // -dhSource bei negativem
-                                                                                       // dhSource
+                        * (predictedDuneLength - actualDuneLength) * dt * morphFactor; // Betrag von dhSource - deshalb -dhSource bei negativem dhSource
                 smd.duneLengthX = smd.duneLengthX / Function.max(actualDuneLength, 0.01) * newLength;
                 smd.duneLengthY = smd.duneLengthY / Function.max(actualDuneLength, 0.01) * newLength;
             }
-            smd.duneHeight = min(smd.duneHeight, max(0., smd.zh - smd.z)); // kann nicht hoeher sein, als das ueber dem
-                                                                           // erodierbaren Horizont verfuegbare Meterial
+            smd.duneHeight = min(smd.duneHeight, max(0., smd.zh - smd.z)); // kann nicht hoeher sein, als das ueber dem erodierbaren Horizont verfuegbare Meterial
             if (smd.duneHeight <= 0.) {
                 smd.duneHeight = 0.;
                 smd.duneLengthX = 0.;

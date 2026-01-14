@@ -62,8 +62,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
     private final CurrentDat currentdat;
 
-    static private final double ALPHA = .75; // coefficient for secondary flow [0.75 rough bottom, 1. smooth], die
-                                             // Beruecksichtigung der Bodenrauheit erfolgt ueber beta in der Formel
+    static private final double ALPHA = .75; // coefficient for secondary flow [0.75 rough bottom, 1. smooth], die Beruecksichtigung der Bodenrauheit erfolgt ueber beta in der Formel
 
     public static final double BATTJESKOEFF = 0.3; // 0.1 - 0.3 Austauschkoeffizient infolge Wellenbrechens
 
@@ -2336,8 +2335,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             final int gamma = dof.getNumberofFElements();
 
-                cmd.dhdx = cmd._dhdx / gamma;   cmd._dhdx=0.;
-                cmd.dhdy = cmd._dhdy / gamma;   cmd._dhdy=0.;
+            cmd.dhdx = cmd._dhdx / gamma;   cmd._dhdx=0.;
+            cmd.dhdy = cmd._dhdy / gamma;   cmd._dhdy=0.;
 
             cmd.ru /= dof.lumpedMass;
             cmd.rv /= dof.lumpedMass;
@@ -2348,13 +2347,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
             cmd._tau_bx_extra = 0.;
             cmd._tau_by_extra = 0.;
 
-                final double ru = beta0 * cmd.ru + beta1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
-                final double rv = beta0 * cmd.rv + beta1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
-                double reta = beta0 * cmd.reta + beta1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            final double ru = beta0 * cmd.ru + beta1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            final double rv = beta0 * cmd.rv + beta1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            double reta = beta0 * cmd.reta + beta1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
 
-                cmd.dudt = cmd.ru;  cmd.ru=0.;
-                cmd.dvdt = cmd.rv;  cmd.rv=0.;
-                cmd.detadt = cmd.reta;  cmd.reta=0.;
+            cmd.dudt = cmd.ru;  cmd.ru=0.;
+            cmd.dvdt = cmd.rv;  cmd.rv=0.;
+            cmd.detadt = cmd.reta;  cmd.reta=0.;
 
             // Quellen und Senken fuer das Oberflaechenwasser bestimmen
             double source_dhdt = 0;

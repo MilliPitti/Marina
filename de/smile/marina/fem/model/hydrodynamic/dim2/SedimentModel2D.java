@@ -1028,23 +1028,26 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double slope_norm = 2 * bs / (bs2 + 1); // zur Berechnung des gravitationellen Transportes
 
             final double dQgd = dQxdx + dQydy;
-
-//            double lambda_x = -1. / (1. - porosity_mean) * dQgd * dzdx / bs2 * eleEro;
-//            double lambda_y = -1. / (1. - porosity_mean) * dQgd * dzdy / bs2 * eleEro;
-//            lambda_x = lambda_x * eleSed + (1 - eleSed) * morph_x;
-//            lambda_y = lambda_y * eleSed + (1 - eleSed) * morph_y;
-//            final double uG = 1.E-7;
-//            final double oG = 1.E-6;
-//            if (bs2 < oG) {
-//                if (bs2 > uG) { // Morphen
-//                    final double lambda = (bs2 - uG) / (oG - uG);
-//                    lambda_x = lambda * lambda_x + (1 - lambda) * morph_x;
-//                    lambda_y = lambda * lambda_y + (1 - lambda) * morph_y;
-//                } else {
-//                    lambda_x = morph_x;
-//                    lambda_y = morph_y;
-//                }
-//            }
+            
+            // double lambda_x = -1. / (1. - porosity_mean) * dQgd * dzdx / bs2;
+            // double lambda_y = -1. / (1. - porosity_mean) * dQgd * dzdy / bs2;
+            // final double uG = 1.E-7;
+            // final double oG = 1.E-6;
+            // if (bs2 < oG) {
+            //     if (bs2 > uG) { // Morphen
+            //         final double lambda = (bs2 - uG) / (oG - uG);
+            //         lambda_x = lambda * lambda_x + (1 - lambda) * morph_x;
+            //         lambda_y = lambda * lambda_y + (1 - lambda) * morph_y;
+            //     } else {
+            //         lambda_x = morph_x;
+            //         lambda_y = morph_y;
+            //     }
+            // } else {
+            //     lambda_x = slope_norm * lambda_x + (1 - slope_norm) * morph_x;
+            //     lambda_y = slope_norm * lambda_y + (1 - slope_norm) * morph_y;
+            // }
+            // lambda_x = (lambda_x * eleSed + (1 - eleSed) * morph_x) * eleEro;
+            // lambda_y = (lambda_y * eleSed + (1 - eleSed) * morph_y) * eleEro;
 
             double lambda_x = morph_x * eleEro;
             double lambda_y = morph_y * eleEro;

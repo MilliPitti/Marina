@@ -983,9 +983,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             double dQxdx = 0.; // Ableitung des totalen Sedimenttransportes
             double dQydy = 0.;
 
-            double eleEro = 1.; // neuer Indikator mit Test der Turbulenzterme ob diese an einem Knoten
-                                // erodieren wollen der aber nichterodierbar ist
-            double eleSed = 1.;
+            double eleEro = 1.; // Indikator ob in diesem Element ein Knoten nichterodierbar ist
+//            double eleSed = 1.; // Indikator ob in diesem Element ein Knoten teiltrocken ist
             double morph_x = 0.;
             double morph_y = 0.;
 
@@ -1014,7 +1013,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
                 // Indikator fuer nichterodierbare // oder teiltrockene Elemente bestimmen
                 eleEro *= smd.lambda;
-                eleSed *= cmd.wlambda;
+//                eleSed *= cmd.wlambda;
 
             } // end for
 
@@ -1049,9 +1048,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
             double lambda_x = morph_x * eleEro;
             double lambda_y = morph_y * eleEro;
-            lambda_x = lambda_x * eleSed + (1 - eleSed) * morph_x;
-            lambda_y = lambda_y * eleSed + (1 - eleSed) * morph_y;
-
+            
             final double current_mean = Function.norm(u_mean, v_mean);
             double localResC = 0., localResZTransport = 0.;
 

@@ -232,8 +232,10 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                     inStream.skip(4);
                 
                 if(V_gesetzt){
-                    dof_data[i].u = inStream.readFloat()/1000.;
-                    dof_data[i].v = inStream.readFloat()/1000.;
+                    double u = inStream.readFloat()/86400.; // m/d -> m/s
+                    double v = inStream.readFloat()/86400.;
+                    dof_data[i].u = u;
+                    dof_data[i].v = v;
                 }
                 
                 if(Q_gesetzt)
@@ -580,10 +582,11 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 LRes +=  1./3. * (dof_data[i].dhdt - 1./S0 *(dqxdx + dqydy));
             }
 
+
             for ( int j = 0; j < 3; j++) {
                 DOF dof = dofs[j];
                 int i = dof.number; 
-                synchronized (dof_data[i]) { // Peter 28.08.2010
+                synchronized (dof_data[i]) {
                     dof_data[i].nu += u;
                     dof_data[i].nv += v;
                 }
@@ -630,6 +633,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             final int gamma = dof.getNumberofFElements();
 
             gwd.rh *= 3. / gamma;
+            gwd.rh += gwd.source;
             final double rh = beta0 * gwd.rh + beta1 * gwd.dhdt;  // zusaetzliche Stabilisierung in Anlehnung an expliziten Adams-Bashforth 2. Ordnung
 
             gwd.dhdt = gwd.rh;  gwd.rh = 0.;
@@ -641,6 +645,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
 
             gwd.h += dt * rh;
         });
+
 
         // Aktualisiere den vorherigen Zeitschritt fuer das gesamte Modell
         this.previousTimeStep = dt;
@@ -666,17 +671,27 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         }
         
         CurrentModel2DData current2d = CurrentModel2DData.extract(dof);
-        if(current2d!=null){
-            if ((current2d.z+current2d.eta>CurrentModel2D.WATT)){
-                if ((current2d.eta-groundwaterdata.h)>0.) groundwaterdata.h = current2d.eta;
-//                if ((current2d.eta-x[H+i])>0.) groundwaterdata.source = Function.max(0,current2d.eta-x[H+i]);
+        if (current2d != null) {
+            // Austauschterm (positiv: Oberflaeche -> Grundwasser, negativ: Grundwasser -> Oberflaeche)
+            // Skaliert ueber kf, S0 und eine lokale Laengenskala, um zu starke Kopplung zu vermeiden.
+            double headDiff = current2d.eta - groundwaterdata.h;
+            double areaSum = 0.;
+            FElement[] feles = dof.getFElements();
+            for (FElement fele : feles) {
+                areaSum += fele.getVolume();
             }
+            double meanArea = (feles.length > 0) ? (areaSum / feles.length) : 0.;
+            double L = Math.sqrt(Math.max(meanArea, 1e-12));
+            double S0 = Math.max(groundwaterdata.S0, 1e-9);
+            double exchangeCoeff = groundwaterdata.kf / S0 / Math.max(L, 1e-6); // 1/s
+            // Kopplung nur bei nassen Oberflaechenzellen (wlambda in [0..1])
+            groundwaterdata.source = exchangeCoeff * headDiff * current2d.wlambda;
+        } else {
+            groundwaterdata.source = 0.;
         }
         
         if((groundwaterdata.h+dof_data[i].zG)<=0.) groundwaterdata.h=-dof_data[i].zG;
-        
-        groundwaterdata.u = groundwaterdata.v = 0; // initialisieren zum knotenweise bestimmen der Geschwindigkeiten
-        
+
     } // end setBoundaryCondition
     
     @Override
@@ -1528,8 +1543,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                     if (MarinaXML.release) {
                         setBoundaryCondition(dof, time);
                     }
-                    xf_os.writeFloat((float) (modeldata.u * 1000.));        // v1x
-                    xf_os.writeFloat((float) (modeldata.v * 1000.));        // v1y
+                    xf_os.writeFloat((float) (modeldata.u * 86400.));        // v1x m/s -> m/d
+                    xf_os.writeFloat((float) (modeldata.v * 86400.));        // v1y m/s -> m/d
                     xf_os.writeFloat((float) modeldata.h);        // skalar1
                 }
                 xf_os.flush();

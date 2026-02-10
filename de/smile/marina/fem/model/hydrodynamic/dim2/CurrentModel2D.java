@@ -2370,10 +2370,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             }
             final GroundWater2DData gwdata = GroundWater2DData.extract(dof);
             if (gwdata != null) {
-                if ((cmd.z + gwdata.h) >= 0.) {
-                    source_dhdt += gwdata.dhdt;
-                } else
-                    source_dhdt -= gwdata.kf;
+                // Massenerhalt: gleicher Austauschterm wie im Grundwassermodell, aber mit umgekehrtem Vorzeichen
+                source_dhdt -= gwdata.source;
             } else {
                 source_dhdt -= infiltrationRate;
             }

@@ -39,7 +39,7 @@ public class GroundWater2DData implements ModelData {
 
     // Zustandsgroessen
     public double h = 0., dhdt = 0.;       // gound water level or GW-Drucklinie bei gespannten  (nach oben positiv von NN)
-    public double u = 0., v = 0.;          // velocity
+    public double u = 0., v = 0.;          // velocity (Ausgabe)
 
     // Zwischenergebnisse der rechten Seite
     double rh = 0.;

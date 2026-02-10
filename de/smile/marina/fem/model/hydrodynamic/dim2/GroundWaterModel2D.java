@@ -23,6 +23,7 @@
  */
 package de.smile.marina.fem.model.hydrodynamic.dim2;
 
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
@@ -45,7 +46,7 @@ import de.smile.marina.io.SmileIO;
  * @version 2.7.0
  * @author Peter Milbradt
  */
-public class  GroundWaterModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel  {
+public class  GroundWaterModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel  {
     
     private GroundWater2DData[] dof_data=null;
     private GroundWater2DElementData[] element_data=null;
@@ -56,13 +57,9 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     
     private ArrayList<DOF> inith = new ArrayList<>();
     
-    private int n,H;
-    
     private GroundWaterDat groundwaterdat;
-    
-    double[] result;// zum speichern der Zeitableitungen
-    double[] x;     // zum Speichern der Zustandsgroessen
     private double WATT = 0.1;
+    private double previousTimeStep = 0.0; // Speichert den vorherigen Zeitschritt fuer das gesamte Modell
 
     // konstruktor
     public GroundWaterModel2D(FEDecomposition fe, GroundWaterDat _groundwaterdata) {
@@ -137,12 +134,6 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         
         
         
-        final int numberofdofs = fenet.getNumberofDOFs();
-        
-        H = 0;
-        n = numberofdofs;
-        result = new double[n];
-        
         try {
             xf_os = new DataOutputStream(new FileOutputStream(groundwaterdat.xferg_name));
             TicadIO.write_xf(xf_os, this );
@@ -164,14 +155,12 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
      * @return  */
     public double[] ConstantInitialSolution(double initalvalue) {
         System.out.println("\t Set inital value "+initalvalue);
-        
-        x = new double[fenet.getNumberofDOFs()];
-        
+
         for (int i=0; i<fenet.getNumberofDOFs(); i++){
-            x[i+H] = initalvalue;
+            dof_data[i].h = initalvalue;
         }
-        
-        return x;
+
+        return null;
     }
     
     /** Read the start solution from file
@@ -231,8 +220,6 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             // bis zum record-Satz springen
             inStream.skip((4L+anzKnoten*anzWerte*4L)*record);
             
-            x = new double[n];
-            
             float t=inStream.readFloat();
             for (int i = 0;i<fenet.getNumberofDOFs();i++){
                 if(None_gesetzt)
@@ -253,14 +240,14 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                     inStream.skip(8);
                 
                 if(H_gesetzt){
-                    x[H + i] = inStream.readFloat();
+                    dof_data[i].h = inStream.readFloat();
                     CurrentModel2DData current2d = CurrentModel2DData.extract(fenet.getDOF(i));
                     if(current2d!=null){
                         if ((current2d.z+current2d.eta>CurrentModel2D.WATT)){
-                            if ((current2d.eta-x[H+i])>0.) x[H+i] = current2d.eta;
+                            if ((current2d.eta-dof_data[i].h)>0.) dof_data[i].h = current2d.eta;
                         }
-                        if ((current2d.z+x[H + i]>CurrentModel2D.WATT)){
-                            x[H + i]=current2d.eta=Math.max(x[H + i],current2d.eta);
+                        if ((current2d.z+dof_data[i].h>CurrentModel2D.WATT)){
+                            dof_data[i].h=current2d.eta=Math.max(dof_data[i].h,current2d.eta);
                         }
                     }
                 }
@@ -285,7 +272,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 
             }
         }
-        return x;
+        return null;
     }
     
     /** the method initialSolutionFromTicadErgFile compute a startsolution
@@ -294,56 +281,25 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
      */
     public double[] initialSolution(double time){
         this.time=time;
-        x = new double[n];
-        
-//        System.out.println("CurrentModel - Werte Initialisieren");
-        int NumberOfThreads=getNumberOfThreads();
-        
-        initalSolutionLoop[] iloop = new initalSolutionLoop[NumberOfThreads];
-        int anzdofs = fenet.getNumberofDOFs();
-        for (int ii=0; ii<NumberOfThreads; ii++){
-            iloop[ii]= new initalSolutionLoop(anzdofs*ii/NumberOfThreads, anzdofs*(ii+1)/NumberOfThreads,x,time);
-            iloop[ii].start();
-        }
-        for(int ii=0; ii<NumberOfThreads; ii++)
-            try{iloop[ii].join();} catch(Exception e){}
+
+        Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> {
+            GroundWater2DData modeldata = dof_data[dof.number];
+
+            modeldata.h = initialH(dof,time);
+
+            if ((modeldata.zG + modeldata.h) <= 0.)
+                modeldata.h = -modeldata.zG;
+
+            CurrentModel2DData current2d = CurrentModel2DData.extract(dof);
+            if(current2d!=null){
+                if ((current2d.z+current2d.eta>CurrentModel2D.WATT)){
+                    if ((current2d.eta-modeldata.h)>0.) modeldata.h = current2d.eta;
+                }
+            }
+        });
         
         inith=null;
-        return x;
-    }
-    
-    public final class initalSolutionLoop extends Thread {
-        int lo, hi;
-        double[] x;
-        double time;
-        initalSolutionLoop(int lo, int hi, double[] x, double time ){
-            this.lo=lo;
-            this.hi=hi;
-            this.x = x;
-            this.time = time;
-        }
-        @Override
-        public void run(){
-            for(int ii=lo; ii<hi; ii++){
-                DOF dof= fenet.getDOF(ii);
-                int i = dof.number;
-                GroundWater2DData modeldata = dof_data[i];
-                
-                x[H + i] = initialH(dof,time);
-                
-                if ((modeldata.zG + x[H + i]) <= 0.)
-                    x[H + i] = -modeldata.zG;
-                
-                CurrentModel2DData current2d = CurrentModel2DData.extract(dof);
-                if(current2d!=null){
-                    if ((current2d.z+current2d.eta>CurrentModel2D.WATT)){
-                        if ((current2d.eta-x[H+i])>0.) x[H+i] = current2d.eta;
-                    }
-                }
-                
-                modeldata.h=x[H + i];
-            }
-        }
+        return null;
     }
     
     // ----------------------------------------------------------------------
@@ -376,7 +332,6 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     
     public double[] initialHfromJanetBin(String filename, double time) throws Exception {
         this.time=time;
-        x = new double[n];
         
         int anzAttributes=0;
         double value;
@@ -439,13 +394,13 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                     // x,y,s lesen
                     bin_in.fbinreaddouble();
                     bin_in.fbinreaddouble();
-                    x[H + nr] = bin_in.fbinreaddouble();
+                    double h = bin_in.fbinreaddouble();
                     
                     DOF dof= fenet.getDOF(nr);
                     
                     
                     GroundWater2DData groundwaterdata = dof_data[dof.number];
-                    groundwaterdata.h=x[H + nr];
+                    groundwaterdata.h=h;
 
                 
                     
@@ -463,14 +418,13 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         
         inith=null;
         
-        return x;
+        return null;
     }
     
     
     
     public double[] initialHfromASCIIFile(String systemDatPath, double time) throws Exception {
         this.time=time;
-        x = new double[n];
         
         try {
             InputStream is = new FileInputStream(systemDatPath);
@@ -489,10 +443,10 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                     int  pos = TicadIO.NextInt(st);
                     TicadIO.NextDouble(st);
                     TicadIO.NextDouble(st);
-                    x[H + pos] = TicadIO.NextDouble(st); // -> eta
+                    double h = TicadIO.NextDouble(st); // -> eta
                     DOF dof=fenet.getDOF(pos);
                     GroundWater2DData groundwaterdata = dof_data[dof.number];
-                    groundwaterdata.h=x[H + pos];
+                    groundwaterdata.h=h;
                 }
             } else System.out.println("\t different number of nodes");
             
@@ -502,7 +456,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         }
         
         inith=null;
-        return x;
+        return null;
     }
     
     
@@ -511,34 +465,9 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
      * @param x
      * @return  */
     @Override
+    @Deprecated
     public double[] getRateofChange(double time, double x[]){
-        
-        this.x=x;
-        this.time=time;
-        
-        java.util.Arrays.fill(result,0.0);
-        
-        setBoundaryConditions();
-        
-        maxTimeStep = 10000.;
-        
-        // Elementloop
-        performElementLoop();
-        
-        for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
-            final int gamma = dof.getNumberofFElements();
-            result[H+i] *= 3. / gamma;
-            double rh = (3.*result[H+i]-dof_data[i].dhdt)/2.;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung
-            dof_data[i].dhdt=result[H+i];
-            result[H+i]=rh;
-            dof_data[i].nu /= gamma;
-            dof_data[i].nv /= gamma;
-            dof_data[i].u = dof_data[i].nu;
-            dof_data[i].v = dof_data[i].nv;
-        }
-        
-        return result;
+        return null;
     } // end getRateofChange
     
     
@@ -576,22 +505,22 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             
             if(dof_data[i].bh!=null) ibound++;
             
-            if((x[H+i]+dof_data[i].zG)<WATT) {
+            if((dof_data[i].h+dof_data[i].zG)<WATT) {
                 iwatt++;
             } else {
-                if(x[H+i]< -dof_data[i].upperImpermeableLayer)
-                    m[j] = x[H+i]+dof_data[i].zG;  // freier GW
+                if(dof_data[i].h< -dof_data[i].upperImpermeableLayer)
+                    m[j] = dof_data[i].h+dof_data[i].zG;  // freier GW
                 else
                     m[j] = -dof_data[i].upperImpermeableLayer+dof_data[i].zG;  // gespannter GW
             }
             
-            hdx += x[H+i] * koeffmat[j][1];
-            hdy += x[H+i] * koeffmat[j][2];
+            hdx += dof_data[i].h * koeffmat[j][1];
+            hdy += dof_data[i].h * koeffmat[j][2];
             
             dqxdx += m[j] * dof_data[i].u * koeffmat[j][1];
             dqydy += m[j] * dof_data[i].v * koeffmat[j][2];
             
-            h[j]=x[H+i];
+            h[j]=dof_data[i].h;
             
             kf+=dof_data[i].kf/3.;
             
@@ -667,11 +596,56 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                         result_H_i += 1./S0 * vorfaktor*(m[l]*(koeffmat[j][1] * u + koeffmat[j][2] * v));
                 }
                 synchronized (dof){
-                        result[H+i] += result_H_i;
+                        dof_data[i].rh += result_H_i;
                 }
         }
             return timeStep;
     } // end ElementApproximation
+
+    @Override
+    public final void timeStep(double dt) {
+
+        setBoundaryConditions();
+
+        maxTimeStep = Double.MAX_VALUE;
+
+        // Elementloop
+        performElementLoop();
+
+        // Berechne omega und die Koeffizienten fuer Variable Adams-Bashforth 2. Ordnung
+        // einmal vor dem parallelen Stream
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            // Erster Schritt: Euler-Integration (beta0=1, beta1=0)
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
+        }
+
+        Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> {
+            final GroundWater2DData gwd = dof_data[dof.number];
+            final int gamma = dof.getNumberofFElements();
+
+            gwd.rh *= 3. / gamma;
+            final double rh = beta0 * gwd.rh + beta1 * gwd.dhdt;  // zusaetzliche Stabilisierung in Anlehnung an expliziten Adams-Bashforth 2. Ordnung
+
+            gwd.dhdt = gwd.rh;  gwd.rh = 0.;
+
+            gwd.u = gwd.nu / gamma;
+            gwd.v = gwd.nv / gamma;
+            gwd.nu = 0.;
+            gwd.nv = 0.;
+
+            gwd.h += dt * rh;
+        });
+
+        // Aktualisiere den vorherigen Zeitschritt fuer das gesamte Modell
+        this.previousTimeStep = dt;
+        this.time += dt;
+    }
     
     // ----------------------------------------------------------------------
     // setBoundaryCondition
@@ -687,21 +661,19 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         
         if (groundwaterdata.bh != null){
 //            System.out.println(i+" bh");
-            x[H + i]    = groundwaterdata.bh.getValue(t);
+            groundwaterdata.h = groundwaterdata.bh.getValue(t);
 //            groundwaterdata.detadt = groundwaterdata.bh.getDifferential(t);
         }
         
         CurrentModel2DData current2d = CurrentModel2DData.extract(dof);
         if(current2d!=null){
             if ((current2d.z+current2d.eta>CurrentModel2D.WATT)){
-                if ((current2d.eta-x[H+i])>0.) x[H+i] = current2d.eta;
+                if ((current2d.eta-groundwaterdata.h)>0.) groundwaterdata.h = current2d.eta;
 //                if ((current2d.eta-x[H+i])>0.) groundwaterdata.source = Function.max(0,current2d.eta-x[H+i]);
             }
         }
         
-        if((x[H+i]+dof_data[i].zG)<=0.) x[H+i]=-dof_data[i].zG;
-        
-        groundwaterdata.h = x[H + i];
+        if((groundwaterdata.h+dof_data[i].zG)<=0.) groundwaterdata.h=-dof_data[i].zG;
         
         groundwaterdata.u = groundwaterdata.v = 0; // initialisieren zum knotenweise bestimmen der Geschwindigkeiten
         
@@ -720,7 +692,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     @Override
     public ModelData genData(DOF dof){
         //System.out.println("DOF "+dof);
-        GroundWater2DData data = new GroundWater2DData();
+        GroundWater2DData data = new GroundWater2DData(dof);
         int dofnumber = dof.number;
         dof_data[dofnumber]=data;
         
@@ -1536,16 +1508,23 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         
     /** The method write_erg_xf
      * @param erg
-     * @param t  */
+     * @param t
+     * @deprecated
+     */
     @Override
+    @Deprecated
     public void write_erg_xf(double[] erg, double t) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    } // end write_erg_xf
+
+    /** The method write_erg_xf */
+    @Override
+    public void write_erg_xf() {
         if (xf_os != null) {
             try {
-                xf_os.writeFloat((float) t);
+                xf_os.writeFloat((float) time);
                 for (DOF dof : fenet.getDOFs()) {
-                    GroundWater2DData modeldata = GroundWater2DData.extract(dof);
-                    int i = dof.number;
-                    modeldata.h = erg[H + i];
+                    GroundWater2DData modeldata = dof_data[dof.number];
                     if (MarinaXML.release) {
                         setBoundaryCondition(dof, time);
                     }

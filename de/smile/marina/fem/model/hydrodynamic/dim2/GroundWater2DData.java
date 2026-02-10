@@ -35,18 +35,29 @@ import java.util.Iterator;
 public class GroundWater2DData implements ModelData {
 
     private static int id = NO_MODEL_DATA;
-    double h, dhdt;       // gound water level or GW-Drucklinie bei gespannten  (nach oben positiv von NN)
-    double nu, nv;        // new velocity
-    double u, v;        // velocity
-    double zG = 10.;     // impermeable Layer     (positiv nach unten von NN)
-    double upperImpermeableLayer = Double.NEGATIVE_INFINITY;  // upper impermeable Layer     (positiv nach unten von NN)
-    double source;      // quellterm des Grundwassermodells zur kopplung mit dem Oberflaechenmodell
-    ScalarFunction1d bh = null;
-    double kf = 0.0001;    //hydr. Durchlaessigkeit, permeability // mittlerer Sand
-    double S0 = 0.25;     //effektive Porositaet
+    private static final long serialVersionUID = 1L;
+
+    // Zustandsgroessen
+    public double h = 0., dhdt = 0.;       // gound water level or GW-Drucklinie bei gespannten  (nach oben positiv von NN)
+    public double u = 0., v = 0.;          // velocity
+
+    // Zwischenergebnisse der rechten Seite
+    double rh = 0.;
+    double nu = 0., nv = 0.;               // temporäre Akkumulatoren für u/v
+
+    public double zG = 10.;     // impermeable Layer     (positiv nach unten von NN)
+    public double upperImpermeableLayer = Double.NEGATIVE_INFINITY;  // upper impermeable Layer     (positiv nach unten von NN)
+    public double source = 0.;      // quellterm des Grundwassermodells zur kopplung mit dem Oberflaechenmodell
+    public ScalarFunction1d bh = null;
+    public double kf = 0.0001;    // hydr. Durchlaessigkeit, permeability // mittlerer Sand
+    public double S0 = 0.25;     // effektive Porositaet
 
     /** Creates a new instance of GroundWater2DData */
     public GroundWater2DData() {
+        id = SEARCH_MODEL_DATA;
+    }
+
+    public GroundWater2DData(DOF dof) {
         id = SEARCH_MODEL_DATA;
     }
 
@@ -58,9 +69,9 @@ public class GroundWater2DData implements ModelData {
             Iterator<ModelData> modeldatas = dof.allModelDatas();
             while (modeldatas.hasNext()) {
                 ModelData md = modeldatas.next();
-                if (md instanceof GroundWater2DData) {
+                if (md instanceof GroundWater2DData groundwater2DData) {
                     id = dof.getIndexOf(md);
-                    return (GroundWater2DData) md;
+                    return groundwater2DData;
                 }
             }
             id = NO_MODEL_DATA;

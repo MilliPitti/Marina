@@ -34,10 +34,11 @@ import java.util.Iterator;
 public class GroundWater2DElementData implements ModelData{
     
     private static int id = NO_MODEL_DATA;
+    private static final long serialVersionUID = 1L;
     
-    double mean_zG=10.;
-    double kf = 0.001;
-    double u,v;
+    public double mean_zG=10.;
+    public double kf = 0.001;
+    public double u,v;
     
     public GroundWater2DElementData(){
         id = SEARCH_MODEL_DATA;

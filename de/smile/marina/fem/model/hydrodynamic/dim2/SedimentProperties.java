@@ -26,6 +26,7 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 import de.smile.geom.LinearPoint;
 import de.smile.geom.MetricPoint;
 import de.smile.marina.PhysicalParameters;
+import static de.smile.marina.fem.model.hydrodynamic.dim2.SedimentModel2DData.getWC;
 import static de.smile.math.Function.sqr;
 import java.io.Serializable;
 import java.util.function.Function;
@@ -38,14 +39,12 @@ import java.util.logging.Logger;
  * @author Peter Milbradt
  * @version 4.0.0
  */
-public class SedimentProperties
-        implements Cloneable, MetricPoint<SedimentProperties>, LinearPoint<SedimentProperties>, Serializable {
+public class SedimentProperties implements Cloneable, MetricPoint<SedimentProperties>, LinearPoint<SedimentProperties>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     public static enum CriticalShieldsFunction {
-        /**
-         * Classic
+        /** Classic
          * SHIELDS (1936) gilt fuer Korngroeszen zwischen 0.1 bis 5 mm
          */
         Shields((Double D1) -> {
@@ -84,9 +83,7 @@ public class SedimentProperties
          * kritische Schubspannung in der Formulierung nach Soulsby 1997
          * angepasst, so dass fuer grosze Korngroeszen dem von Knoroz entspricht
          */
-        SoulsbyKnoroz((Double D) -> 0.3 / (1. + 1.2 * D) + 0.033 * (1. - Math.exp(-0.02 * D))), // auch fuer grobe
-                                                                                                // Sedimente, z.B. Rhein
-                                                                                                // und Donau
+        SoulsbyKnoroz((Double D) -> 0.3 / (1. + 1.2 * D) + 0.033 * (1. - Math.exp(-0.02 * D))), // auch fuer grobe Sedimente, z.B. Rhein und Donau
         Sisyphe((Double D) -> 0.45 / (1. + 1.2 * D) + 0.0267 * (1. - Math.exp(-0.03 * D))),
         /**
          * van Rijn, L.,C. (1984a): Sediment transport, part I: Bed Load
@@ -121,13 +118,11 @@ public class SedimentProperties
             return 0.033063282;
         }),
         /**
-         * kritische Schubspannung nach Julien 2001
+         * kritische Schubspannung nach Julien 2001 
          */
         Julien((Double D) -> {
-            final double d50 = D / Math.pow(PhysicalParameters.G
-                    * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER
-                    / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
-            return 0.3 * Math.exp(-D / 3.) + 0.06 * getInnerFrictionAngle(d50) * (1. - Math.exp(-D / 20.));// original
+            final double d50 = D / Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
+            return 0.3 * Math.exp(-D / 3.) + 0.06 * getInnerFrictionAngle(d50) * (1. - Math.exp(-D / 20.)); // original
         }),
         /**
          * kritische Schubspannung nach Julien 2001 mit Anpassung um fuer grosze
@@ -137,10 +132,8 @@ public class SedimentProperties
          * inverse Funktion
          */
         JulienKnoroz((Double D) -> {
-            final double d50 = D / Math.pow(PhysicalParameters.G
-                    * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER
-                    / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
-            return 0.3 * Math.exp(-D / 3.) + 0.039 * getInnerFrictionAngle(d50) * (1. - Math.exp(-D / 10.));// Peter's Anpassung um fuer grosze Koerner einen Transport zu erhalten
+            final double d50 = D / Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
+            return 0.3 * Math.exp(-D / 3.) + 0.039 * getInnerFrictionAngle(d50) * (1. - Math.exp(-D / 10.)); // Peter's Anpassung um fuer grosze Koerner einen Transport zu erhalten
         });
 
         private final Function<Double, Double> function;
@@ -159,8 +152,7 @@ public class SedimentProperties
     public static final double n_trapez = .26; // Porosity bei Einkorn und Trapetzlagerung
 
     public double dmin = 0.042E-3; // [m] kleinstes verfuegbares Korn (entspricht in etwa d_05/2.)
-    public double d50 = 0.42E-3; // [m] mittlerer Kordurchmesser, wenn eine Verteilung da ist soll dieser Wert
-                                 // berechnet werden
+    public double d50 = 0.42E-3; // [m] mittlerer Kordurchmesser, wenn eine Verteilung da ist soll dieser Wert berechnet werden
     public double dmax = 4.2E-3; // [m] groesztes verfuegbares Korn (entspricht in etwa d_95*2.)
 
     public double k = .6 / ((1. - ((dmax + dmin) / 2.) / dmax) * (1. - dmin / ((dmax + dmin) / 2.)));
@@ -170,16 +162,10 @@ public class SedimentProperties
     public double wc = getWC_WuAndWang(d50); // [m/s] Sinkgeschwindigkeit
 
     public double porosity = getPorosityLogistic(d50, sorting);
-    public double consolidation = (n_trapez / (1. + sorting * Math.sqrt(wc))) / porosity; // 1 wenn minmaler
-                                                                                          // Zwischenraum - Boden
-                                                                                          // maximal konsolidiert -
-                                                                                          // fest!
+    public double consolidation = (n_trapez / (1. + sorting * Math.sqrt(wc))) / porosity; // 1 wenn minmaler Zwischenraum - Boden maximal konsolidiert - fest!
 
     public double innerFrictionAngle = getInnerFrictionAngle(d50);
-    double D = d50 * Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)
-            / PhysicalParameters.RHO_WATER
-            / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1.0 / 3.0); // dimensionsloser
-                                                                                                           // Teilchendurchmesser
+    double D = d50 * Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1.0 / 3.0); // dimensionsloser Teilchendurchmesser
 
     public SedimentProperties() {
         this(0.42E-3);
@@ -206,7 +192,7 @@ public class SedimentProperties
     /**
      * Konstruktor
      *
-     * @param d50            [m]
+     * @param d50 [m]
      * @param initialSorting 0 Einkrinmaterial, ..
      */
     public SedimentProperties(double d50, double initialSorting) {
@@ -214,9 +200,7 @@ public class SedimentProperties
     }
 
     public void setProperties(String line) throws Exception {
-        // new String[] {"nodenumber ; x ; y ; z [m] in depth ; dmax [mm] ; d50 [mm] ;
-        // dmin [mm] ; meanInitialSorting ; porosity ; consolidation ; time [s] since
-        // 01.01.1970 ; Datum"};
+//        new String[] {"nodenumber ; x ; y ; z [m] in depth ; dmax [mm] ; d50 [mm] ; dmin [mm] ; meanInitialSorting ; porosity ; consolidation ; time [s] since 01.01.1970 ; Datum"};
         String[] seperated = line.split(";");
         dmax = Double.parseDouble(seperated[4].trim()) / 1000.;
         d50 = Double.parseDouble(seperated[5].trim()) / 1000.;
@@ -231,7 +215,7 @@ public class SedimentProperties
      * update Sedimentparameter
      *
      * @param lowerGrainSize [m]
-     * @param d50            [m]
+     * @param d50 [m]
      * @param upperGrainSize [m]
      * @param initialSorting 0 Einkornmaterial, ..
      */
@@ -247,7 +231,7 @@ public class SedimentProperties
      * update Sedimentparameter
      *
      * @param lowerGrainSize [m]
-     * @param d50            [m]
+     * @param d50 [m]
      * @param upperGrainSize [m]
      */
     public final void update(double lowerGrainSize, double d50, double upperGrainSize) {
@@ -261,14 +245,11 @@ public class SedimentProperties
      * Update the dependent attributes
      */
     final void update() {
-        this.D = d50 * Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)
-                / PhysicalParameters.RHO_WATER
-                / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
+        this.D = d50 * Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
         this.sorting = initialSorting * (1. - d50 / dmax) * (1. - dmin / d50) * k;
         this.wc = getWC_WuAndWang(d50);
         this.porosity = getPorosityLogistic(d50, sorting, wc);
-        consolidation = (n_trapez / (1. + sorting * Math.sqrt(wc))) / porosity; // 1 wenn minmaler Zwischenraum - Boden
-                                                                                // maximal konsolidiert - fest!
+        consolidation = (n_trapez / (1. + sorting * Math.sqrt(wc))) / porosity; // 1 wenn minmaler Zwischenraum - Boden maximal konsolidiert - fest!
         this.innerFrictionAngle = getInnerFrictionAngle(d50);
     }
 
@@ -307,7 +288,7 @@ public class SedimentProperties
             throw new ArithmeticException("range exception");
         }
         return -Math.log(d) / Math.log(2.);
-        // return -SpecialFunction.log2(d);
+//        return -SpecialFunction.log2(d);
     }
 
     /**
@@ -340,7 +321,7 @@ public class SedimentProperties
     /**
      * Porosity
      *
-     * @param d50     in [m]
+     * @param d50 in [m]
      * @param sorting (0 Einkron, 1 gut gemischt, grosz - breites Kornspektrum)
      * @return porosity between 0 (pur Sediment) and 1 (pur Water)
      */
@@ -357,7 +338,7 @@ public class SedimentProperties
      *
      * @param d50 in [m]
      * @return porosity - the value is always greater than 0.26, the prostity of
-     *         a ball packing of the same size
+     * a ball packing of the same size
      */
     public static double getPorosityLogistic(double d50) {
         final double p1 = -0.436;
@@ -374,7 +355,7 @@ public class SedimentProperties
      * applications in marine science Earth Syst. Sci. Data, 10, 109?130, 2018
      * https://doi.org/10.5194/essd-10-109-2018
      *
-     * @param d50     in [m]
+     * @param d50 in [m]
      * @param sorting (0 Einkron, 1 gut gemischt, grosz - breites Kornspektrum)
      * @return
      */
@@ -389,9 +370,9 @@ public class SedimentProperties
      * applications in marine science Earth Syst. Sci. Data, 10, 109?130, 2018
      * https://doi.org/10.5194/essd-10-109-2018
      *
-     * @param d50     in [m]
+     * @param d50 in [m]
      * @param sorting (0 Einkron, 1 gut gemischt, grosz - breites Kornspektrum)
-     * @param wc      Settling velocity [m/s]
+     * @param wc Settling velocity [m/s]
      * @return
      */
     public static double getPorosityLogistic(double d50, double sorting, double wc) {
@@ -421,34 +402,173 @@ public class SedimentProperties
 
     public static double getWC_WuAndWang(double d50) {
 
-        double D = d50 * Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)
-                / PhysicalParameters.RHO_WATER
-                / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
+        double D = d50 * Math.pow(PhysicalParameters.G * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
 
-        return M / N * PhysicalParameters.KINVISCOSITY_WATER / d50
-                * Math.pow(Math.sqrt(1. / 4. + Math.pow(4. / 3. * N / M / M * D * D * D, 1. / n)) - 1. / 2., n);
+        return M / N * PhysicalParameters.KINVISCOSITY_WATER / d50 * Math.pow(Math.sqrt(1. / 4. + Math.pow(4. / 3. * N / M / M * D * D * D, 1. / n)) - 1. / 2., n);
     }
+    
+    /**
+     * Modifiziert die Schubspannungs-Komponenten basierend auf der Hangneigung
+     * (in Anlehnung an Schoklitsch).
+     *
+     * @param dzdx   Bodenänderung in X
+     * @param dzdy   Bodenänderung in Y
+     * @param tauX   Originale Schubspannung in X
+     * @param tauY   Originale Schubspannung in Y
+     * @param phi    Reibungswinkel (Radians)
+     * @return Ein Array mit {tauX_neu, tauY_neu}
+     */
+    public static double[] getSlopeCorrectedTau(double dzdx, double dzdy, double tauX, double tauY, double phi) {
+        
+        // 1. Gradienten-Betrag (Steigung)
+        double gradMag = Math.sqrt(dzdx * dzdx + dzdy * dzdy);
 
+        // Bei flachem Boden: Keine Änderung
+        if (gradMag < 1.0e-6) {
+            return new double[]{tauX, tauY};
+        }
+
+        // 2. Betrag der Schubspannung
+        double tauMag = Math.sqrt(tauX * tauX + tauY * tauY);
+        if (tauMag < 1.0e-6) {
+            return new double[]{0.0, 0.0};
+        }
+
+        // 3. Skalarprodukt und Cosinus (Winkel zwischen Strömung und Hangneigung)
+        double dotProduct = -1.0 * (tauX * dzdx) + (tauY * dzdy);
+        double cosTheta = dotProduct / (tauMag * gradMag);
+
+        // Clamping (Sicherheit gegen Rundungsfehler)
+        if (cosTheta > 1.0) cosTheta = 1.0;
+        if (cosTheta < -1.0) cosTheta = -1.0;
+
+        // 4. Beta (Hangneigungswinkel)
+        double slopeAngleBeta = Math.atan(gradMag);
+
+        // 5. Berechnung des Schoklitsch-Faktors K
+        // K = sin(phi + cosTheta * beta) / sin(phi)
+        double termInsideSin = phi + (cosTheta * slopeAngleBeta);
+        
+        // Sicherheitscheck: Verhindert negative Argumente im Sinus (physikalisch unmöglich, aber numerisch denkbar)
+        // Wenn termInsideSin <= 0, würde das Sediment von alleine Rutschen (Hangneigung > Reibungswinkel)
+        if (termInsideSin <= 0.0001) {
+             // Extremfall: Das Sediment ist instabil. 
+             // Man könnte Tau hier extrem erhöhen, um "Lawinen" zu simulieren.
+             // Wir setzen einen Mindestwert für den Sinus-Term.
+             termInsideSin = 0.0001; 
+        }
+
+        double factorK = Math.sin(termInsideSin) / Math.sin(phi);
+
+        // 6. Anwendung auf Tau ("Inverse" Anwendung)
+        // Tau_eff = Tau_orig / K
+        // Damit wir nicht durch 0 teilen:
+        if (factorK < 1.0e-4) factorK = 1.0e-4;
+
+        double correction = 1.0 / factorK;
+
+        return new double[]{tauX * correction, tauY * correction};
+    }
+    
+    public double getCriticalShearStressSchoklitsch(
+            double dzdx,
+            double dzdy,
+            double tauX,
+            double tauY,
+            double tauC0
+    ) {
+        return calculateCriticalShearStressSchoklitsch(
+                dzdx, dzdy, tauX, tauY, tauC0, getInnerFrictionAngle(d50)
+        );
+    }
+    
+    /**
+     * Berechnet die kritische Schubspannung nach dem modifizierten Ansatz von Schoklitsch.
+     *
+     * @param dzdx   Änderung der Bodenhöhe in x-Richtung
+     * @param dzdy   Änderung der Bodenhöhe in y-Richtung
+     * @param tauX   Komponente der aktuellen Schubspannung in x-Richtung (Fließrichtung)
+     * @param tauY   Komponente der aktuellen Schubspannung in y-Richtung
+     * @param tauC0  Kritische Schubspannung auf ebener Sohle (Shields)
+     * @param phi    Innerer Reibungswinkel (Angle of Repose) in Bogenmaß (Radians)!
+     * @return Die korrigierte kritische Schubspannung (tau_c)
+     */
+    public static double calculateCriticalShearStressSchoklitsch(
+            double dzdx,
+            double dzdy,
+            double tauX,
+            double tauY,
+            double tauC0,
+            double phi
+    ) {
+        // 1. Betrag des Bodengradienten (Steigung)
+        // Entspricht ||grad zB||
+        double gradMag = Math.sqrt(dzdx * dzdx + dzdy * dzdy);
+
+        // Sonderfall: Wenn der Boden flach ist (Steigung nahe 0), 
+        // ist keine Korrektur nötig (und wir vermeiden Division durch Null).
+        if (gradMag < 1.0e-6) {
+            return tauC0;
+        }
+
+        // 2. Betrag der aktuellen Schubspannung (Vektorlänge von tau)
+        // Entspricht ||tau||
+        double tauMag = Math.sqrt(tauX * tauX + tauY * tauY);
+
+        // Wenn keine Strömung da ist, Rückfall auf Basiswert
+        if (tauMag < 1.0e-6) {
+            return tauC0;
+        }
+
+        // 3. Skalarprodukt von tau und grad zB
+        // Entspricht Vektor(tau) * Vektor(grad zB)
+        double dotProduct = -1.0 * (tauX * dzdx) + (tauY * dzdy);
+
+        // 4. Berechnung des Cosinus-Terms (der Bruch in der Formel)
+        // cos(theta) = (a . b) / (|a| * |b|)
+        double cosTheta = dotProduct / (tauMag * gradMag);
+
+        // Sicherheitsmaßnahme: Durch Fließkomma-Ungenauigkeiten kann der Wert
+        // theoretisch leicht über 1.0 oder unter -1.0 rutschen -> korrigieren.
+        if (cosTheta > 1.0) cosTheta = 1.0;
+        if (cosTheta < -1.0) cosTheta = -1.0;
+
+        // 5. Der Term arctan(||grad zB||)
+        // Das ist faktisch der Neigungswinkel des Bodens (Beta)
+        double slopeAngleBeta = Math.atan(gradMag);
+
+        // 6. Zusammensetzen des Terms innerhalb des Sinus
+        // sin(phi + (cosTheta * slopeAngleBeta))
+        double termInsideSin = phi + (cosTheta * slopeAngleBeta);
+
+        // 7. Finale Berechnung
+        // tau_c = (sin(...) / sin(phi)) * tau_c0
+        double tauC = (Math.sin(termInsideSin) / Math.sin(phi)) * tauC0;
+
+        // Sicherheit: Kritische Schubspannung sollte nicht negativ sein
+        return Math.max(0.0, tauC);
+    }
+    
     public static void mainTest(String... args) {
-        double d50 = 1e-4;
+        double d50=1e-4;
+        System.out.println("Initial d50: " + d50);
+        System.out.println("wc: " + getWC_WuAndWang(d50));
+        
+        d50=1e-3;
         System.out.println("Initial d50: " + d50);
         System.out.println("wc: " + getWC_WuAndWang(d50));
 
-        d50 = 1e-3;
-        System.out.println("Initial d50: " + d50);
-        System.out.println("wc: " + getWC_WuAndWang(d50));
-
-        d50 = 1e-2;
+        d50=1e-2;
         System.out.println("Initial d50: " + d50);
         System.out.println("wc: " + getWC_WuAndWang(d50));
 
     }
-
+    
     /**
      * Durchlaessigkeit based on Bear, J.: Dyinamics of Fluid in Porous Media,
      * Elsevier, New York, USA, 1972.
      *
-     * @param d50      in mm
+     * @param d50 in mm
      * @param porosity between 0 an 1
      * @return Permeability in m/s
      */
@@ -460,8 +580,7 @@ public class SedimentProperties
     public SedimentProperties clone() throws CloneNotSupportedException {
         SedimentProperties rvalue = (SedimentProperties) super.clone();
         rvalue.dmax = dmax; // [m] groesztes verfuegbares Korn (entspricht in etwa d_95*2)
-        rvalue.d50 = d50; // [m] mittlerer Kordurchmesser, wenn eine Verteilung da ist soll dieser Wert
-                          // berechnet werden
+        rvalue.d50 = d50; // [m] mittlerer Kordurchmesser, wenn eine Verteilung da ist soll dieser Wert berechnet werden
         rvalue.dmin = dmin; // [m] kleinstes verfuegbares Korn (entspricht in etwa d_05/2)
         rvalue.initialSorting = initialSorting;
         rvalue.sorting = sorting;
@@ -477,7 +596,8 @@ public class SedimentProperties
                 + sqr(this.d50 - y.d50)
                 + sqr(this.dmin - y.dmin)
                 + sqr(this.initialSorting - y.initialSorting)
-                + sqr(this.consolidation - y.consolidation));
+                + sqr(this.consolidation - y.consolidation)
+        );
     }
 
     @Override

@@ -33,7 +33,7 @@ import java.util.*;
 
 /**
  * @author Peter Milbradt
- * @version 4.9.3
+ * @version 4.10.0
  */
 public class SedimentModel2DData extends SedimentProperties implements ModelData {
 
@@ -97,9 +97,11 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     double tau_cr = CSF * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)
             * PhysicalParameters.G * d50;
     double rC;
+    double rd50;
     double rZTransport; // for Transport
     double rZCorrect; // for Diffusion
     double dzCdt;
+    double dd50dt;
 
     double duneHeight = 0;
     double duneLengthX = 0;
@@ -119,6 +121,40 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         dmin = d50 / 10.;
         d50init = d50;
         setD50(d50);
+    }
+    
+    /**
+     * Modifiziert die Schubspannungs-Komponenten basierend auf der Hangneigung
+     * (in Anlehnung an Schoklitsch).
+     *
+     * @param dzdx   Bodenänderung in X
+     * @param dzdy   Bodenänderung in Y
+     * @param tauX   Originale Schubspannung in X
+     * @param tauY   Originale Schubspannung in Y
+     * @return Ein Array mit {tauX_neu, tauY_neu}
+     */
+    public double[] getSlopeCorrectedTau(double dzdx, double dzdy, double tauX, double tauY) {
+        return getSlopeCorrectedTau( dzdx, dzdy, tauX, tauY, getInnerFrictionAngle(d50));
+    }
+    
+    /**
+     * Berechnet die kritische Schubspannung nach dem modifizierten Ansatz von Schoklitsch.
+     *
+     * @param dzdx   Änderung der Bodenhöhe in x-Richtung
+     * @param dzdy   Änderung der Bodenhöhe in y-Richtung
+     * @param tauX   Komponente der aktuellen Schubspannung in x-Richtung (Fließrichtung)
+     * @param tauY   Komponente der aktuellen Schubspannung in y-Richtung
+     * @return Die korrigierte kritische Schubspannung (tau_c)
+     */
+    public double getCriticalShearStressSchoklitsch(
+            double dzdx,
+            double dzdy,
+            double tauX,
+            double tauY
+    ) {
+        return calculateCriticalShearStressSchoklitsch(
+                dzdx, dzdy, tauX, tauY, tau_cr, getInnerFrictionAngle(d50)
+        );
     }
 
     /**

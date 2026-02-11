@@ -131,6 +131,9 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 GroundWater2DData.extract(dof).upperImpermeableLayer = groundwaterdat.standartUpperImpermeabilityThickness;
             }
         }
+
+        // Elementweise Parameter aus den Knotenwerten ableiten (kf, S0, zG)
+        updateElementHydraulicParameters();
         
         
         
@@ -142,6 +145,29 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             System.out.println(e.getMessage());
             throw new RuntimeException(e);
         } 
+    }
+
+    private void updateElementHydraulicParameters() {
+        for (FElement felement : fenet.getFElements()) {
+            final GroundWater2DElementData eleData = element_data[felement.number];
+            final DOF[] dofs = felement.getDOFs();
+            final int n = dofs.length;
+            if (n <= 0) {
+                continue;
+            }
+            double meanKf = 0.;
+            double meanS0 = 0.;
+            double meanZG = 0.;
+            for (DOF dof : dofs) {
+                final GroundWater2DData gwd = dof_data[dof.number];
+                meanKf += gwd.kf;
+                meanS0 += gwd.S0;
+                meanZG += gwd.zG;
+            }
+            eleData.kf = meanKf / n;
+            eleData.S0 = meanS0 / n;
+            eleData.mean_zG = meanZG / n;
+        }
     }
     
     @Override
@@ -483,6 +509,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         
         FTriangle ele = (FTriangle) element;
         DOF[] dofs=element.getDOFs();
+        final GroundWater2DElementData eleData = element_data[ele.number];
         
         final double[][] koeffmat = ele.getkoeffmat();
         
@@ -498,7 +525,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         int iwatt = 0;
         int ibound = 0;
         
-        double kf=0.; // TODO aus den Elementparametern lesen
+        final double kf = eleData.kf;
+        final double S0 = Math.max(eleData.S0, 1e-9); // effektive Porositaet
         
         // compute element derivations
         for ( int j = 0; j < 3; j++) {
@@ -524,12 +552,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             
             h[j]=dof_data[i].h;
             
-            kf+=dof_data[i].kf/3.;
-            
 //            q[j]=0.01 * dof_data[i].source;
         }
-
-        double S0=0.25;     // effektive Porositaet TODO aus den Elementparametern lesen
         
         if(iwatt!=0){
             hdx=0.;
@@ -587,8 +611,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 DOF dof = dofs[j];
                 int i = dof.number; 
                 synchronized (dof_data[i]) {
-                    dof_data[i].nu += u;
-                    dof_data[i].nv += v;
+                    dof_data[i].nu += u * ele.area;
+                    dof_data[i].nv += v * ele.area;
                 }
                 double result_H_i = +tau_cur * ( koeffmat[j][1] * u * LRes + koeffmat[j][2] * v * LRes );
                 
@@ -599,7 +623,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                         result_H_i += 1./S0 * vorfaktor*(m[l]*(koeffmat[j][1] * u + koeffmat[j][2] * v));
                 }
                 synchronized (dof){
-                        dof_data[i].rh += result_H_i;
+                        dof_data[i].rh += result_H_i * ele.area;
                 }
         }
             return timeStep;
@@ -630,16 +654,14 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
 
         Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> {
             final GroundWater2DData gwd = dof_data[dof.number];
-            final int gamma = dof.getNumberofFElements();
-
-            gwd.rh *= 3. / gamma;
+            gwd.rh /= dof.lumpedMass;
             gwd.rh += gwd.source;
             final double rh = beta0 * gwd.rh + beta1 * gwd.dhdt;  // zusaetzliche Stabilisierung in Anlehnung an expliziten Adams-Bashforth 2. Ordnung
 
             gwd.dhdt = gwd.rh;  gwd.rh = 0.;
 
-            gwd.u = gwd.nu / gamma;
-            gwd.v = gwd.nv / gamma;
+            gwd.u = gwd.nu / (dof.lumpedMass * 3.);
+            gwd.v = gwd.nv / (dof.lumpedMass * 3.);
             gwd.nu = 0.;
             gwd.nv = 0.;
 

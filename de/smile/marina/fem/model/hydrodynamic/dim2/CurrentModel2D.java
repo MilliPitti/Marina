@@ -1026,8 +1026,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                             * (cmd.u * detady - cmd.v * detadx)
                             / reduceFactor;
                     synchronized (cmd) {
-                        cmd._tau_bx_extra -= coeff * (-cmd.v);
-                        cmd._tau_by_extra -= coeff * (+cmd.u);
+                        cmd._tau_bx_extra -= coeff * (-cmd.v) * ele.area;
+                        cmd._tau_by_extra -= coeff * (+cmd.u) * ele.area;
                     }
                 }
             }
@@ -1120,8 +1120,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                     cmd.puddleLambda = ((cmd.puddleLambda < puddleLambda) ? puddleLambda : cmd.puddleLambda);
 
-                    cmd._dhdx += detadx;
-                    cmd._dhdy += detady;
+                    cmd._dhdx += detadx * ele.area;
+                    cmd._dhdy += detady * ele.area;
                 }
             }
         }
@@ -2333,17 +2333,17 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final CurrentModel2DData cmd = dof_data[dof.number];
             final SedimentModel2DData smd = SedimentModel2DData.extract(dof);
 
-            final int gamma = dof.getNumberofFElements();
+            final double area = dof.lumpedMass * 3.;
 
-            cmd.dhdx = cmd._dhdx / gamma;   cmd._dhdx=0.;
-            cmd.dhdy = cmd._dhdy / gamma;   cmd._dhdy=0.;
+            cmd.dhdx = cmd._dhdx / area;   cmd._dhdx=0.;
+            cmd.dhdy = cmd._dhdy / area;   cmd._dhdy=0.;
 
             cmd.ru /= dof.lumpedMass;
             cmd.rv /= dof.lumpedMass;
             cmd.reta /= dof.lumpedMass;
 
-            cmd.tau_bx_extra = cmd._tau_bx_extra / gamma;
-            cmd.tau_by_extra = cmd._tau_by_extra / gamma;
+            cmd.tau_bx_extra = cmd._tau_bx_extra / area;
+            cmd.tau_by_extra = cmd._tau_by_extra / area;
             cmd._tau_bx_extra = 0.;
             cmd._tau_by_extra = 0.;
 
@@ -2361,11 +2361,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 source_dhdt = cmd.sourceh.getValue(time);
             }
             if (cmd.sourceQ != null) {
-                double area = 0.;
-                FElement[] feles = dof.getFElements();
-                for (FElement fele : feles) { // muss nicht jedes mal neu berechet werden
-                    area += fele.getVolume();
-                }
                 source_dhdt = cmd.sourceQ.getValue(time) / area;
             }
             final GroundWater2DData gwdata = GroundWater2DData.extract(dof);

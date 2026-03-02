@@ -425,12 +425,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         return k;
     }
 
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    } // end getRateofChange
-
     // ----------------------------------------------------------------------
     // ElementApproximation
     // ----------------------------------------------------------------------
@@ -1259,13 +1253,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
     // ----------------------------------------------------------------------
     // write_erg_xf
     // ----------------------------------------------------------------------
-    /**
-     * @deprecated
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-    } // end write_erg_xf
+    // end write_erg_xf
 
     // ----------------------------------------------------------------------
     // write_erg_xf

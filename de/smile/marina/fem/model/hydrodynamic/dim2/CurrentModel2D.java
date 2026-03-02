@@ -566,13 +566,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         return null;
     }
-
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    }
-
     /**
      * FEM-Approximation for a FElement (FTriangle)
      * 
@@ -985,7 +978,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
                                 + cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
-                if (!cmd.boundary) cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
+                cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
                 // Impulsgleichung y
                 terms_v[j] =
@@ -1006,7 +999,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // CouplingTerm from the derivation of the Formulation q -> v
                                 + cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
-                if (!cmd.boundary) cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
+                cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
 
                 // ToDo ins Sedimentmodell
                 if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements
@@ -1038,7 +1031,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double operatornorm_y = c0 + Math.abs(v_mean);
             final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
             final double tau_cur = 0.5 * elementsize / operatornorm;
-            timeStep = tau_cur;
+            
+            // Neuer, konservativer Skalierungsfaktor
+            final double residual_norm = Math.sqrt(cureq1_mean * cureq1_mean + cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean);
+            final double lmb = Math.min(1, 10.*residual_norm);
+            final double scaleFactor = lmb + (1 - lmb) * 2;
+            timeStep = tau_cur*scaleFactor;
 
             for (int j = 0; j < 3; j++) {
 
@@ -1895,8 +1893,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
     }
 
     /**
-     * the method readNikuradseCoeff read the datas for Nikuradse coefficients in
-     * [mm]
+     * the method readNikuradseCoeff read the datas for Nikuradse coefficients in [mm]
      * from a sysdat-file named nam
      * 
      * @param nam name of the file to be open
@@ -1933,8 +1930,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             if (rand_knoten < 0 || rand_knoten > 10000000 || gebiets_knoten < 0 || gebiets_knoten > 10000000) {
                 throw new Exception("Fehler");
             }
-
-            // System.out.println(""+rand_knoten+" "+gebiets_knoten);
 
             // Knoten einlesen
             int p_count = 0;
@@ -1992,19 +1987,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
         }
 
     }
-
-    /**
-     * The method write_erg_xf
-     * 
-     * @param erg
-     * @param t
-     * @deprecated
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    } // end write_erg_xf
 
     @Override
     public int getTicadErgMask() {

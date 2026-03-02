@@ -28,9 +28,6 @@ import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEdge;
 import javax.swing.*;
-import de.smile.math.ode.ivp.HeunTStep;
-import de.smile.math.ode.ivp.SimpleTStep;
-import de.smile.math.ode.ivp.IVP;
 
 public class MainMacroscopicTrafficModel1D extends JCanvas {
 
@@ -63,9 +60,6 @@ public class MainMacroscopicTrafficModel1D extends JCanvas {
 
     double[] mtrafficerg = mtraffic1d.initialSolution(0.); // Anfangswerte (Initialisierung)
 
-    // SimpleTStep methode = new EulerTStep();
-    SimpleTStep methode = new HeunTStep();
-
     mtraffic1d.setMaxTimeStep(0.001); // Zeitschritt
 
     double startTime = 0.0; // [sec]
@@ -76,7 +70,17 @@ public class MainMacroscopicTrafficModel1D extends JCanvas {
     mtraffic1d.draw_it(getGraphics(), mtrafficerg, startTime);
     for (double t = startTime; t < endTime; t += dt) {
 
-      mtrafficerg = IVP.Solve(mtraffic1d, t, mtrafficerg, t + dt, methode);
+      double ta = t;
+      double te = t + dt;
+      do {
+        double ts = mtraffic1d.getMaxTimeStep();
+        if ((ta + ts) > te) {
+          ts = te - ta;
+        }
+        mtraffic1d.timeStep(ts);
+        ta += ts;
+      } while (ta < te);
+      mtrafficerg = getState(mtraffic1d);
 
       mtraffic1d.draw_it(getGraphics(), mtrafficerg, t + dt);
       repaint();
@@ -87,5 +91,18 @@ public class MainMacroscopicTrafficModel1D extends JCanvas {
 
   public static void main(String args[]) {
     new MainMacroscopicTrafficModel1D();
+  }
+
+  private double[] getState(MacroscopicTrafficModel1D mtraffic1d) {
+    DOF[] dofs = fed.getDOFs();
+    int n = dofs.length;
+    double[] state = new double[2 * n];
+    for (DOF dof : dofs) {
+      int i = dof.number;
+      MacroscopicTrafficModel1DData data = MacroscopicTrafficModel1DData.extract(dof);
+      state[i] = data.v;
+      state[n + i] = data.rho;
+    }
+    return state;
   }
 }

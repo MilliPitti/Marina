@@ -30,7 +30,5 @@ package de.smile.marina.fem;
  * @author milbradt
  */
 public interface TicadModel {
-    public void write_erg_xf(double[] erg, double t);
-
     public int getTicadErgMask();
 }

@@ -28,6 +28,7 @@ import javax.vecmath.*;
 import java.util.*;
 
 import bijava.math.ifunction.*;
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 
 
@@ -51,20 +52,19 @@ import de.smile.math.Function;
  * @version 2.7.4
  * @author Peter Milbradt
  */
-public class  NitrogenModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel  {
+public class  NitrogenModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel  {
     
     private DataOutputStream xf_os = null;
     private FileOutputStream xf_fs = null;
     
     private Vector<DOF> initsc = new Vector<>();
     
-    private int n,SKonc,numberofdofs;
+    private int n,numberofdofs;
     private Vector<BoundaryCondition> bskonc  = new Vector<>();
     
     private NitrogenDat nitratdat;
     
-    private double[] x;     // zum Speichern der Zustandsgroessen
-    double[] result;
+    private double previousTimeStep = 0.0;
     
     // Erdbeschleunigung
     static final double RhoWater = 998.2;       // Water density
@@ -96,9 +96,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         initialDOFs();
         
         numberofdofs = fenet.getNumberofDOFs();
-        SKonc = 0;
         n = numberofdofs;
-        result = new double[n];
         
         try {
             xf_fs = new FileOutputStream(nitratdat.xferg_name);
@@ -173,9 +171,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
     //------------------------------------------------------------------------
     public double[] initialSolution(double time){
         this.time = time;
-        
-        double x[] = new double[getResultSize()];
-        
+
         System.out.println("NitratModel - Werte Initialisieren");
         DOF[] dof = fenet.getDOFs();
 //        for (int j=0; j<dof.length;j++){
@@ -189,15 +185,12 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
 //            nitratmodeldata.skonc=x[SKonc + i];
 //        }
         for (int j=0; j<dof.length;j++){
-            int i = dof[j].number;
-            
             NitrogenModel2DData nitratmodeldata = NitrogenModel2DData.extract(dof[j]);
-            
-            nitratmodeldata.skonc = x[SKonc + i] = initialNitratConcentration(dof[j],time);
+            nitratmodeldata.skonc = initialNitratConcentration(dof[j],time);
         }
         initsc=null;
-        write_erg_xf(x, time);
-        return x;
+        write_erg_xf();
+        return null;
     }//end initialSolution
     
      /** Read the start solution from file
@@ -257,8 +250,6 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
             // bis zum record-Satz springen
             inStream.skip((4+anzKnoten*anzWerte*4)*record);
             
-            x = new double[getResultSize()];
-            
             float time=inStream.readFloat();
             for (int i = 0;i<fenet.getNumberofDOFs();i++){
                 DOF dof=fenet.getDOF(i);
@@ -284,9 +275,8 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                     inStream.skip(8);
                 }
 
-                if (H_gesetzt) {
-                    nmd.skonc = x[SKonc + i] = inStream.readFloat();
-                }
+                if (H_gesetzt)
+                    nmd.skonc = inStream.readFloat();
 
                 if (SALT_gesetzt) {
                     inStream.skip(4);
@@ -313,36 +303,46 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                 }
             }
         }
-        return x;
+        return null;
     }
     
     //------------------------------------------------------------------------
-    // getRateofChange
     //------------------------------------------------------------------------
-    @Override
-    public double[] getRateofChange(double time, double x[]){
-        this.x = x;
-        this.time = time;
-        
-        for(int i=0;i<result.length;i++) result[i]=0.;
 
+    @Override
+    public void timeStep(double dt) {
         setBoundaryConditions();
-        
-        maxTimeStep = 10000.;
-        
-        // Elementloop
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
-        
+
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
+        }
+
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             NitrogenModel2DData nitmodeldata = NitrogenModel2DData.extract(dof);
             int gamma = dof.getNumberofFElements();
-            result[SKonc+i] *= 3. / gamma;
-            nitmodeldata.dskoncdt = result[SKonc+i];
+            nitmodeldata.rskonc *= 3. / gamma;
+
+            double rNit = beta0 * nitmodeldata.rskonc + beta1 * nitmodeldata.dskoncdt;
+            nitmodeldata.dskoncdt = nitmodeldata.rskonc;
+            nitmodeldata.rskonc = 0.;
+
+            nitmodeldata.skonc += dt * rNit;
+            if (nitmodeldata.skonc < 0.) {
+                nitmodeldata.skonc = 0.;
+            }
         }
-        
-        return result;        
-    } // end getRateofChange
+
+        this.previousTimeStep = dt;
+        this.time += dt;
+    }
     
     //------------------------------------------------------------------------
     // ElementApproximation
@@ -429,16 +429,16 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                     final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
-                    synchronized (result) {
-                        result[SKonc+i] -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean);
+                    synchronized (dof) {
+                        NitrogenModel2DData.extract(dof).rskonc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean);
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
                         final double vorfak = (l == j) ? 1./6. : 1./12.;
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
-                        synchronized (result) {
-                            result[SKonc+i] -= vorfak * terms_Nit[l]*gl;
+                        synchronized (dof) {
+                            NitrogenModel2DData.extract(dof).rskonc -= vorfak * terms_Nit[l]*gl;
                         }
                     }
                 }
@@ -456,10 +456,12 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         NitrogenModel2DData nitmodeldata = NitrogenModel2DData.extract(dof);
         
         /* prevention of negative concentration */
-        if (x[SKonc + i] <= 0.)   x[SKonc + i] = 0.;
+        if (nitmodeldata.skonc <= 0.) {
+            nitmodeldata.skonc = 0.;
+        }
         
         if (nitmodeldata.bsc != null){
-            x[SKonc + i] = nitmodeldata.bsc.getValue(t);
+            nitmodeldata.skonc = nitmodeldata.bsc.getValue(t);
             nitmodeldata.dskoncdt = nitmodeldata.bsc.getDifferential(t);
         }
 
@@ -474,7 +476,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                             tmpdata = NitrogenModel2DData.extract(elem.getDOF((ll+ii)%3));
                             int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
-                                x[SKonc + i] = (9.*x[SKonc + i] + 1. * x[SKonc + jtmp])/10.;
+                                nitmodeldata.skonc = (9. * nitmodeldata.skonc + 1. * tmpdata.skonc) / 10.;
                             }
                         }
                     }
@@ -483,7 +485,9 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
             }
         }
         
-        nitmodeldata.skonc = x[SKonc + i];
+        if (nitmodeldata.skonc < 0.) {
+            nitmodeldata.skonc = 0.;
+        }
     }//end setBoundaryCondition
     
     //------------------------------------------------------------------------
@@ -511,28 +515,23 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
     //------------------------------------------------------------------------
     // write_erg_xf
     //------------------------------------------------------------------------
+//end write_erg_xf
+
     @Override
-    public void write_erg_xf(double[] erg, double t) {
+    public void write_erg_xf() {
         try {
-            xf_os.writeFloat((float) t);
+            xf_os.writeFloat((float) time);
             for (DOF dof : fenet.getDOFs()) {
-                int i = dof.number;
-//                CurrentModel2DData  currentmodeldata = CurrentModel2DData.extract(dof[j]);
-//                double erg1=0.0;
-//                double erg2=0.0;
-                if (erg[SKonc + i] < 0.) {
-                    erg[SKonc + i] = 0.;    // Peter 12.03.10
+                double erg3 = NitrogenModel2DData.extract(dof).skonc;
+                if (erg3 < 0.) {
+                    erg3 = 0.;
                 }
-                double M = 14.0067 + 3. * 15.9994; //Molare Masse Nitrat
-                double erg3 = erg[SKonc + i];//*M/1000*10; //Umrechnung von micromol/l in mg/l und 10-fach �berh�ht
-//                xf_os.writeFloat((float)erg1);
-//                xf_os.writeFloat((float)erg2);
                 xf_os.writeFloat((float) erg3);
             }
             xf_os.flush();
         } catch (Exception e) {
         }
-    }//end write_erg_xf
+    }
 
     //------------------------------------------------------------------------
     // getSourceSunk

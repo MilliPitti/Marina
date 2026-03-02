@@ -30,7 +30,6 @@ import de.smile.marina.fem.model.hydrodynamic.dim2.*;
 import de.smile.marina.fem.model.hydrodynamic.dim3.*;
 import de.smile.marina.fem.model.meteorology.*;
 import de.smile.marina.io.*;
-import de.smile.math.ode.ivp.*;
 import de.smile.xml.marina.*;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -48,7 +47,7 @@ public class MarinaXML {
     
     public final static int majorversion = 4;
     public final static int minorversion = 10;
-    public final static String update = "0";
+    public final static String update = "1";
 
     public final static boolean release=true;
     
@@ -165,21 +164,17 @@ public class MarinaXML {
                 System.out.println("Number of threads:     "+numberOfThreads);
                 System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(Math.max(2,numberOfThreads)));
 
-                SimpleTStep methode = new EulerTStep();
-                ((EulerTStep)methode).setNumberOfThreads(numberOfThreads);
-
 // Configuration
                 de.smile.xml.marina.Marina.Configuration configuration = mcp.getConfiguration();
 
 // generate modellvector
-                ArrayList<TimeDependentFEModel> TimeDependentFEModels = new ArrayList<>();
+                ArrayList<TimeDependentModel> timeDependentModels = new ArrayList<>();
 
 // Meteorology
 //--------------
                 if( configuration.getMeteorologyCondition() != null && configuration.getMeteorologicalModel2D()==null) {
                     OKWindModel meteorologyModel = new OKWindModel(feapp, base_dir+configuration.getMeteorologyCondition().getFileName());
-                    double[] meteorologyerg = meteorologyModel.initialSolution(startTime);
-                    TimeDependentFEModels.add(new TimeDependentFEModel(meteorologyModel, meteorologyerg));
+                    meteorologyModel.initialSolution(startTime);
                 }
 
                 if( configuration.getMeteorologicalModel2D()!=null) {
@@ -199,7 +194,7 @@ public class MarinaXML {
                         if (metModel != null) {
                             metModel.setStartTime(startTime);
                             metModel.initialSolution(startTime);
-                            TimeDependentFEModels.add(new TimeDependentFEModel(metModel, null));
+                            timeDependentModels.add(metModel);
                         }
                     }
                 }
@@ -216,7 +211,7 @@ public class MarinaXML {
                         }
                         if (bathymetricModel != null) {
                             bathymetricModel.setStartTime(startTime);
-                            TimeDependentFEModels.add(new TimeDependentFEModel(bathymetricModel, null));
+                            timeDependentModels.add(bathymetricModel);
                         }
                     }
                 }
@@ -317,6 +312,11 @@ public class MarinaXML {
                     try{
                         currentdat.watt=configuration.getCurrentModel2D().getDryFallBound();
                     } catch(Exception ex){}
+                    
+                    try{
+                        currentdat.speedUp=configuration.getCurrentModel2D().getSpeedUp();
+                        System.out.println("SpeedUp: " + currentdat.speedUp);
+                    } catch(Exception ex){}
 
                     try{                                                                                        // undocumented
                         currentdat.infiltrationRate=configuration.getCurrentModel2D().getInfiltrationRate();
@@ -385,7 +385,7 @@ public class MarinaXML {
 
                     currentmodel2D.setMaxTimeStep(Math.min(Math.abs(controlParameter.getSimulationTime().getResultTimeStep())/100.,0.1));
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(currentmodel2D, currerg));
+                    timeDependentModels.add(currentmodel2D);
                 }
 
 // CurrentModel3D
@@ -531,7 +531,7 @@ public class MarinaXML {
                                 currerg = currentmodel3D.initialSolution(startTime);
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(currentmodel3D, currerg));
+                    timeDependentModels.add(currentmodel3D);
 
                 }
 
@@ -724,7 +724,7 @@ public class MarinaXML {
                                 }
                             }
                         }
-                        TimeDependentFEModels.add(new TimeDependentFEModel(sedimentmodel, sedimenterg));
+                        timeDependentModels.add(sedimentmodel);
                     }
                 }
 
@@ -775,7 +775,7 @@ public class MarinaXML {
                     else
                         wavehyperg = wavehypmodel.initialSolution(startTime);
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(wavehypmodel, wavehyperg));
+                    timeDependentModels.add(wavehypmodel);
 
                 }
 
@@ -846,7 +846,7 @@ public class MarinaXML {
                         salterg = saltmodel.initialSolution(startTime);
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(saltmodel, salterg));
+                    timeDependentModels.add(saltmodel);
 
                 }
 
@@ -965,7 +965,7 @@ public class MarinaXML {
 
                     fluidMudModel2D.setMaxTimeStep(Math.min(Math.abs(controlParameter.getSimulationTime().getResultTimeStep())/100.,0.1));
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(fluidMudModel2D, fluidMudErg));
+                    timeDependentModels.add(fluidMudModel2D);
                 }
 
 // AdvectionDispersionModel2D
@@ -1038,7 +1038,7 @@ public class MarinaXML {
                         aderg = admodel.initialSolution(startTime);
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(admodel, aderg));
+                    timeDependentModels.add(admodel);
                 }
 
 // HeatTransport 2D
@@ -1110,7 +1110,7 @@ public class MarinaXML {
                         heatTransportErg = heatTransportModel2D.initialSolution(startTime);
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(heatTransportModel2D, heatTransportErg));
+                    timeDependentModels.add(heatTransportModel2D);
                 }
 
 // GroundWaterModel2D
@@ -1246,7 +1246,7 @@ public class MarinaXML {
                          groundwatererg = groundwatermodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(groundwatermodel, groundwatererg));
+                    timeDependentModels.add(groundwatermodel);
                 }
 
 // SpartinaAlternifloraModel2D
@@ -1291,7 +1291,7 @@ public class MarinaXML {
                     SpartinaAlternifloraModel2D heatTransportModel2D = new SpartinaAlternifloraModel2D(feapp, heatTdat);
                     heatTransportModel2D.setStartTime(startTime);
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(heatTransportModel2D, null));
+                    timeDependentModels.add(heatTransportModel2D);
                 }
 
 // OxygenTransportModel2D
@@ -1366,7 +1366,7 @@ public class MarinaXML {
 
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(oxygenTransportModel2d, oxygenerg));
+                    timeDependentModels.add(oxygenTransportModel2d);
                 }
 
 // NitratTransportModel2D
@@ -1436,7 +1436,7 @@ public class MarinaXML {
 
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(nitratmodel, nitraterg));
+                    timeDependentModels.add(nitratmodel);
                 }
 
 // PhytoplanktonModel2D
@@ -1511,7 +1511,7 @@ public class MarinaXML {
 
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(phytomodel, phytoerg));
+                    timeDependentModels.add(phytomodel);
                 }
 
 // ZooplanktonModel2D
@@ -1587,7 +1587,7 @@ public class MarinaXML {
 
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(zoomodel, zooerg));
+                    timeDependentModels.add(zoomodel);
                 }
 
 // DetritusModel2D
@@ -1660,21 +1660,17 @@ public class MarinaXML {
 
                     }
 
-                    TimeDependentFEModels.add(new TimeDependentFEModel(detritusmodel, detrituserg));
+                    timeDependentModels.add(detritusmodel);
                 }
 
 //...Anfangswerte rauschreiben.....................................
-                    for(TimeDependentFEModel m:TimeDependentFEModels){
-                        if(m.model instanceof TimeDependentModel timeDependentModel){
-                            ((TimeDependentFEApproximation) m.model).setBoundaryConditions();
-                            timeDependentModel.write_erg_xf();
-                            if (m.model instanceof CurrentModel3D currentModel3D){
-                                currentModel3D.write_erg();
-                            }
-                        }else{
-                            Object obj = m.getFEModel();
-                            if (obj instanceof TicadModel ticadModel)
-                                ticadModel.write_erg_xf(m.getResult(), startTime);
+                    for(TimeDependentModel model:timeDependentModels){
+                        if(model instanceof TimeDependentFEApproximation timeDependentFEApproximation){
+                            timeDependentFEApproximation.setBoundaryConditions();
+                        }
+                        model.write_erg_xf();
+                        if (model instanceof CurrentModel3D currentModel3D){
+                            currentModel3D.write_erg();
                         }
                     }
 
@@ -1701,8 +1697,10 @@ public class MarinaXML {
                         double ts = Double.MAX_VALUE;
 
                         //...Zeitschritt auf Courant-Schitt setzen (minim. Zeitschritt)
-                        for(TimeDependentFEModel m:TimeDependentFEModels){
-                            ts  = Math.min(ts,m.getODESystem().getMaxTimeStep()); // Zeitschritt auf Courant-Schritt
+                        for(TimeDependentModel model:timeDependentModels){
+                            if(model instanceof TimeDependentFEApproximation timeDependentFEApproximation){
+                                ts  = Math.min(ts,timeDependentFEApproximation.getMaxTimeStep()); // Zeitschritt auf Courant-Schritt
+                            }
                         }
                         if (everyTimeStep){
                             te = ta + ts;
@@ -1712,24 +1710,14 @@ public class MarinaXML {
                         if((ta+ts)>te) ts = te - ta;
 
                         //...Berechnung durchfuehren.................................
-                        for(TimeDependentFEModel m:TimeDependentFEModels){
-                            if(m.model instanceof TimeDependentModel timeDependentModel){
-                                timeDependentModel.timeStep(ts);
-                            } else
-                                m.setResult(methode.TimeStep(m.getODESystem(),  ta, ts, m.getResult()));
-                            resultIsNaN |=((FEApproximation)m.model).resultIsNaN;
+                        for(TimeDependentModel model:timeDependentModels){
+                            model.timeStep(ts);
+                            resultIsNaN |=((FEApproximation)model).resultIsNaN;
                         }
                         if (resultIsNaN)
-                            for(TimeDependentFEModel m:TimeDependentFEModels){
-                                if (m.model instanceof TimeDependentModel timeDependentModel) {
-                                    timeDependentModel.write_erg_xf();
-                                    if (m.model instanceof CurrentModel3D currentModel3D) currentModel3D.write_erg();
-                                } else {
-                                    Object obj = m.getFEModel();
-                                    if (obj instanceof TicadModel ticadModel) {
-                                        ticadModel.write_erg_xf(m.getResult(), t + dt);
-                                    }
-                                }
+                            for(TimeDependentModel model:timeDependentModels){
+                                model.write_erg_xf();
+                                if (model instanceof CurrentModel3D currentModel3D) currentModel3D.write_erg();
                             }
 
                         ta+=ts;
@@ -1739,15 +1727,9 @@ public class MarinaXML {
                     System.out.println("t+dt = "+(t+dt));
 
                     //...Ergebnisse rauschreiben.....................................
-                    for(TimeDependentFEModel m:TimeDependentFEModels){
-                        if(m.model instanceof TimeDependentModel timeDependentModel){
-                            timeDependentModel.write_erg_xf();
-                            if (m.model instanceof CurrentModel3D currentModel3D) currentModel3D.write_erg();
-                        }else{
-                            Object obj = m.getFEModel();
-                            if (obj instanceof TicadModel ticadModel)
-                                ticadModel.write_erg_xf(m.getResult(), t+dt);
-                        }
+                    for(TimeDependentModel model:timeDependentModels){
+                        model.write_erg_xf();
+                        if (model instanceof CurrentModel3D currentModel3D) currentModel3D.write_erg();
                     }
 
                     System.out.println("Runtime: "+((System.currentTimeMillis()-time)/1000/60)+" min ("+((System.currentTimeMillis()-time)/1000)+" sec )");

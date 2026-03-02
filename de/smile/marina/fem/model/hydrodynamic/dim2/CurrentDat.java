@@ -1,5 +1,5 @@
 /* ----- AGPL ------------------------------------------------------------------
- * Copyright (C) Peter Milbradt, 1996-2026
+ * Copyright (C) Peter Milbradt, 1996-2021
 
  * This file is part of Marina.
 
@@ -67,6 +67,8 @@ public class CurrentDat{
     
     public double watt = 0.01;
     public double infiltrationRate = 0.; // default value 1.e-5 for fine sand
+    
+    public double speedUp = 1;
     
     public int NumberOfThreads =2;
 }

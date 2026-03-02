@@ -23,6 +23,7 @@
  */
 package de.smile.marina.fem.model.ecological;
 
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.*;
 import de.smile.math.Function;
 import bijava.math.ifunction.DiscretScalarFunction1d;
@@ -50,7 +51,7 @@ import java.util.Vector;
  *
  * @version 1.2.15
  */
-public class DetritusModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel {
+public class DetritusModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
     
     private DataOutputStream xf_os = null;
     
@@ -58,14 +59,10 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     
     private Vector<BoundaryCondition> bsc  = new Vector<>();
     
-    private int n,DetritConc,numberofdofs;
+    private int n,numberofdofs;
     
-    private DetritusDat detritdat;
+    private double previousTimeStep = 0.0;
     
-    private double[] result;// zum speichern der Zeitableitungen
-    private double[] x;     // zum Speichern der Zustandsgroessen
-    
-    // Erdbeschleunigung
     static final double AST      = 0.0012;      // 0.0012 Austauschkoeffizient fuer Stroemung
     
     static final double BATTJESKOEFF=0.3; 	// 0.1 - 0.3 Austauschkoeffizient infolge Wellenbrechens
@@ -77,7 +74,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     public DetritusModel2D(FEDecomposition fe, DetritusDat detritdat) {
         fenet = fe;
         femodel=this;
-        this.detritdat = detritdat;
         System.out.println("DetritusModel2D initalization");
         
         setNumberOfThreads(detritdat.numberOfThreads);
@@ -92,9 +88,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
         initialDOFs();
         
         numberofdofs = fenet.getNumberofDOFs();
-        DetritConc = 0;
         n = numberofdofs;
-        result = new double[n];
         
         try {
             xf_os = new DataOutputStream(new FileOutputStream(detritdat.xferg_name));
@@ -157,7 +151,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
         System.out.println("\t Read inital values from result file "+detriterg);
 	//erstes Durchscannen
 	File sysergFile=new File(detriterg);
-        double[] x;
         try (FileInputStream stream = new FileInputStream(sysergFile); DataInputStream inStream = new DataInputStream(stream)) {
             
             // Kommentar lesen, bis ASCII-Zeichen 7 kommt
@@ -198,7 +191,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
             inStream.skip((anzElemente*4+anzr+3*anzKnoten)*4); //4 Bytes je float und int    
             // bis zum record-Satz springen
             inStream.skip((4+anzKnoten*anzWerte*4)*record);
-            x = new double[getResultSize()];
             float time=inStream.readFloat();
             for (int i = 0;i<fenet.getNumberofDOFs();i++){
                 DOF dof=fenet.getDOF(i);
@@ -224,9 +216,8 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                     inStream.skip(8);
                 }
 
-                if (H_gesetzt) {
-                    detritmodeldata.detritconc = x[DetritConc + i] = inStream.readFloat();
-                }
+                if (H_gesetzt)
+                    detritmodeldata.detritconc = inStream.readFloat();
 
                 if (SALT_gesetzt) {
                     inStream.skip(4);
@@ -253,14 +244,12 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                 }                
             }          
         }
-        return x;
+        return null;
     }
     
     public double[] readDetritConcentrationFromASCII(String name) {
 
         System.out.println("DetritusModel2D - Read inital values from ASCII file.");
-        double[] x = null;
-
         try {
             BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(name)));
 
@@ -272,14 +261,13 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
             int anzr = TicadIO.NextInt(st);
             int anzk = anzr + TicadIO.NextInt(st);
             if (fenet.getNumberofDOFs() == anzk) {
-                x = new double[getResultSize()];
                 for (int j = 0; j < anzk; j++) {
                     int pos = TicadIO.NextInt(st);
                     DOF dof = fenet.getDOF(pos);
                     DetritusModel2DData detritmodeldata = DetritusModel2DData.extract(dof);
                     TicadIO.NextDouble(st);
                     TicadIO.NextDouble(st);
-                    detritmodeldata.detritconc = x[DetritConc + j] = TicadIO.NextDouble(st);
+                    detritmodeldata.detritconc = TicadIO.NextDouble(st);
                 }
             } else {
                 System.out.println("The initial file have a different number of nodes.");
@@ -289,23 +277,21 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
             System.out.println(e.getMessage());
             throw new RuntimeException(e);
         }
-        return x;
+        return null;
     }
     
     
     public double[] initialSolution(double time){
-        
-        double x[] = new double[getResultSize()];
+        this.time = time;
         
         System.out.println("DetritusModel2D - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             DetritusModel2DData detritmodeldata = DetritusModel2DData.extract(dof);
-            detritmodeldata.detritconc = x[DetritConc + i] = initialDetritConcentration(dof, time);
+            detritmodeldata.detritconc = initialDetritConcentration(dof, time);
         }
         initsc=null;
-        write_erg_xf(x, time);
-        return x;
+        write_erg_xf();
+        return null;
     }
     
     /** initialisiert die Detrituskonzentration mit einem konstanten Wert
@@ -324,33 +310,42 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     
     
     //------------------------------------------------------------------------
-    // getRateofChange
     //------------------------------------------------------------------------
-    public double[] getRateofChange(double time, double x[]){
-        
-        this.x = x;
-        this.time = time;
-        
-        for(int i=0;i<result.length;i++) result[i]=0.;
 
+    @Override
+    public void timeStep(double dt) {
         setBoundaryConditions();
-        
-        maxTimeStep = 10000.;
-        
-        // Elementloop
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
 
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
+        }
+
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             DetritusModel2DData detritmodeldata = DetritusModel2DData.extract(dof);
             int gamma = dof.getNumberofFElements();
-            result[DetritConc+i] *= 3. / gamma;
-            detritmodeldata.dDetritConcdt = result[DetritConc+i];
+            detritmodeldata.rdetritconc *= 3. / gamma;
+
+            double rDetrit = beta0 * detritmodeldata.rdetritconc + beta1 * detritmodeldata.dDetritConcdt;
+            detritmodeldata.dDetritConcdt = detritmodeldata.rdetritconc;
+            detritmodeldata.rdetritconc = 0.;
+
+            detritmodeldata.detritconc += dt * rDetrit;
+            if (detritmodeldata.detritconc < 0.) {
+                detritmodeldata.detritconc = 0.;
+            }
         }
-        
-        return result;
-        
-    } // end getRateofChange
+
+        this.previousTimeStep = dt;
+        this.time += dt;
+    }
     
     //------------------------------------------------------------------------
     // ElementApproximation
@@ -432,19 +427,18 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                 // Fehlerkorrektur durchfuehren
                 for (int j = 0; j < 3; j++) {
                     DOF dof = ele.getDOF(j);
-                    final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
-                    synchronized (result) {
-                        result[DetritConc+i] -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean);
+                    synchronized (dof) {
+                        DetritusModel2DData.extract(dof).rdetritconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean);
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
                         double vorfak = (l == j) ? 1./6. : 1./12.;
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
-                        synchronized (result) {
-                            result[DetritConc+i] -= vorfak * terms_Detrit[l]*gl;
+                        synchronized (dof) {
+                            DetritusModel2DData.extract(dof).rdetritconc -= vorfak * terms_Detrit[l]*gl;
                         }
                     }
                 }
@@ -571,14 +565,15 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     //------------------------------------------------------------------------
     public void setBoundaryCondition(DOF dof, double t){
         
-        int i = dof.number;
         DetritusModel2DData detritmodeldata = DetritusModel2DData.extract(dof);
         
         /* prevention of negative concentration */
-        if (x[DetritConc + i] <= 0.)   x[DetritConc + i] = 0.;
+        if (detritmodeldata.detritconc <= 0.) {
+            detritmodeldata.detritconc = 0.;
+        }
         
         if (detritmodeldata.bsc != null){
-            x[DetritConc + i]=detritmodeldata.bsc.getValue(t);
+            detritmodeldata.detritconc = detritmodeldata.bsc.getValue(t);
             detritmodeldata.dDetritConcdt = detritmodeldata.bsc.getDifferential(t);
         }
 
@@ -593,7 +588,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                             tmpdata = DetritusModel2DData.extract(elem.getDOF((ll+ii)%3));
                             int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
-                                x[DetritConc + i] = (9.*x[DetritConc + i] + 1. * x[DetritConc + jtmp])/10.;
+                                detritmodeldata.detritconc = (9. * detritmodeldata.detritconc + 1. * tmpdata.detritconc) / 10.;
                             }
                         }
                     }
@@ -602,7 +597,9 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
             }
         }
         
-        detritmodeldata.detritconc = x[DetritConc + i];
+        if (detritmodeldata.detritconc < 0.) {
+            detritmodeldata.detritconc = 0.;
+        }
     }
     
     //------------------------------------------------------------------------
@@ -637,13 +634,15 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     // write_erg_xf
     //------------------------------------------------------------------------
     @Override
-    public void write_erg_xf( double[] erg, double t) {
+    public void write_erg_xf() {
         try {
-            xf_os.writeFloat((float) t);
-            DOF[] dof = fenet.getDOFs();
-            for (int j=0; j<dof.length;j++){
-                if(erg[j]<0.) erg[j]=0.;    // Peter 12.03.10
-                xf_os.writeFloat((float)erg[j]);
+            xf_os.writeFloat((float) time);
+            for (DOF dof : fenet.getDOFs()) {
+                double c = DetritusModel2DData.extract(dof).detritconc;
+                if (c < 0.) {
+                    c = 0.;
+                }
+                xf_os.writeFloat((float) c);
             }
             xf_os.flush();
         } catch (Exception e) {}

@@ -485,12 +485,6 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation
         return null;
     }
 
-    @Deprecated
-    @Override
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    } // end getRateofChange
-
     // ------------------------------------------------------------------------
     // ElementApproximation
     // ------------------------------------------------------------------------
@@ -730,13 +724,6 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation
 
         return data;
     }
-
-    @Deprecated
-    @Override
-    public void write_erg_xf(double[] erg, double t) {
-        System.out.println("deprecated method is called");
-    }
-
     @Override
     public void write_erg_xf() {
         try {

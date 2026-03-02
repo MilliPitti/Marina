@@ -192,16 +192,4 @@ public class MeteorologicalModel2D extends TimeDependentFEApproximation implemen
             }
         }
     }
-
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double[] x) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 }

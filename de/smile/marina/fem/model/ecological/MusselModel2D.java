@@ -83,12 +83,6 @@ public class MusselModel2D extends TimeDependentFEApproximation implements FEMod
 
         
     }
-
-    @Override
-    public double[] getRateofChange(double time, double[] x) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     @Override
     public ModelData genData(DOF dof) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -160,12 +154,6 @@ public class MusselModel2D extends TimeDependentFEApproximation implements FEMod
 
         return timeStep;
     }
-
-    @Override
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     @Override
     public int getTicadErgMask() {
         // Setzen der Ergebnismaske MuschelBiomasse g pro quadratmeter

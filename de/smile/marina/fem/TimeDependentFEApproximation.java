@@ -23,7 +23,6 @@
  */
 package de.smile.marina.fem;
 
-import de.smile.math.ode.ivp.ODESystem;
 import java.util.Arrays;
 import java.util.OptionalDouble;
 
@@ -31,7 +30,7 @@ import java.util.OptionalDouble;
  * @author Peter Milbradt
  * @version 3.10
  */
-public abstract class TimeDependentFEApproximation extends FEApproximation implements ODESystem {
+public abstract class TimeDependentFEApproximation extends FEApproximation {
     
     public String referenceDate = "1970-01-01 00:00:00 UTC+1"; // Reference date [yyyy-MM-dd HH:mm:ss z]
     
@@ -48,7 +47,6 @@ public abstract class TimeDependentFEApproximation extends FEApproximation imple
     //------------------------------------------------------------------------
     // setMaxTimeStep
     //------------------------------------------------------------------------
-    @Override
     synchronized public final void setMaxTimeStep(double maxtimestep){
         maxTimeStep = maxtimestep;
     }
@@ -56,7 +54,6 @@ public abstract class TimeDependentFEApproximation extends FEApproximation imple
     //------------------------------------------------------------------------
     // getMaxTimeStep
     //------------------------------------------------------------------------
-    @Override
     synchronized public final double getMaxTimeStep(){
         return maxTimeStep;
     }

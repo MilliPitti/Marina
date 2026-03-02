@@ -90,23 +90,7 @@ public class ShepardInterpolatedMeteorologicalModel2D extends TimeDependentFEApp
         return data;
     }
 
-    /**
-     * Compute the time derivations on each node by the FE-domainapproximation of
-     * the FE-Model
-     * 
-     * @param time
-     * @param x
-     * @return
-     */
-    @Override
-    public double[] getRateofChange(double time, double x[]) {
-
-        // System.out.println(time+" "+data.insolation+ " "+I_n);
-
-        return new double[1];
-    }
-
-    public double[] initialSolution(double StartTime) {
+        public double[] initialSolution(double StartTime) {
         this.time = StartTime;
 
         System.out.println("\tinterpolating initial wind feld");

@@ -22,6 +22,7 @@
  * 
  */
 package de.smile.marina.fem.model.hydrodynamic.dim1;
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
@@ -32,13 +33,12 @@ import de.smile.marina.fem.TimeDependentFEApproximation;
 import java.awt.*;
 import java.util.*;
 
-public class SedimentModel1D extends TimeDependentFEApproximation implements FEModel {
+public class SedimentModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
     static final double G = 9.81;
     static final double AST=0.0012;	     	//0.0012 Austauschkoeffizient fuer Stroemung
 
-    private int n,C,numberofdofs;
-    private double MaxTimeStep;
-    private double[] result;
+    private int n,numberofdofs;
+    private double previousTimeStep = 0.0;
 
     /** Creates new SedimentModel1D */
     public SedimentModel1D(FEDecomposition fe) {
@@ -48,9 +48,7 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
 	initialDOFs();
 
 	numberofdofs = fenet.getNumberofDOFs();
-	C = 0;
 	n = numberofdofs;
-	result = new double[n];
     }
 
     //------------------------------------------------------------------------
@@ -64,7 +62,7 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
         for (DOF dof : fenet.getDOFs()) {
             int i = dof.number;
             SedimentModel1DData smd = getSedimentModel1DData(dof);
-            x[C + i] = smd.C;
+            x[i] = smd.C;
         }
 	return x;
     }
@@ -186,7 +184,6 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
     }
 
 
-
     //------------------------------------------------------------------------
     // getResultSize
     //------------------------------------------------------------------------
@@ -195,39 +192,43 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
     }
 
     //------------------------------------------------------------------------
-    // getRateofChange
     //------------------------------------------------------------------------
-    public double[] getRateofChange(double p1,double[] x) {
-
-
+    @Override
+    public void timeStep(double dt) {
 	DOF[] dof = fenet.getDOFs();
-        for (int j=0; j<dof.length;j++){
-            int i = dof[j].number;
-	    SedimentModel1DData current = getSedimentModel1DData(dof[j]);
-
-	    current.C = x[C + i];
-
-	    current.dCdt=current.rC;
-
+        for (DOF value : dof) {
+	    SedimentModel1DData current = getSedimentModel1DData(value);
 	    current.dCdx = 0.;
-	    // set Results to zero
-	    current.rC=0.;
+	    current.rC = 0.;
 	}
 
-	MaxTimeStep = 10000.;
-
-	// Elementloop
+        setBoundaryConditions();
+        maxTimeStep = Double.MAX_VALUE;
 	performElementLoop();
 
-	dof = fenet.getDOFs();
-        for (int j=0; j<dof.length;j++){
-            int i = dof[j].number;
-	    SedimentModel1DData current = getSedimentModel1DData(dof[j]);
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            final double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
+        }
 
-	    result[C+i] = current.rC;
-	}
+        for (DOF value : dof) {
+            SedimentModel1DData current = getSedimentModel1DData(value);
+            final double rC = beta0 * current.rC + beta1 * current.dCdt;
+            current.dCdt = current.rC;
+            current.C += dt * rC;
+            if (current.C < 0.) {
+                current.C = 0.;
+            }
+            current.rC = 0.;
+        }
 
-	return result;
+        previousTimeStep = dt;
+        time += dt;
     }
 
     //------------------------------------------------------------------------
@@ -239,8 +240,8 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
 
 	g.setColor( Color.blue );
 	for( int k=0;k<anz-1;k++) {
-	    g.drawLine(	(int)(5*fenet.getDOF(k).x)+100, (int)(500.*x[C+k])+200,
-			(int)(5*fenet.getDOF(k+1).x+100), (int)(500.*x[C+k+1])+200);
+	    g.drawLine(	(int)(5*fenet.getDOF(k).x)+100, (int)(500.*x[k])+200,
+			(int)(5*fenet.getDOF(k+1).x+100), (int)(500.*x[k+1])+200);
 	}
 	/*
 	  g.setColor( Color.red );
@@ -250,5 +251,9 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
 	  }*/
 	g.setColor( Color.blue );
 
+    }
+
+    @Override
+    public void write_erg_xf() {
     }
 }

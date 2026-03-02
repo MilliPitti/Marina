@@ -536,16 +536,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         return null;
     }
 
-    /**
-     * @deprecated
-     */
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    }
-
-    /**
+        /**
      * @param element
      * @return
      */
@@ -1481,18 +1472,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         }
     } // end generateClosedBoundCond
 
-    /**
-     * The method write_erg_xf
-     * 
-     * @param erg
-     * @param t
-     * @deprecated by write_erg_xf()
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    } // end write_erg_xf
+    // end write_erg_xf
 
     @Override
     public int getTicadErgMask() {

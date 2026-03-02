@@ -614,13 +614,6 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         return null;
     }
     
-    
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    }
-    
     // ----------------------------------------------------------------------
     // ElementApproximation
     // ----------------------------------------------------------------------
@@ -2097,17 +2090,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
         return TicadIO.HRES_Z | TicadIO.HRES_V | TicadIO.HRES_H | TicadIO.HRES_SHEAR;
     }
     
-    /**
-     * The method write_erg_xf
-     * @param erg
-     * @param t
-     * @deprecated
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    } // end write_erg_xf
+    // end write_erg_xf
 
     /** The method write_erg_xf */
     @Override

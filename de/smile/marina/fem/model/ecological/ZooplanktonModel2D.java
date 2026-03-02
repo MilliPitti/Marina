@@ -24,6 +24,7 @@
 package de.smile.marina.fem.model.ecological;
 
 import bijava.math.ifunction.DiscretScalarFunction1d;
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
@@ -61,19 +62,18 @@ import javax.vecmath.Point3d;
  * @version 2.7.4
  * @author Peter Milbradt
  */
-public class ZooplanktonModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel {
+public class ZooplanktonModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
     private DataOutputStream xf_os = null;
     
     private Vector<DOF> initsc = new Vector<>();
     
     private Vector<BoundaryConditionOld> bsc  = new Vector<>();
     
-    private int n,ZooConc,numberofdofs;
+    private int n,numberofdofs;
     
     private ZooplanktonDat zoodat;
     
-    private double[] result;// zum speichern der Zeitableitungen
-    private double[] x;     // zum Speichern der Zustandsgroessen
+    private double previousTimeStep = 0.0;
     
     // Erdbeschleunigung
     static final double AST      = 0.0012;      // 0.0012 Austauschkoeffizient fuer Stroemung
@@ -100,9 +100,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         initialDOFs();
         
         numberofdofs = fenet.getNumberofDOFs();
-        ZooConc = 0;
         n = numberofdofs;
-        result = new double[n];
         
         try {
             xf_os = new DataOutputStream(new FileOutputStream(zoodat.xferg_name));
@@ -157,7 +155,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         System.out.println("\t Read inital values from result file "+zooerg);
 	//erstes Durchscannen
 	File sysergFile=new File(zooerg);
-        double[] x;
         try (FileInputStream stream = new FileInputStream(sysergFile); DataInputStream inStream = new DataInputStream(stream)) {
             
             // Kommentar lesen, bis ASCII-Zeichen 7 kommt
@@ -198,7 +195,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
             inStream.skip((anzElemente*4+anzr+3*anzKnoten)*4); //4 Bytes je float und int    
             // bis zum record-Satz springen
             inStream.skip((4+anzKnoten*anzWerte*4)*record);
-            x = new double[n];
             float time=inStream.readFloat();
             for (int i = 0;i<fenet.getNumberofDOFs();i++){
                 DOF dof=fenet.getDOF(i);
@@ -224,9 +220,8 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                     inStream.skip(8);
                 }
 
-                if (H_gesetzt) {
-                    zoomodeldata.zooconc = x[ZooConc + i] = inStream.readFloat();
-                }
+                if (H_gesetzt)
+                    zoomodeldata.zooconc = inStream.readFloat();
 
                 if (SALT_gesetzt) {
                     inStream.skip(4);
@@ -253,7 +248,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                 }
             }          
         }
-        return x;
+        return null;
     }
     
     
@@ -460,7 +455,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
     public double[] readZooConcentrationFromASCII(String name){
         
         System.out.println("ZooplanktonModel2D - Read inital values from ASCII file.");
-        double[] x = null;
         
         InputStream is = null;
 	try
@@ -478,34 +472,31 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
 	int anzr = TicadIO.NextInt(st);
 	int anzk = anzr + TicadIO.NextInt(st);
         if (fenet.getNumberofDOFs() == anzk){
-            x = new double[n];
             for(int j = 0;j<anzk;j++) {
                 int pos=TicadIO.NextInt(st);
                 DOF dof=fenet.getDOF(pos);
                 ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
                 TicadIO.NextDouble(st);
                 TicadIO.NextDouble(st);
-                zoomodeldata.zooconc = x[ZooConc + j] = TicadIO.NextDouble(st);
+                zoomodeldata.zooconc = TicadIO.NextDouble(st);
             }
         } else
             System.out.println("The initial file have a different number of nodes.");
-        return x;
+        return null;
     }
     
     
     public double[] initialSolution(double time){
-        
-        double x[] = new double[n];
+        this.time = time;
         
         System.out.println("ZooplanktonModel2D - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
-            zoomodeldata.zooconc = x[ZooConc + i] = initialZooConcentration(dof, time);
+            zoomodeldata.zooconc = initialZooConcentration(dof, time);
         }
         initsc=null;
-        write_erg_xf(x, time);
-        return x;
+        write_erg_xf();
+        return null;
     }
     
     /** initialisiert die Phytoplanktonkonzentration mit einem konstanten Wert
@@ -524,37 +515,44 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
     
     
     //------------------------------------------------------------------------
-    // getRateofChange
     //------------------------------------------------------------------------
-    @Override
-    public double[] getRateofChange(double time, double x[]){
-        
-        this.x = x;
-        this.time = time;
-        
-        for(int i=0;i<result.length;i++) result[i]=0.;
 
+    @Override
+    public void timeStep(double dt) {
         setBoundaryConditions();
-        
-        maxTimeStep = 10000.;
-        
-        // Elementloop
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
-        
+
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
+        }
+
         DOF[] dof = fenet.getDOFs();
         for (int j=0; j<dof.length;j++){
-            int i = dof[j].number;
             ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof[j]);
             int gamma = dof[j].getNumberofFElements();
-            
-            result[ZooConc+i] *= 3. / gamma;
-            
-            zoomodeldata.dZooConcdt = result[ZooConc+i];
+
+            zoomodeldata.rzooconc *= 3. / gamma;
+
+            double rZoo = beta0 * zoomodeldata.rzooconc + beta1 * zoomodeldata.dZooConcdt;
+            zoomodeldata.dZooConcdt = zoomodeldata.rzooconc;
+            zoomodeldata.rzooconc = 0.;
+
+            zoomodeldata.zooconc += dt * rZoo;
+            if (zoomodeldata.zooconc < 0.) {
+                zoomodeldata.zooconc = 0.;
+            }
         }
-        
-        return result;
-        
-    } // end getRateofChange
+
+        this.previousTimeStep = dt;
+        this.time += dt;
+    }
     
     //------------------------------------------------------------------------
     // ElementApproximation
@@ -640,16 +638,16 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                     final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
-                    synchronized (result) {
-                        result[ZooConc + i] -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean );
+                    synchronized (dof) {
+                        ZooplanktonModel2DData.extract(dof).rzooconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean );
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
                         final double vorfak = (l == j) ? 1./6. : 1./12.;
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
-                        synchronized (result) {
-                            result[ZooConc+i] -= vorfak * terms_Zoo[l]*gl;
+                        synchronized (dof) {
+                            ZooplanktonModel2DData.extract(dof).rzooconc -= vorfak * terms_Zoo[l]*gl;
                         }
                     }
                 }
@@ -803,10 +801,12 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
         
         /* prevention of negative concentration */
-        if (x[ZooConc + i] <= 0.)   x[ZooConc + i] = 0.;
+        if (zoomodeldata.zooconc <= 0.) {
+            zoomodeldata.zooconc = 0.;
+        }
         
         if (zoomodeldata.bsc != null){
-            x[ZooConc + i]=zoomodeldata.bsc.getValue(t);
+            zoomodeldata.zooconc = zoomodeldata.bsc.getValue(t);
             zoomodeldata.dZooConcdt = zoomodeldata.bsc.getDifferential(t);
         }
 
@@ -821,7 +821,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                             tmpdata = ZooplanktonModel2DData.extract(elem.getDOF((ll+ii)%3));
                             int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
-                                x[ZooConc + i] = (9.*x[ZooConc + i] + 1. * x[ZooConc + jtmp])/10.;
+                                zoomodeldata.zooconc = (9. * zoomodeldata.zooconc + 1. * tmpdata.zooconc) / 10.;
                             }
                         }
                     }
@@ -830,7 +830,9 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
             }
         }
         
-        zoomodeldata.zooconc = x[ZooConc + i];
+        if (zoomodeldata.zooconc < 0.) {
+            zoomodeldata.zooconc = 0.;
+        }
     }
     
     //------------------------------------------------------------------------
@@ -864,13 +866,16 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
     // write_erg_xf
     //------------------------------------------------------------------------
     @Override
-    public void write_erg_xf( double[] erg, double t) {
+    public void write_erg_xf() {
         try {
-            xf_os.writeFloat((float) t);
+            xf_os.writeFloat((float) time);
             DOF[] dof = fenet.getDOFs();
-            for (int j=0; j<dof.length;j++){
-                if(erg[j]<0.) erg[j]=0.;    // Peter 12.03.10
-                xf_os.writeFloat((float)erg[j]);
+            for (DOF value : dof) {
+                double c = ZooplanktonModel2DData.extract(value).zooconc;
+                if (c < 0.) {
+                    c = 0.;
+                }
+                xf_os.writeFloat((float) c);
             }
             xf_os.flush();
         } catch (Exception e) {}

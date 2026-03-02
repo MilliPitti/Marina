@@ -23,6 +23,7 @@
  */
 package de.smile.marina.fem.model.traffic;
 
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
@@ -42,10 +43,10 @@ import java.awt.*;
  * @author Peter Milbradt
  * @version 1.1
  */
-public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation implements FEModel {
+public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
 
-  private int n, V, RHO, numberofdofs;
-  private double[] result;
+  private int n, numberofdofs;
+  private double previousTimeStep = 0.0;
 
   double vf = 130.0 / 3.6; // Wunschgeschwindigkeit (130 km/h )
   double rhoMax = 175.0 / 1000.0; // maximale Dichte (175 Fz/km)
@@ -69,10 +70,7 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     initialDOFs();
 
     numberofdofs = fenet.getNumberofDOFs();
-    V = 0;
-    RHO = numberofdofs;
     n = 2 * numberofdofs;
-    result = new double[n];
   }
 
   /**
@@ -89,8 +87,8 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     for (DOF dof1 : dof) {
       int i = dof1.number;
       MacroscopicTrafficModel1DData mtmd = getMacroscopicTrafficModel1DData(dof1);
-      x[RHO + i] = mtmd.rho;
-      x[V + i] = mtmd.v;
+      x[numberofdofs + i] = mtmd.rho;
+      x[i] = mtmd.v;
     }
     return x;
   }
@@ -245,39 +243,44 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     }
     return cmd;
   }
-
   @Override
-  public double[] getRateofChange(double p1, double[] x) {
+  public void timeStep(double dt) {
     DOF[] dof = fenet.getDOFs();
     for (DOF dof1 : dof) {
-      int i = dof1.number;
       MacroscopicTrafficModel1DData mtmd = getMacroscopicTrafficModel1DData(dof1);
-      mtmd.rho = Math.min(rhoMax, x[RHO + i]);
-      mtmd.v = Math.max(0., x[V + i]);
-      setBoundaryCondition(dof1, p1);
-      x[RHO + i] = mtmd.rho;
-      x[V + i] = mtmd.v;
+      mtmd.rho = Math.min(rhoMax, mtmd.rho);
+      mtmd.v = Math.max(0., mtmd.v);
       mtmd.drhodt = mtmd.rrho;
       mtmd.dvdt = mtmd.rv;
       mtmd.dvdx = 0.;
-      // set Results to zero
       mtmd.rv = 0.;
       mtmd.rrho = 0.;
     }
 
-    maxTimeStep = 10000.;
-
-    // Elementloop
+    setBoundaryConditions();
+    maxTimeStep = Double.MAX_VALUE;
     performElementLoop();
 
+    final double beta0, beta1;
+    if (previousTimeStep == 0.0) {
+      beta0 = 1.0;
+      beta1 = 0.0;
+    } else {
+      final double omega = dt / previousTimeStep / 2.;
+      beta0 = 1.0 + omega;
+      beta1 = -omega;
+    }
+
     for (DOF dof1 : dof) {
-      int i = dof1.number;
       MacroscopicTrafficModel1DData mtmd = getMacroscopicTrafficModel1DData(dof1);
-      result[V + i] = mtmd.rv;
-      result[RHO + i] = (3. * mtmd.rrho - mtmd.drhodt) / 2.;
+      final double rV = beta0 * mtmd.rv + beta1 * mtmd.dvdt;
+      final double rRho = beta0 * mtmd.rrho + beta1 * mtmd.drhodt;
+      mtmd.v = Math.max(0., mtmd.v + dt * rV);
+      mtmd.rho = Math.min(rhoMax, Math.max(0., mtmd.rho + dt * rRho));
     }
     first = false;
-    return result;
+    previousTimeStep = dt;
+    time += dt;
   }
 
   public void draw_it(Graphics g, double[] x, double t) {
@@ -293,16 +296,16 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     g.setColor(Color.black);
     for (int k = 0; k < knoten - 1; k++)
       g.drawLine(100 + (int) (0.02 * fenet.getDOF(k).x),
-          300 - (int) (1200.00 * x[RHO + k]),
+          300 - (int) (1200.00 * x[numberofdofs + k]),
           100 + (int) (0.02 * fenet.getDOF(k + 1).x),
-          300 - (int) (1200.00 * x[RHO + k + 1]));
+          300 - (int) (1200.00 * x[numberofdofs + k + 1]));
 
     g.setColor(Color.red);
     for (int k = 0; k < knoten - 1; k++)
       g.drawLine(100 + (int) (0.02 * fenet.getDOF(k).x),
-          300 - (int) (3.60 * x[V + k]),
+          300 - (int) (3.60 * x[k]),
           100 + (int) (0.02 * fenet.getDOF(k + 1).x),
-          300 - (int) (3.60 * x[V + k + 1]));
+          300 - (int) (3.60 * x[k + 1]));
 
     g.setColor(Color.blue);
     g.drawString("Zeit: " + Integer.toString((int) t) + " s", 100, 350);
@@ -354,5 +357,9 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     double T = 1.8;
     double help = (1.0 - rho / rhoMax);
     return (vf * rho * T * T / (tau * A(rhoMax) * help * help));
+  }
+
+  @Override
+  public void write_erg_xf() {
   }
 }

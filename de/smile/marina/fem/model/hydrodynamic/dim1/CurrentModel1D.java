@@ -23,6 +23,7 @@
  */
 package de.smile.marina.fem.model.hydrodynamic.dim1;
 
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
@@ -40,14 +41,14 @@ import java.awt.*;
  * @author Prof. Dr.-Ing. habil. Peter Milbradt
  * @version 3.15.5
  */
-public class CurrentModel1D extends TimeDependentFEApproximation implements FEModel {
+public class CurrentModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
     static final double G = 9.81;
     static final double AST = 0.0012; // 0.0012 Austauschkoeffizient fuer Stroemung
 
     static public double WATT = 0.05;
 
-    private final int n, U, H, numberofdofs;
-    private final double[] result;
+    private final int n, numberofdofs;
+    private double previousTimeStep = 0.0;
 
     /**
      * Creates new CurrentModel1D
@@ -61,10 +62,7 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         initialDOFs();
 
         numberofdofs = fenet.getNumberofDOFs();
-        U = 0;
-        H = numberofdofs;
         n = 2 * numberofdofs;
-        result = new double[n];
     }
 
     /**
@@ -80,8 +78,8 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         for (DOF dof : fenet.getDOFs()) {
             int i = dof.number;
             CurrentModel1DData cmd = CurrentModel1DData.extract(dof);
-            x[H + i] = cmd.h;
-            x[U + i] = 0.;
+            x[numberofdofs + i] = cmd.h;
+            x[i] = 0.;
         }
         return x;
     }
@@ -243,48 +241,53 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         return timeStep;
     }
 
-    /**
-     * getRateofChange
-     * 
-     * @return
-     */
-    @Override
-    public double[] getRateofChange(double p1, double[] x) {
-
+        @Override
+    public void timeStep(double dt) {
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             CurrentModel1DData current = CurrentModel1DData.extract(dof);
-            if ((dof.z + x[H + i]) <= 0.) {
-                x[H + i] = -dof.z;
-                x[U + i] = 0.;
+            if ((dof.z + current.h) <= 0.) {
+                current.h = -dof.z;
+                current.u = 0.;
             }
-            // if ((dof[j].z + x[H + i]) < WATT) x[U + i] *= (dof[j].z + x[H + i])/WATT;
-            current.h = x[H + i];
-            current.u = x[U + i];
-            setBoundaryCondition(dof, p1);
-            x[H + i] = current.h;
-            x[U + i] = current.u;
             current.dudx = 0.;
-            // set Results to zero
             current.ru = 0.;
             current.rh = 0.;
         }
 
-        // Elementloop
+        setBoundaryConditions();
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
 
-        for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
-            CurrentModel1DData current = CurrentModel1DData.extract(dof);
-
-            result[U + i] = current.ru;
-            result[H + i] = current.rh;
-
-            current.dudt = result[U + i];
-            current.dhdt = result[H + i];
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            final double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
         }
 
-        return result;
+        for (DOF dof : fenet.getDOFs()) {
+            CurrentModel1DData current = CurrentModel1DData.extract(dof);
+
+            final double ru = beta0 * current.ru + beta1 * current.dudt;
+            final double rh = beta0 * current.rh + beta1 * current.dhdt;
+
+            current.dudt = current.ru;
+            current.dhdt = current.rh;
+
+            current.u += dt * ru;
+            current.h += dt * rh;
+
+            if ((dof.z + current.h) <= 0.) {
+                current.h = -dof.z;
+                current.u = 0.;
+            }
+        }
+
+        previousTimeStep = dt;
+        time += dt;
     }
 
     public void draw_it(Graphics g, double[] x, double time) {
@@ -297,10 +300,14 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
 
         g.setColor(Color.blue);
         for (int k = 0; k < anz - 1; k++) {
-            if ((fenet.getDOF(k + 1).z + x[H + k]) >= 0.)
-                g.drawLine((int) (10 * fenet.getDOF(k).x), 400 - ((int) (50. * x[H + k]) + 200),
-                        (int) (10 * fenet.getDOF(k + 1).x), 400 - ((int) (50. * x[H + k + 1]) + 200));
+            if ((fenet.getDOF(k + 1).z + x[numberofdofs + k]) >= 0.)
+                g.drawLine((int) (10 * fenet.getDOF(k).x), 400 - ((int) (50. * x[numberofdofs + k]) + 200),
+                        (int) (10 * fenet.getDOF(k + 1).x), 400 - ((int) (50. * x[numberofdofs + k + 1]) + 200));
         }
+    }
+
+    @Override
+    public void write_erg_xf() {
     }
 
     @Override

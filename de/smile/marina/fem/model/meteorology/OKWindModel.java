@@ -32,8 +32,6 @@ import de.smile.marina.fem.FEModel;
 import de.smile.marina.fem.FElement;
 import de.smile.marina.fem.ModelData;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
-import de.smile.math.ode.ivp.ODESystem;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -46,7 +44,7 @@ import java.io.StreamTokenizer;
  *
  * @author milbradt
  */
-public class OKWindModel extends FEApproximation implements ODESystem, FEModel {
+public class OKWindModel extends FEApproximation implements FEModel {
 
     ScalarFunction1d windx = null;
     ScalarFunction1d windy = null;
@@ -105,51 +103,6 @@ public class OKWindModel extends FEApproximation implements ODESystem, FEModel {
     @Override
     public ModelData genData(DOF dof) {
         return data;
-    }
-
-    /**
-     * Compute the time derivations on each node by the FE-domainapproximation of
-     * the FE-Model
-     * 
-     * @param time
-     * @param x
-     * @return
-     */
-    // public double[] getRateofChange(double time, double x[]){
-    // if(windtimeseries != null){
-    // double[] w = windtimeseries.getRateofChange(time);
-    // data.windx = w[0];
-    // data.windy = w[1];
-    // data.windspeed = Function.norm(w[0],w[1]);
-    // }
-    // return new double[1];
-    // }
-
-    @Override
-    public double[] getRateofChange(double time, double x[]) {
-
-        if (windx != null)
-            data.windx = windx.getValue(time);
-        if (windy != null)
-            data.windy = windy.getValue(time);
-
-        data.windspeed = Function.norm(data.windx, data.windy);
-
-        return new double[] { data.windspeed };
-    }
-
-    // @Override
-    // public int getResultSize() {
-    // return 1;
-    // }
-
-    @Override
-    public void setMaxTimeStep(double maxtimestep) {
-    }
-
-    @Override
-    public double getMaxTimeStep() {
-        return Double.MAX_VALUE;
     }
 
     public double[] initialSolution(double StartTime) {

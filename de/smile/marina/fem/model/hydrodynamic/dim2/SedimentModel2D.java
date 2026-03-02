@@ -936,17 +936,6 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     }
 
     // ------------------------------------------------------------------------
-    // getRateofChange
-    // ------------------------------------------------------------------------
-    @Deprecated
-    @Override
-    public double[] getRateofChange(double time, double x[]) {
-
-        return null;
-
-    } // end getRateofChange
-
-    // ------------------------------------------------------------------------
     // ElementApproximation
     // ------------------------------------------------------------------------
     @Override
@@ -2099,11 +2088,6 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     // ------------------------------------------------------------------------
     // write_erg_xf
     // ------------------------------------------------------------------------
-    @Deprecated
-    @Override
-    public void write_erg_xf(double[] erg, double t) {
-    }
-
     // ------------------------------------------------------------------------
     // write_erg_xf
     // ------------------------------------------------------------------------

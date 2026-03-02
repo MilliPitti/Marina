@@ -79,6 +79,9 @@
                                         <element name="Latitude"
                                                  type="double" minOccurs="0" maxOccurs="1">
                                         </element>
+                                        <element name="SpeedUp"
+                                                 type="double" minOccurs="0" maxOccurs="1">
+                                        </element>
                                         <element
                                             name="BoundaryCondition" maxOccurs="1"
                                             minOccurs="1">
@@ -2244,6 +2247,7 @@
             <enumeration value="RossinskyDebolsky"/>
             <enumeration value="Bagnold1966"/>
             <enumeration value="vanRijn84"/>
+            <enumeration value="Yang_1973"/>
         </restriction>
     </simpleType>
 

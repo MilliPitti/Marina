@@ -24,6 +24,7 @@
 package de.smile.marina.fem.model.ecological;
 
 import bijava.math.ifunction.DiscretScalarFunction1d;
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
@@ -60,7 +61,7 @@ import javax.vecmath.Point3d;
  *
  * @version 1.8.42
  */
-public class PhytoplanktonModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel {
+public class PhytoplanktonModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
     private DataOutputStream xf_os = null;
     private FileOutputStream xf_fs = null;
     
@@ -68,12 +69,11 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
     
     private Vector<BoundaryCondition> bsc  = new Vector<>();
     
-    private int n,PhytoConc,numberofdofs;
+    private int n,numberofdofs;
     
     private PhytoplanktonDat phytodat;
     
-    private double[] result;// zum speichern der Zeitableitungen
-    private double[] x;     // zum Speichern der Zustandsgroessen
+    private double previousTimeStep = 0.0;
     
     // Erdbeschleunigung
     static final double AST      = 0.0012;      // 0.0012 Austauschkoeffizient fuer Stroemung
@@ -101,9 +101,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         initialDOFs();
         
         numberofdofs = fenet.getNumberofDOFs();
-        PhytoConc = 0;
         n = numberofdofs;
-        result = new double[n];
         
         try {
             xf_fs = new FileOutputStream(phytodat.xferg_name);
@@ -181,7 +179,6 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         System.out.println("\t Read inital values from result file "+phytoerg);
 	//erstes Durchscannen
 	File sysergFile=new File(phytoerg);
-        double[] x;
         try (FileInputStream stream = new FileInputStream(sysergFile); DataInputStream inStream = new DataInputStream(stream)) {
             
 // Kommentar lesen, bis ASCII-Zeichen 7 kommt
@@ -223,7 +220,6 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
             inStream.skip((anzElemente*4+anzr+3*anzKnoten)*4); //4 Bytes je float und int    
             // bis zum record-Satz springen
             inStream.skip((4+anzKnoten*anzWerte*4)*record);
-            x = new double[getResultSize()];
             float time=inStream.readFloat();
             for (int i = 0;i<fenet.getNumberofDOFs();i++){
                 DOF dof=fenet.getDOF(i);
@@ -249,9 +245,8 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                     inStream.skip(8);
                 }
 
-                if (H_gesetzt) {
-                    phytomodeldata.phytoconc = x[PhytoConc + i] = inStream.readFloat();
-                }
+                if (H_gesetzt)
+                    phytomodeldata.phytoconc = inStream.readFloat();
 
                 if (SALT_gesetzt) {
                     inStream.skip(4);
@@ -278,13 +273,12 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                 }
             }          
         }
-        return x;
+        return null;
     }
     
     public double[] readPhytoConcentrationFromASCII(String name) throws IOException{
         
         System.out.println("PhytoplanktonModel2D - Read inital values from ASCII file.");
-        double[] x = null;
         try (FileInputStream is = new FileInputStream(name);){
 	    
 	BufferedReader r = new BufferedReader(new InputStreamReader(is));
@@ -297,66 +291,72 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
 	int anzr = TicadIO.NextInt(st);
 	int anzk = anzr + TicadIO.NextInt(st);
         if (fenet.getNumberofDOFs() == anzk){
-            x = new double[getResultSize()];
             for(int j = 0;j<anzk;j++) {
                 int pos=TicadIO.NextInt(st);
                 DOF dof=fenet.getDOF(pos);
                 PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
                 TicadIO.NextDouble(st);
                 TicadIO.NextDouble(st);
-                phytomodeldata.phytoconc = x[PhytoConc + j] = TicadIO.NextDouble(st);
+                phytomodeldata.phytoconc = TicadIO.NextDouble(st);
             }
         } else
             System.out.println("The initial file have a different number of nodes.");
         }
-        return x;
+        return null;
     }
     
     
     public double[] initialSolution(double time){
-        
-        double x[] = new double[getResultSize()];
+        this.time = time;
         
         System.out.println("PhytoplanktonModel2D - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
-            phytomodeldata.phytoconc = x[PhytoConc + i] = initialPhytoConcentration(dof, time);
+            phytomodeldata.phytoconc = initialPhytoConcentration(dof, time);
         }
         initsc=null;
-        write_erg_xf(x, time);
-        return x;
+        write_erg_xf();
+        return null;
     }
     
     
     //------------------------------------------------------------------------
-    // getRateofChange
     //------------------------------------------------------------------------
-    public double[] getRateofChange(double time, double x[]){
-        
-        this.x = x;
-        this.time = time;
-        
-        for(int i=0;i<result.length;i++) result[i]=0.;
 
+    @Override
+    public void timeStep(double dt) {
         setBoundaryConditions();
-        
-        maxTimeStep = 10000.;
-        
-        // Elementloop
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
-        
+
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
+        }
+
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
             int gamma = dof.getNumberofFElements();
-            result[PhytoConc+i] *= 3. / gamma;
-            phytomodeldata.dPhytoConcdt = result[PhytoConc+i];
+            phytomodeldata.rphytoconc *= 3. / gamma;
+
+            double rPhyto = beta0 * phytomodeldata.rphytoconc + beta1 * phytomodeldata.dPhytoConcdt;
+            phytomodeldata.dPhytoConcdt = phytomodeldata.rphytoconc;
+            phytomodeldata.rphytoconc = 0.;
+
+            phytomodeldata.phytoconc += dt * rPhyto;
+            if (phytomodeldata.phytoconc < 0.) {
+                phytomodeldata.phytoconc = 0.;
+            }
         }
-        
-        return result;
-        
-    } // end getRateofChange
+
+        this.previousTimeStep = dt;
+        this.time += dt;
+    }
     
     //------------------------------------------------------------------------
     // ElementApproximation
@@ -443,16 +443,16 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                     final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
-                    synchronized (result) {
-                        result[PhytoConc+i] -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean );
+                    synchronized (dof) {
+                        PhytoplanktonModel2DData.extract(dof).rphytoconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean );
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
                         final double vorfak = (l == j) ? 1./6. : 1./12.;
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
-                        synchronized (result) {
-                            result[PhytoConc+i] -= vorfak * terms_Phyto[l]*gl;
+                        synchronized (dof) {
+                            PhytoplanktonModel2DData.extract(dof).rphytoconc -= vorfak * terms_Phyto[l]*gl;
                         }
                     }
                 }
@@ -634,10 +634,12 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
         
         /* prevention of negative concentration */
-        if (x[PhytoConc + i] <= 0.)   x[PhytoConc + i] = 0.;
+        if (phytomodeldata.phytoconc <= 0.) {
+            phytomodeldata.phytoconc = 0.;
+        }
         
         if (phytomodeldata.bsc != null){
-            x[PhytoConc + i]=phytomodeldata.bsc.getValue(t);
+            phytomodeldata.phytoconc = phytomodeldata.bsc.getValue(t);
             phytomodeldata.dPhytoConcdt = phytomodeldata.bsc.getDifferential(t);
         }
 
@@ -652,7 +654,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                             tmpdata = PhytoplanktonModel2DData.extract(elem.getDOF((ll+ii)%3));
                             int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
-                                x[PhytoConc + i] = (9.*x[PhytoConc + i] + 1. * x[PhytoConc + jtmp])/10.;
+                                phytomodeldata.phytoconc = (9. * phytomodeldata.phytoconc + 1. * tmpdata.phytoconc) / 10.;
                             }
                         }
                     }
@@ -661,7 +663,9 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
             }
         }
         
-        phytomodeldata.phytoconc = x[PhytoConc + i];
+        if (phytomodeldata.phytoconc < 0.) {
+            phytomodeldata.phytoconc = 0.;
+        }
     }
     
     //------------------------------------------------------------------------
@@ -695,17 +699,19 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
     // write_erg_xf
     //------------------------------------------------------------------------
     @Override
-    public void write_erg_xf( double[] erg, double t) {
+    public void write_erg_xf() {
         try {
-            xf_os.writeFloat((float) t);
-            DOF[] dof = fenet.getDOFs();
-            for (int j=0; j<dof.length;j++){
-                if(erg[j]<0.) erg[j]=0.;    // Peter 12.03.10
-                xf_os.writeFloat((float)erg[j]);
+            xf_os.writeFloat((float) time);
+            for (DOF dof : fenet.getDOFs()) {
+                double c = PhytoplanktonModel2DData.extract(dof).phytoconc;
+                if (c < 0.) {
+                    c = 0.;
+                }
+                xf_os.writeFloat((float) c);
             }
             xf_os.flush();
         } catch (Exception e) {}
-    }    
+    }
     
     /** the method readConcentrationDat read the datas for skonc 
      *  from a sysdat-file named filename

@@ -23,6 +23,7 @@
  */
 package de.smile.marina.fem.model.hydrodynamic.wave;
 
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.model.meteorology.WindData;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
@@ -50,7 +51,7 @@ import de.smile.marina.fem.TimeDependentFEApproximation;
  * @version 1.2
  * @author Peter Milbradt
  */
-public class  SpectralWaveModel extends TimeDependentFEApproximation implements FEModel {
+public class  SpectralWaveModel extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
     
     private DataOutputStream xf_os = null;
     private DataOutputStream sp_os = null;
@@ -59,9 +60,7 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
     
     private Vector<WBoundaryCondition> bcs = new Vector<>(); // temp boundary conditions
     
-    private double MaxTimeStep;
     int n;
-    double[] result;
     SpectralWaveDat wavedat;
     WindData winddata;
     
@@ -114,7 +113,6 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
         initialDOFs();
         
         n =  wavedat.frequencylength * wavedat.directionlength * fenet.getNumberofDOFs();
-        result = new double[n];
         
         try {
             sp_fs = new FileOutputStream(wavedat.specoutname);
@@ -197,124 +195,107 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
                 }
             }
         }
-        write_erg_xf(x, time);
+        write_erg_xf();
         return x;
     }
     
-    /**
-     */
-    @Override
-    public double[] getRateofChange(double time, double x[]){
-        
+        @Override
+    public void timeStep(double dt){
         double windx=0., windy=0.;
-        
-        // Werte Aktualisieren
-		for (int j=0; j<fenet.getNumberofDOFs(); j++){
-			DOF dof = (DOF) fenet.getDOF(j);
+        final double[] state = new double[n];
+
+        for (int j=0; j<fenet.getNumberofDOFs(); j++){
+            DOF dof = fenet.getDOF(j);
             int i = dof.number;
-            
+
             SpectralWaveModelData spectralwavemodeldata = SpectralWaveModelData.extract(dof);
-            
             CurrentModel2DData currentdata = CurrentModel2DData.extract(dof);
-            
+
             double z = dof.z;
             SedimentModel2DData sedimentdata = SedimentModel2DData.extract(dof);
             if (sedimentdata != null)
                 z  = sedimentdata.z;
 
-            double depth;
-            if(currentdata!=null) depth = Math.max(WATT,z+currentdata.eta);
-            else depth = Math.max(WATT,z);
-            
+            final double depth = (currentdata!=null) ? Math.max(WATT,z+currentdata.eta) : Math.max(WATT,z);
+
             if (winddata!=null) {
                 double[] wind=winddata.getValue(dof, time);
                 windx=wind[0];
                 windy=wind[1];
             }
-            
+
             DiscreteSpectrum2D s=spectralwavemodeldata.n;
-            DiscreteSpectrum2D sdt=spectralwavemodeldata.dndt;
-            
-            // set mean RadiationStress to zero
+
             spectralwavemodeldata.sxx=0.;
             spectralwavemodeldata.sxy=0.;
             spectralwavemodeldata.syy=0.;
-            
-            // update of DOF-values
-            for (int ai=0; ai<s.getDirectionLength(); ai++)
-                for (int fi=0; fi<s.getFrequencyLength(); fi++)	{
-                    s.setValueAt(fi,ai,x[GlobalIndex( fi, ai, i)]);
-                    sdt.setValueAt(fi,ai, result[GlobalIndex( fi, ai, i)]);
-                }
-            
+
             // Einarbeiten der Randbedingungen
             setBoundaryCondition(dof, time);
-            
+
             for (int ai=0; ai<s.getDirectionLength(); ai++){
                 for (int fi=0; fi<s.getFrequencyLength(); fi++){
-                    
+
                     double[] werte = s.getValueAt(fi,ai);
                     double sigma=2.*Math.PI * werte[0];
-                    
-                    x[GlobalIndex( fi, ai, i)]=werte[2];
-                    // update other values
-                    
+                    state[GlobalIndex(fi, ai, i)] = werte[2];
+
                     double wavenumber=WaveFunction.WaveNumber(depth,sigma);
                     double c = sigma/wavenumber;
                     double cg = 0.5 * (1. + 2. * wavenumber * depth / sinh(2. * wavenumber * depth)) * c;
                     spectralwavemodeldata.wavenumber.setValueAt(fi,ai,wavenumber);
                     spectralwavemodeldata.Cg.setValueAt(fi,ai,cg);
-                    
-                    // Battes/Janssen Wave breaking
+
                     double wavebr=Math.PI/(7.*wavenumber)*tanh(7.*MICHEKOEFF/Math.PI*wavenumber*depth);
                     wavebr=Math.min(wavebr,Math.pow(MICHEKOEFF*depth,2.));
                     spectralwavemodeldata.wavebreaking.setValueAt(fi,ai,wavebr);
-                    
-                    // Windinput
+
                     double uwind = Math.max(0., Math.cos(Math.PI * werte[1] / 180.)*windx+Math.sin(Math.PI * werte[1] / 180.)*windy);
                     double alpha=0., beta=0.;
                     if ((wavebr-werte[2])<=0.){
-                        // Hsiao und Shemdin
                         beta = 0.12*RhoAir/RhoWater*sigma*Math.pow(Math.max(0.,8./3./Math.PI*uwind/c-1.),2);
-                        // Cavalieri und Rizzoli [1981]
                         alpha = 80.*RhoAir*RhoAir*sigma/(RhoWater*RhoWater*G*G*wavenumber*wavenumber)*C_D*C_D*Math.pow(uwind,4.);
                     }
                     spectralwavemodeldata.windinput.setValueAt(fi,ai,alpha+beta*werte[2]);
-                    
-                    //  RadiationStress
-                    double n=cg/c;
-                    spectralwavemodeldata.sxx += werte[2] * (n*Math.pow(Math.cos(Math.PI * werte[1] / 180.),2)+n-0.5);
-                    spectralwavemodeldata.sxy += werte[2] *  n*Math.cos(Math.PI * werte[1] / 180.)*Math.sin(Math.PI * werte[1] / 180.);
-                    spectralwavemodeldata.syy += werte[2] * (n*Math.pow(Math.sin(Math.PI * werte[1] / 180.),2)+n-0.5);
+
+                    double nn=cg/c;
+                    spectralwavemodeldata.sxx += werte[2] * (nn*Math.pow(Math.cos(Math.PI * werte[1] / 180.),2)+nn-0.5);
+                    spectralwavemodeldata.sxy += werte[2] *  nn*Math.cos(Math.PI * werte[1] / 180.)*Math.sin(Math.PI * werte[1] / 180.);
+                    spectralwavemodeldata.syy += werte[2] * (nn*Math.pow(Math.sin(Math.PI * werte[1] / 180.),2)+nn-0.5);
                 }
             }
-            
-            // set Results to zero
+
             spectralwavemodeldata.re.setZero();
         }
-        
-        MaxTimeStep = 10000.;
-        
-        // Elementloop
+
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
-        
+
         for (int j=0; j<fenet.getNumberofDOFs(); j++){
-            DOF dof = (DOF) fenet.getDOF(j);
+            DOF dof = fenet.getDOF(j);
             int i = dof.number;
             int gamma = dof.getNumberofFElements();
-            
+
             SpectralWaveModelData spectralwavemodeldata = SpectralWaveModelData.extract(dof);
-            
+            DiscreteSpectrum2D s = spectralwavemodeldata.n;
+            DiscreteSpectrum2D sdt = spectralwavemodeldata.dndt;
+
             for (int ai=0; ai<spectralwavemodeldata.re.getDirectionLength(); ai++){
                 for (int fi=0; fi<spectralwavemodeldata.re.getFrequencyLength(); fi++){
-                    
-                    result[GlobalIndex( fi, ai, i)] = (3. / gamma * spectralwavemodeldata.re.getValueAt(fi,ai)[2]);
-                    if ((x[GlobalIndex( fi, ai, i)]<=0.) && (result[GlobalIndex( fi, ai, i)]<=0.))
-                        result[GlobalIndex( fi, ai, i)] = 0.;
+                    double r = (3. / gamma * spectralwavemodeldata.re.getValueAt(fi,ai)[2]);
+                    int idx = GlobalIndex(fi, ai, i);
+                    if ((state[idx]<=0.) && (r<=0.))
+                        r = 0.;
+                    double nnew = state[idx] + dt * r;
+                    if (nnew < 0.) {
+                        nnew = 0.;
+                    }
+                    s.setValueAt(fi, ai, nnew);
+                    sdt.setValueAt(fi, ai, r);
                 }
             }
         }
-        return result;
+        this.time += dt;
     }
     
     // ElementApproximation
@@ -746,19 +727,13 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
             }
         }
     }
-    
-    public void write_erg_xf( double[] erg, double t) {
+    @Override
+    public void write_erg_xf() {
         try {
-            xf_os.writeFloat((float) t);
+            xf_os.writeFloat((float) time);
             for (DOF dof : fenet.getDOFs()) {
-                int i = dof.number;
                 SpectralWaveModelData spectralwavedata = SpectralWaveModelData.extract(dof);
                 DiscreteSpectrum2D s=spectralwavedata.n;
-                
-                // update of DOF-values
-                for (int ai=0; ai<s.getDirectionLength(); ai++)
-                    for (int fi=0; fi<s.getFrequencyLength(); fi++)
-                        s.setValueAt(fi,ai,erg[GlobalIndex( fi, ai, i)]);
                 
                 double[] werte = s.getExpectedDirection();
                 if (s.getDiscreteMax()[2]>WATT){
@@ -1145,5 +1120,3 @@ class BSHDat{
         this.date=date;
     }
 }
-
-

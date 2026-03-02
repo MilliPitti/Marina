@@ -31,8 +31,6 @@ import bijava.graphics.JCanvas;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEdge;
-import de.smile.math.ode.ivp.HeunTStep;
-import de.smile.math.ode.ivp.SimpleTStep;
 import javax.swing.*;
 import java.awt.*;
 
@@ -87,11 +85,6 @@ public class MainCurrentGroundwater1D extends Object {
 
     //    sediment1d.setNumberOfThreads(2);
 
-//    RKETStep methode = new RK_2_3_TStep();
-//    SimpleTStep methode = new EulerTStep();
-    SimpleTStep methode = new HeunTStep();
-    //ABMTStep   methode = new ABMTStep();
-
     Graphics g = jcanvas.getGraphics();
     
     current1d.setMaxTimeStep(0.01);                             // Zeitschritt
@@ -124,12 +117,18 @@ public class MainCurrentGroundwater1D extends Object {
 	    
 	    if((ta+ts)>te) ts = te - ta;
 
-	    if (currenterg  != null) currenterg  = methode.TimeStep(current1d,  ta, ts, currenterg);
-	    if (groundwatererg != null) groundwatererg = methode.TimeStep(groundwater1d, ta, ts, groundwatererg);
+	    if (currenterg  != null) current1d.timeStep(ts);
+	    if (groundwatererg != null) groundwater1d.timeStep(ts);
 
 	    ta+=ts;
 
 	} while (ta<te);
+        if (currenterg != null) {
+            currenterg = getCurrentState(current1d);
+        }
+        if (groundwatererg != null) {
+            groundwatererg = getGroundwaterState(groundwater1d);
+        }
 	
         
 	if (groundwatererg  != null) groundwater1d.draw_it(jcanvas.getGraphics(), groundwatererg,  t+dt);
@@ -166,6 +165,31 @@ public class MainCurrentGroundwater1D extends Object {
    */
   public static void main (String args[]) {
     MainCurrentGroundwater1D e = new MainCurrentGroundwater1D();
+  }
+
+  private double[] getCurrentState(CurrentModel1D current1d) {
+      DOF[] dofs = fed.getDOFs();
+      int n = dofs.length;
+      double[] state = new double[2 * n];
+      for (DOF dof : dofs) {
+          int i = dof.number;
+          CurrentModel1DData data = CurrentModel1DData.extract(dof);
+          state[i] = data.u;
+          state[n + i] = data.h;
+      }
+      return state;
+  }
+
+  private double[] getGroundwaterState(GroundwaterModel1D groundwater1d) {
+      DOF[] dofs = fed.getDOFs();
+      int n = dofs.length;
+      double[] state = new double[n];
+      for (DOF dof : dofs) {
+          int i = dof.number;
+          GroundwaterModel1DData data = GroundwaterModel1DData.extract(dof);
+          state[i] = data.h;
+      }
+      return state;
   }
 
 }

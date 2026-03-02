@@ -478,19 +478,6 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
         return null;
     }
 
-    /**
-     * @deprecated
-     * @param time
-     * @param x
-     * @return
-     */
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double x[]) {
-
-        return null;
-
-    } // end getRateofChange
 
     // ------------------------------------------------------------------------
     // ElementApproximation
@@ -747,18 +734,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
         return data;
     }
 
-    /**
-     * @deprecated
-     * @param erg
-     * @param t
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
+        @Override
     public void write_erg_xf() {
         try {
             xf_os.writeFloat((float) time);

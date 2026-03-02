@@ -41,12 +41,6 @@ public class ZosteraMarina  extends TimeDependentFEApproximation implements FEMo
     public void setBoundaryCondition(DOF dof, double t) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
-    @Override
-    public double[] getRateofChange(double time, double[] x) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     @Override
     public ModelData genData(DOF dof) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -61,12 +55,6 @@ public class ZosteraMarina  extends TimeDependentFEApproximation implements FEMo
     public double ElementApproximation(FElement ele) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
-    @Override
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     @Override
     public int getTicadErgMask() {
         // Setzen der Ergebnismaske Planzen pro 

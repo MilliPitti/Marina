@@ -23,6 +23,7 @@
  */
 package de.smile.marina.fem.model.hydrodynamic.dim1;
 
+import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEModel;
@@ -33,10 +34,10 @@ import de.smile.marina.fem.TimeDependentFEApproximation;
 import java.awt.*;
 import java.util.*;
 
-public class GroundwaterModel1D extends TimeDependentFEApproximation implements FEModel {
+public class GroundwaterModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
 
-    private int n,  H,  numberofdofs;
-    private double[] result;
+    private int n,  numberofdofs;
+    private double previousTimeStep = 0.0;
 
     /** Creates new SedimentModel1D */
     public GroundwaterModel1D(FEDecomposition fe) {
@@ -46,9 +47,7 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         initialDOFs();
 
         numberofdofs = fenet.getNumberofDOFs();
-        H = 0;
         n = numberofdofs;
-        result = new double[n];
     }
 
     //------------------------------------------------------------------------
@@ -63,7 +62,7 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         for (int j = 0; j < dof.length; j++) {
             int i = dof[j].number;
             GroundwaterModel1DData smd = getGroundwaterModel1DData(dof[j]);
-            x[H + i] = smd.h;
+            x[i] = smd.h;
         }
         return x;
     }
@@ -190,7 +189,6 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         }
 
 
-
         /* the 2. derivation is for linear interpolation in the element equal  0 */
         //also entfaellt der gesamte Stabilisierungs-Anteil (Least-Squares)
 
@@ -258,34 +256,45 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
     }
 
     //------------------------------------------------------------------------
-    // getRateofChange
     //------------------------------------------------------------------------
-    public double[] getRateofChange(double p1, double[] x) {
-
+    @Override
+    public void timeStep(double dt) {
         for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
             GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
-            if ((gwm.zG + x[H + i]) <= 0.) {
-                x[H + i] = -gwm.zG;
+            if ((gwm.zG + gwm.h) <= 0.) {
+                gwm.h = -gwm.zG;
             }
-            gwm.h = x[H + i];
-            setBoundaryCondition(dof, p1);
-            gwm.dhdt = gwm.rh;
             gwm.dhdx = 0.;
-            // set Results to zero
             gwm.rh = 0.;
         }
 
-        // Elementloop
+        setBoundaryConditions();
+        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
 
-        for (DOF dof : fenet.getDOFs()) {
-            int i = dof.number;
-            GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
-            result[H + i] = gwm.rh;
+        final double beta0, beta1;
+        if (previousTimeStep == 0.0) {
+            beta0 = 1.0;
+            beta1 = 0.0;
+        } else {
+            final double omega = dt / previousTimeStep / 2.;
+            beta0 = 1.0 + omega;
+            beta1 = -omega;
         }
 
-        return result;
+        for (DOF dof : fenet.getDOFs()) {
+            GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
+            final double rh = beta0 * gwm.rh + beta1 * gwm.dhdt;
+            gwm.dhdt = gwm.rh;
+            gwm.h += dt * rh;
+            if ((gwm.zG + gwm.h) <= 0.) {
+                gwm.h = -gwm.zG;
+            }
+            gwm.rh = 0.;
+        }
+
+        previousTimeStep = dt;
+        time += dt;
     }
 
     //------------------------------------------------------------------------
@@ -327,5 +336,9 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
 
         }
 
+    }
+
+    @Override
+    public void write_erg_xf() {
     }
 }

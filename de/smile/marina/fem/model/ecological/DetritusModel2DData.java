@@ -42,6 +42,7 @@ public class DetritusModel2DData implements ModelData {
     ScalarFunction1d bsc=null;
     
     double dDetritConcdt;
+    double rdetritconc;
     
     boolean extrapolate = false;
     

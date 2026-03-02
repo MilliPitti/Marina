@@ -135,13 +135,6 @@ public class SysErgInterpolatedBathymetricModel2D extends TimeDependentFEApproxi
     public void setBoundaryCondition(DOF dof, double t) {
         // nicht Notwendig
     }
-
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double[] x) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     @Override
     public double ElementApproximation(FElement ele) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.

@@ -31,8 +31,6 @@ import bijava.graphics.JCanvas;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEdge;
-import de.smile.math.ode.ivp.HeunTStep;
-import de.smile.math.ode.ivp.SimpleTStep;
 import javax.swing.*;
 import java.awt.*;
 
@@ -71,11 +69,6 @@ public class MainCurrentSediment1D extends Object {
 
     //    sediment1d.setNumberOfThreads(2);
 
-//    RKETStep methode = new RK_2_3_TStep();
-//    SimpleTStep methode = new EulerTStep();
-    SimpleTStep methode = new HeunTStep();
-    //ABMTStep   methode = new ABMTStep();
-
     Graphics g = jcanvas.getGraphics();
     
     current1d.setMaxTimeStep(0.01);                             // Zeitschritt
@@ -108,12 +101,18 @@ public class MainCurrentSediment1D extends Object {
 	    
 	    if((ta+ts)>te) ts = te - ta;
 
-	    if (currenterg  != null) currenterg  = methode.TimeStep(current1d,  ta, ts, currenterg);
-	    if (sedimenterg != null) sedimenterg = methode.TimeStep(sediment1d, ta, ts, sedimenterg);
+	    if (currenterg  != null) current1d.timeStep(ts);
+	    if (sedimenterg != null) sediment1d.timeStep(ts);
 
 	    ta+=ts;
 
 	} while (ta<te);
+        if (currenterg != null) {
+            currenterg = getCurrentState(current1d);
+        }
+        if (sedimenterg != null) {
+            sedimenterg = getSedimentState(sediment1d);
+        }
 	
 	if (sedimenterg  != null) sediment1d.draw_it(jcanvas.getGraphics(), sedimenterg,  t+dt);
 	if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), currenterg,   t+dt);
@@ -129,6 +128,31 @@ public class MainCurrentSediment1D extends Object {
    */
   public static void main (String args[]) {
     MainCurrentSediment1D e = new MainCurrentSediment1D();
+  }
+
+  private double[] getCurrentState(CurrentModel1D current1d) {
+      DOF[] dofs = fed.getDOFs();
+      int n = dofs.length;
+      double[] state = new double[2 * n];
+      for (DOF dof : dofs) {
+          int i = dof.number;
+          CurrentModel1DData data = CurrentModel1DData.extract(dof);
+          state[i] = data.u;
+          state[n + i] = data.h;
+      }
+      return state;
+  }
+
+  private double[] getSedimentState(SedimentModel1D sediment1d) {
+      DOF[] dofs = fed.getDOFs();
+      int n = dofs.length;
+      double[] state = new double[n];
+      for (DOF dof : dofs) {
+          int i = dof.number;
+          SedimentModel1DData data = SedimentModel1DData.extract(dof);
+          state[i] = data.C;
+      }
+      return state;
   }
 
 }

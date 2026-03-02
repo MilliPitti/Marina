@@ -23,7 +23,9 @@
  */
 package de.smile.marina.fem.model.traffic;
 import bijava.math.ifunction.*;
+import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.ModelData;
+import java.util.Iterator;
 
 /** 
  *
@@ -43,5 +45,16 @@ public class MacroscopicTrafficModel1DData implements ModelData {
   // boudary conditions
   ScalarFunction1d bv=null;
   ScalarFunction1d brho=null;
+
+  public static MacroscopicTrafficModel1DData extract(DOF dof) {
+    Iterator<ModelData> modeldatas = dof.allModelDatas();
+    while (modeldatas.hasNext()) {
+      ModelData md = modeldatas.next();
+      if (md instanceof MacroscopicTrafficModel1DData) {
+        return (MacroscopicTrafficModel1DData) md;
+      }
+    }
+    return null;
+  }
   
 }

@@ -470,11 +470,6 @@ public class SpartinaAlternifloraModel2D extends TimeDependentFEApproximation im
         System.out.println("noch nicht genutzt");
         return null;
     }
-
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
     public void setBoundaryCondition(DOF dof, double t) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
@@ -482,10 +477,5 @@ public class SpartinaAlternifloraModel2D extends TimeDependentFEApproximation im
     @Override
     public double ElementApproximation(FElement ele) {
         return Double.MAX_VALUE;
-    }
-
-    @Override
-    public double[] getRateofChange(double time, double[] x) {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

@@ -466,17 +466,6 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
         return null;
     }
 
-    /**
-     * @deprecated
-     * @param time
-     * @param x
-     * @return
-     */
-    @Deprecated
-    @Override
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    } // end getRateofChange
 
     // ------------------------------------------------------------------------
     // ElementApproximation
@@ -712,18 +701,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
         return data;
     }
 
-    /**
-     * @deprecated
-     * @param erg
-     * @param t
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        System.out.println("deprecated method is called");
-    }
-
-    @Override
+        @Override
     public void write_erg_xf() {
         try {
             xf_os.writeFloat((float) time);

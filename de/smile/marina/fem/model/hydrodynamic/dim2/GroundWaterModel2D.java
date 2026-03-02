@@ -488,15 +488,6 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     }
     
     
-    /** Compute the time derivations on each node by the FE-domainapproximation of the FE-Model
-     * @param time
-     * @param x
-     * @return  */
-    @Override
-    @Deprecated
-    public double[] getRateofChange(double time, double x[]){
-        return null;
-    } // end getRateofChange
     
     
     /**
@@ -1543,16 +1534,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
 
     } // end readBoundCond
         
-    /** The method write_erg_xf
-     * @param erg
-     * @param t
-     * @deprecated
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    } // end write_erg_xf
+    // end write_erg_xf
 
     /** The method write_erg_xf */
     @Override

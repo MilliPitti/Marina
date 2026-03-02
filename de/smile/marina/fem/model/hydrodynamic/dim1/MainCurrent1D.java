@@ -32,8 +32,6 @@ import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEdge;
 import javax.swing.*;
 import java.awt.*;
-import de.smile.math.ode.ivp.HeunTStep;
-import de.smile.math.ode.ivp.SimpleTStep;
 
 public class MainCurrent1D extends Object {
     
@@ -65,11 +63,6 @@ public class MainCurrent1D extends Object {
         CurrentModel1D  current1d  = new CurrentModel1D(fed);   // Stroemungsmodell
         double[] currenterg  = current1d.initialSolution(0.);   // Anfangswerte (Initialisierung)
         
-//        RKETStep methode = new RK_2_3_TStep();
-//	SimpleTStep methode = new EulerTStep();
-        SimpleTStep methode = new HeunTStep();
-        //ABMTStep   methode = new ABMTStep();
-        
         current1d.setMaxTimeStep(0.01);                             // Zeitschritt
         
         double startTime = 0.0;     // [sec]
@@ -89,11 +82,12 @@ public class MainCurrent1D extends Object {
                 
                 if((ta+ts)>te) ts = te - ta;
                 
-                currenterg  = methode.TimeStep(current1d,  ta, ts, currenterg);
+                current1d.timeStep(ts);
                 
                 ta+=ts;
                 
             } while (ta<te);
+            currenterg = getState(current1d);
             
             current1d.draw_it(jcanvas.getGraphics(), currenterg,   t+dt);
             jcanvas.repaint();
@@ -162,6 +156,18 @@ public class MainCurrent1D extends Object {
             }
         }
     }
+
+    private double[] getState(CurrentModel1D current1d) {
+        DOF[] dofs = fed.getDOFs();
+        int n = dofs.length;
+        double[] state = new double[2 * n];
+        for (DOF dof : dofs) {
+            int i = dof.number;
+            CurrentModel1DData data = CurrentModel1DData.extract(dof);
+            state[i] = data.u;
+            state[n + i] = data.h;
+        }
+        return state;
+    }
     
 }
-

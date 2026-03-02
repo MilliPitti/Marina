@@ -467,13 +467,6 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
         initsc = null;
         return null;
     }
-
-    @Deprecated
-    @Override
-    public double[] getRateofChange(double time, double x[]) {
-        return null;
-    }
-
     // ------------------------------------------------------------------------
     // ElementApproximation
     // ------------------------------------------------------------------------
@@ -675,18 +668,7 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
         return data;
     }
 
-    /**
-     * @deprecated
-     * @param erg
-     * @param t
-     */
-    @Override
-    @Deprecated
-    public void write_erg_xf(double[] erg, double t) {
-        System.out.println("deprecated method is called");
-    }
-
-    @Override
+        @Override
     public void write_erg_xf() {
         try {
             xf_os.writeFloat((float) time);

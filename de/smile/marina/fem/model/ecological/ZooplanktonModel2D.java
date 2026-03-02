@@ -536,9 +536,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         DOF[] dof = fenet.getDOFs();
         for (int j=0; j<dof.length;j++){
             ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof[j]);
-            int gamma = dof[j].getNumberofFElements();
-
-            zoomodeldata.rzooconc *= 3. / gamma;
+            zoomodeldata.rzooconc /= dof[j].lumpedMass;
 
             double rZoo = beta0 * zoomodeldata.rzooconc + beta1 * zoomodeldata.dZooConcdt;
             zoomodeldata.dZooConcdt = zoomodeldata.rzooconc;
@@ -639,12 +637,12 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {
-                        ZooplanktonModel2DData.extract(dof).rzooconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean );
+                        ZooplanktonModel2DData.extract(dof).rzooconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean ) * ele.area;
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
-                        final double vorfak = (l == j) ? 1./6. : 1./12.;
+                        final double vorfak = ele.area * ((l == j) ? 1./6. : 1./12.);
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
                         synchronized (dof) {
                             ZooplanktonModel2DData.extract(dof).rzooconc -= vorfak * terms_Zoo[l]*gl;

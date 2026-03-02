@@ -330,8 +330,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
 
         for (DOF dof : fenet.getDOFs()) {
             DetritusModel2DData detritmodeldata = DetritusModel2DData.extract(dof);
-            int gamma = dof.getNumberofFElements();
-            detritmodeldata.rdetritconc *= 3. / gamma;
+            detritmodeldata.rdetritconc /= dof.lumpedMass;
 
             double rDetrit = beta0 * detritmodeldata.rdetritconc + beta1 * detritmodeldata.dDetritConcdt;
             detritmodeldata.dDetritConcdt = detritmodeldata.rdetritconc;
@@ -430,12 +429,12 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {
-                        DetritusModel2DData.extract(dof).rdetritconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean);
+                        DetritusModel2DData.extract(dof).rdetritconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean) * ele.area;
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
-                        double vorfak = (l == j) ? 1./6. : 1./12.;
+                        double vorfak = ele.area * ((l == j) ? 1./6. : 1./12.);
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
                         synchronized (dof) {
                             DetritusModel2DData.extract(dof).rdetritconc -= vorfak * terms_Detrit[l]*gl;

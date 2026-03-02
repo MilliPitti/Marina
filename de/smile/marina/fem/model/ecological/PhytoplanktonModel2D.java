@@ -341,8 +341,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
 
         for (DOF dof : fenet.getDOFs()) {
             PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
-            int gamma = dof.getNumberofFElements();
-            phytomodeldata.rphytoconc *= 3. / gamma;
+            phytomodeldata.rphytoconc /= dof.lumpedMass;
 
             double rPhyto = beta0 * phytomodeldata.rphytoconc + beta1 * phytomodeldata.dPhytoConcdt;
             phytomodeldata.dPhytoConcdt = phytomodeldata.rphytoconc;
@@ -444,12 +443,12 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {
-                        PhytoplanktonModel2DData.extract(dof).rphytoconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean );
+                        PhytoplanktonModel2DData.extract(dof).rphytoconc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean ) * ele.area;
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
-                        final double vorfak = (l == j) ? 1./6. : 1./12.;
+                        final double vorfak = ele.area * ((l == j) ? 1./6. : 1./12.);
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
                         synchronized (dof) {
                             PhytoplanktonModel2DData.extract(dof).rphytoconc -= vorfak * terms_Phyto[l]*gl;

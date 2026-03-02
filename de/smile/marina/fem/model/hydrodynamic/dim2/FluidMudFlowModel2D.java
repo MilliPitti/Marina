@@ -835,12 +835,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                     source_dhdt = fmudmd.sourceh.getValue(time);
                 }
                 if (fmudmd.sourceQ != null) {
-                    double area = 0.;
-                    FElement[] feles = dofs[j].getFElements();
-                    for (FElement fele : feles) {
-                        // muss nicht jedes mal neu berechet werden
-                        area += fele.getVolume();
-                    }
+                    final double area = dofs[j].lumpedMass * 3.;
                     source_dhdt = fmudmd.sourceQ.getValue(time) / area;
                 }
 
@@ -1077,8 +1072,8 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                                                                                                     // dh;
                                     }
                                     synchronized (tmpcdata) {
-                                        tmpcdata.m += dh / elem.getDOF((ll + ii) % 3).getNumberofFElements()
-                                                * dof.getNumberofFElements();
+                                        tmpcdata.m += dh * dof.lumpedMass
+                                                / elem.getDOF((ll + ii) % 3).lumpedMass;
                                         tmpcdata.thickness = Function.max(0., tmpcdata.z + tmpcdata.m); // tmpcdata.totaldepth
                                                                                                         // += dh /
                                                                                                         // elem.getDOF((ll
@@ -1097,8 +1092,8 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                         fluidmuddata.cv = Function.norm(fluidmuddata.u, fluidmuddata.v);
                                     }
                                     synchronized (tmpcdata) {
-                                        tmpcdata.u += du / elem.getDOF((ll + ii) % 3).getNumberofFElements()
-                                                * dof.getNumberofFElements();
+                                        tmpcdata.u += du * dof.lumpedMass
+                                                / elem.getDOF((ll + ii) % 3).lumpedMass;
                                         tmpcdata.cv = Function.norm(tmpcdata.u, tmpcdata.v);
                                     }
                                 }
@@ -1111,8 +1106,8 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                         fluidmuddata.cv = Function.norm(fluidmuddata.u, fluidmuddata.v);
                                     }
                                     synchronized (tmpcdata) {
-                                        tmpcdata.v += dv / elem.getDOF((ll + ii) % 3).getNumberofFElements()
-                                                * dof.getNumberofFElements();
+                                        tmpcdata.v += dv * dof.lumpedMass
+                                                / elem.getDOF((ll + ii) % 3).lumpedMass;
                                         tmpcdata.cv = Function.norm(tmpcdata.u, tmpcdata.v);
                                     }
                                 }

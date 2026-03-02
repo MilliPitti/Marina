@@ -274,7 +274,6 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
         for (int j=0; j<fenet.getNumberofDOFs(); j++){
             DOF dof = fenet.getDOF(j);
             int i = dof.number;
-            int gamma = dof.getNumberofFElements();
 
             SpectralWaveModelData spectralwavemodeldata = SpectralWaveModelData.extract(dof);
             DiscreteSpectrum2D s = spectralwavemodeldata.n;
@@ -282,7 +281,7 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
 
             for (int ai=0; ai<spectralwavemodeldata.re.getDirectionLength(); ai++){
                 for (int fi=0; fi<spectralwavemodeldata.re.getFrequencyLength(); fi++){
-                    double r = (3. / gamma * spectralwavemodeldata.re.getValueAt(fi,ai)[2]);
+                    double r = spectralwavemodeldata.re.getValueAt(fi,ai)[2] / dof.lumpedMass;
                     int idx = GlobalIndex(fi, ai, i);
                     if ((state[idx]<=0.) && (r<=0.))
                         r = 0.;
@@ -519,9 +518,9 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
                     // Upwinding
                     - tau.getValueAt(fi,ai)[2] * ( koeffmat[j][1]*cgx*elementerror.getValueAt(fi,ai)[2]
                                                  + koeffmat[j][2]*cgy*elementerror.getValueAt(fi,ai)[2]
-                    )
+                    ) * ele.area
                     // Propagation
-                    - 1./3. * (CgxNdx.getValueAt(fi,ai)[2] + CgyNdy.getValueAt(fi,ai)[2])
+                    - 1./3. * (CgxNdx.getValueAt(fi,ai)[2] + CgyNdy.getValueAt(fi,ai)[2]) * ele.area
                     ;
                     re.setValueAt( fi, ai, res );
                 }
@@ -532,9 +531,9 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
                 int lg = dofl.number;
                 SpectralWaveModelData spectralwavemodeldatal = SpectralWaveModelData.extract(dofl);
                 if (l == j)
-                    vorfak = 1. / 6.;
+                    vorfak = ele.area * 1. / 6.;
                 else
-                    vorfak = 1. / 12.;
+                    vorfak = ele.area * 1. / 12.;
                 
                 // for all Spektralkomponents
                 for (int ai=0; ai<N[l].getDirectionLength(); ai++){

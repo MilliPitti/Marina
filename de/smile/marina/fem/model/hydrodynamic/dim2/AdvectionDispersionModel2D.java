@@ -639,8 +639,8 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                                     adModelData.C -= dC * lambda;
                                 }
                                 synchronized (tmpdata) {
-                                    tmpdata.C += dC / elem.getDOF((ll + ii) % 3).getNumberofFElements()
-                                            * dof.getNumberofFElements();
+                                    tmpdata.C += dC * dof.lumpedMass
+                                            / elem.getDOF((ll + ii) % 3).lumpedMass;
                                 }
                             }
                         }
@@ -680,12 +680,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
         if (cmd.totaldepth > CurrentModel2D.WATT) {
 
             if (cmd.sourceQ != null) {
-                double area = 0.;
-                FElement[] feles = dof.getFElements();
-                for (FElement fele : feles) // muss nicht jedes mal neu berechet werden
-                {
-                    area += fele.getVolume();
-                }
+                final double area = dof.lumpedMass * 3.;
                 double cquelle = 0.0;
                 if (adModelData.sourceQc != null) {
                     cquelle = adModelData.sourceQc.getValue(time);

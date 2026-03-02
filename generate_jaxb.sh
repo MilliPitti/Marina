@@ -10,6 +10,7 @@ fi
 # Libraries
 LIB_DIR=lib
 JARS="$LIB_DIR/jaxb-xjc.jar:$LIB_DIR/jaxb-impl.jar:$LIB_DIR/jaxb-core.jar:$LIB_DIR/jaxb-api.jar:$LIB_DIR/activation.jar:$LIB_DIR/vecmath.jar"
+GENERATED_SRC_DIR="bin/generated-src"
 
 # Check if jars exist (checking one is enough usually)
 if [ ! -f "$LIB_DIR/jaxb-api.jar" ]; then
@@ -19,13 +20,17 @@ fi
 
 echo "Using Java: $JAVA"
 echo "Classpath: $JARS"
+echo "Generating sources into: $GENERATED_SRC_DIR"
+
+rm -rf "$GENERATED_SRC_DIR"
+mkdir -p "$GENERATED_SRC_DIR"
 
 # Generate Marina classes
 echo "Generating Marina classes..."
-"$JAVA" -cp "$JARS" com.sun.tools.xjc.XJCFacade -d . -p de.smile.xml.marina jaxb/MarinaXML/Marina.xsd -extension
+"$JAVA" -cp "$JARS" com.sun.tools.xjc.XJCFacade -d "$GENERATED_SRC_DIR" -p de.smile.xml.marina jaxb/MarinaXML/Marina.xsd -extension
 
 # Generate Weirs classes
 echo "Generating Weirs classes..."
-"$JAVA" -cp "$JARS" com.sun.tools.xjc.XJCFacade -d . -p de.smile.xml.marina.weirs jaxb/WeirsXML/Weirs.xsd -extension
+"$JAVA" -cp "$JARS" com.sun.tools.xjc.XJCFacade -d "$GENERATED_SRC_DIR" -p de.smile.xml.marina.weirs jaxb/WeirsXML/Weirs.xsd -extension
 
 echo "Done."

@@ -327,8 +327,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
 
         for (DOF dof : fenet.getDOFs()) {
             NitrogenModel2DData nitmodeldata = NitrogenModel2DData.extract(dof);
-            int gamma = dof.getNumberofFElements();
-            nitmodeldata.rskonc *= 3. / gamma;
+            nitmodeldata.rskonc /= dof.lumpedMass;
 
             double rNit = beta0 * nitmodeldata.rskonc + beta1 * nitmodeldata.dskoncdt;
             nitmodeldata.dskoncdt = nitmodeldata.rskonc;
@@ -430,12 +429,12 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {
-                        NitrogenModel2DData.extract(dof).rskonc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean);
+                        NitrogenModel2DData.extract(dof).rskonc -= tau_konc * (koeffmat[j][1] * u_mean * Koeq1_mean + koeffmat[j][2] * v_mean * Koeq1_mean) * ele.area;
                     }
                     
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
-                        final double vorfak = (l == j) ? 1./6. : 1./12.;
+                        final double vorfak = ele.area * ((l == j) ? 1./6. : 1./12.);
                         final double gl = (l == j) ? 1. :  Math.min(cmd.wlambda, CurrentModel2DData.extract(ele.getDOF(l)).totaldepth/Math.max(CurrentModel2D.WATT,cmd.totaldepth)); // Peter 21.01.2016
                         synchronized (dof) {
                             NitrogenModel2DData.extract(dof).rskonc -= vorfak * terms_Nit[l]*gl;

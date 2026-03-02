@@ -649,12 +649,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
         oxygenmodeldata.sourceSink = 0.;
         if (cmd.totaldepth > CurrentModel2D.WATT) {
             if (cmd.sourceQ != null) {
-                double area = 0.;
-                FElement[] feles = dof.getFElements();
-                for (FElement fele : feles) // muss nicht jedes mal neu berechet werden
-                {
-                    area += fele.getVolume();
-                }
+                final double area = dof.lumpedMass * 3.;
                 double cquelle = 0.0;
                 if (oxygenmodeldata.sourceQc != null) {
                     cquelle = oxygenmodeldata.sourceQc.getValue(time);

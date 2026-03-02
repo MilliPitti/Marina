@@ -246,6 +246,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             // bis zum record-Satz springen
             inStream.skip((4L+anzKnoten*anzWerte*4L)*record);
             
+            @SuppressWarnings("unused")
             float t=inStream.readFloat();
             for (int i = 0;i<fenet.getNumberofDOFs();i++){
                 if(None_gesetzt)
@@ -361,15 +362,24 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     public double[] initialHfromJanetBin(String filename, double time) throws Exception {
         this.time=time;
         
+        @SuppressWarnings("unused")
         int anzAttributes=0;
+        @SuppressWarnings("unused")
         double value;
         int nr;
+        @SuppressWarnings("unused")
         short status,kennung;
+        @SuppressWarnings("unused")
         int anzPolys,anzEdges,anzPoints=0,pointsize,trisize,swapMode;
+        @SuppressWarnings("unused")
         short sets;
+        @SuppressWarnings("unused")
         boolean active,protectBorder,protectConstraints,noPolygon,inPolygon,makeHoles,processFlagsActive;
+        @SuppressWarnings("unused")
         boolean noZoom,inZoom,noActive,processActive,processSelected,inPolygonProp,inZoomProp,protectInnerPoints;
+        @SuppressWarnings("unused")
         boolean noSelected,closed;
+        @SuppressWarnings("unused")
         boolean read_status_byte=false;
         
         FileIO bin_in=new FileIO();
@@ -392,19 +402,27 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             
             // zunaechst den FileHeader lesen
             boolean writePointNumbers=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writePointAttributes=bin_in.fbinreadboolean();
             anzAttributes=bin_in.fbinreadint();
             boolean writePointStatus=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintPolygons=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintEdges=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElements=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementNumbers=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementKennung=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeAlphaTestRadius=bin_in.fbinreadboolean();
             
             // Layertyp ueberlesen
             int filetype=bin_in.fbinreadint();
             // liegt UnTRIM-Gitetr mit diskreten Kantentiefen vor??
+            @SuppressWarnings("unused")
             boolean is_untrim=(filetype==2);
             
             // Anzahl der Punkte lesen
@@ -719,7 +737,6 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
      * @return  */
     @Override
     public ModelData genData(DOF dof){
-        //System.out.println("DOF "+dof);
         GroundWater2DData data = new GroundWater2DData(dof);
         int dofnumber = dof.number;
         dof_data[dofnumber]=data;
@@ -747,6 +764,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         int knoten_nr;
         
         
+        @SuppressWarnings("unused")
         double x,y,kf;
         
         String line;
@@ -785,7 +803,6 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 line=systemfile.freadLine();
                 strto=new StringTokenizer(line," \t\n\r\f,");
                 
-                //System.out.println(""+line+"\n");
                 if (!line.startsWith("C")) {
                     knoten_nr=Integer.parseInt(strto.nextToken());
                     x=Double.parseDouble(strto.nextToken());
@@ -813,22 +830,14 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                     GroundWater2DData groundwaterdata = GroundWater2DData.extract(dof);
                     groundwaterdata.kf=kf;
                                          
-                    
-                    //if(p_count%1000==0) System.out.println(p_count);
                     p_count++;
                 }
                 
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Fehler beim Lesen der Permeabilitaets-Datei!");
+            System.out.println("Fehler beim Lesen der Permeabilitaets-Datei!"+filename);
             System.exit(0);
-//            System.out.println("\t\tcannot open file: "+filename);
-//            System.out.println("\t\tuse standard value for d50: 0.42 mm");
-//            DOF[] dof = fenet.getDOFs();
-//            for (int i=0; i<dof.length; i++){
-//                SedimentModel2DData.extract(dof[i]).d50 = 0.00042;
-//            }
         } 
     }
     
@@ -836,17 +845,26 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
      *  from  a JanetBinary-file named filename
      *  @param nam  name of the file to be open */ 
     private void readPermeabilityFromJanetBin(String filename) {
+        @SuppressWarnings("unused")
         int anzAttributes=0;
+        @SuppressWarnings("unused")
         double x,y,kf;        
         
         boolean hasValidValues=true;        
         int nr;
+        @SuppressWarnings("unused")
         short status,kennung;
+        @SuppressWarnings("unused")
         int anzPolys,anzEdges,anzPoints=0,pointsize,trisize,swapMode;
+        @SuppressWarnings("unused")
         short sets;
+        @SuppressWarnings("unused")
         boolean active,protectBorder,protectConstraints,noPolygon,inPolygon,makeHoles,processFlagsActive;
+        @SuppressWarnings("unused")
         boolean noZoom,inZoom,noActive,processActive,processSelected,inPolygonProp,inZoomProp,protectInnerPoints;
+        @SuppressWarnings("unused")
         boolean noSelected,closed;
+        @SuppressWarnings("unused")
         boolean read_status_byte=false;
         
         FileIO bin_in=new FileIO();
@@ -869,19 +887,27 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             
             // zunaechst den FileHeader lesen
             boolean writePointNumbers=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writePointAttributes=bin_in.fbinreadboolean();
             anzAttributes=bin_in.fbinreadint();
             boolean writePointStatus=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintPolygons=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeConstraintEdges=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElements=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementNumbers=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeElementKennung=bin_in.fbinreadboolean();
+            @SuppressWarnings("unused")
             boolean writeAlphaTestRadius=bin_in.fbinreadboolean();
             
             // Layertyp ueberlesen
             int filetype=bin_in.fbinreadint();
             // liegt UnTRIM-Gitetr mit diskreten Kantentiefen vor??
+            @SuppressWarnings("unused")
             boolean is_untrim=(filetype==2);
             
             // Anzahl der Punkte lesen
@@ -949,6 +975,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         int knoten_nr;
         
         
+        @SuppressWarnings("unused")
         double x,y,zG;
         
         String line;
@@ -1037,6 +1064,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
       /** the method eadPermeabilityFromJanetBin read the datas for kf 
      *  from  a JanetBinary-file named filename
      *  @param nam  name of the file to be open */ 
+    @SuppressWarnings("unused")
     private void readImpermeabilityFromJanetBin(String filename) {
         int anzAttributes=0;
         double x,y,zG;        
@@ -1047,6 +1075,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         int anzPolys,anzEdges,anzPoints=0,pointsize,trisize,swapMode;
         short sets;
         boolean active,protectBorder,protectConstraints,noPolygon,inPolygon,makeHoles,processFlagsActive;
+        
         boolean noZoom,inZoom,noActive,processActive,processSelected,inPolygonProp,inZoomProp,protectInnerPoints;
         boolean noSelected,closed;
         boolean read_status_byte=false;
@@ -1144,6 +1173,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     /** the method readSurfaceWaterFromSysDat read a stationary free surface water level as boundary condition
      *  from a sysdat-file named filename
      *  @param nam  name of the file to be open */
+    @SuppressWarnings("unused")
     private void readSurfaceWaterFromSysDat(String filename) {
         int rand_knoten=0;
         int gebiets_knoten = 0;
@@ -1224,7 +1254,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     
       /** the method readSurfaceWaterFromJanetBin read a stationary free surface water level as boundary condition 
      *  from  a JanetBinary-file named filename
-     *  @param nam  name of the file to be open */  
+     *  @param nam  name of the file to be open */
+    @SuppressWarnings("unused")
     private void readSurfaceWaterFromJanetBin(String filename) {
         int anzAttributes=0;
         double x,y,swl;        
@@ -1407,7 +1438,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
     
     /** the method eadPermeabilityFromJanetBin read the datas for kf 
      *  from  a JanetBinary-file named filename
-     *  @param nam  name of the file to be open */  
+     *  @param nam  name of the file to be open */ 
+    @SuppressWarnings("unused") 
     private void readOverlayingStrataFromJanetBin(String filename) {
         int anzAttributes=0;
         double upperImpermeableLayerThickness;        

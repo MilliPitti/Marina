@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 import de.smile.geom.LinearPoint;
 import de.smile.geom.MetricPoint;
 import de.smile.marina.PhysicalParameters;
-import static de.smile.marina.fem.model.hydrodynamic.dim2.SedimentModel2DData.getWC;
 import static de.smile.math.Function.sqr;
 import java.io.Serializable;
 import java.util.function.Function;

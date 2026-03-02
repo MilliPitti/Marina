@@ -56,7 +56,7 @@ public class MainMacroscopicTrafficModel1D extends JCanvas {
       fed.addFElement(new FEdge(b, e));
     }
 
-    MacroscopicTrafficModel1D mtraffic1d = new MacroscopicTrafficModel1D(fed); // Stroemungsmodell
+    MacroscopicTrafficModel1D mtraffic1d = new MacroscopicTrafficModel1D(fed); 
 
     double[] mtrafficerg = mtraffic1d.initialSolution(0.); // Anfangswerte (Initialisierung)
 

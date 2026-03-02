@@ -29,7 +29,6 @@ import bijava.math.ifunction.*;
 import de.smile.marina.PhysicalParameters;
 import static de.smile.marina.PhysicalParameters.G;
 import de.smile.marina.fem.model.ground.Pair;
-import de.smile.math.Function;
 
 /**
  * @author Peter Milbradt

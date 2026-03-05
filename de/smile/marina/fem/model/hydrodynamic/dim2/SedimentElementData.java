@@ -34,7 +34,6 @@ import java.util.Iterator;
 public class SedimentElementData implements ModelData {
 
     private static int id = NO_MODEL_DATA;
-    private static final long serialVersionUID = 1L;
     public double dzdx, dzdy;
     public double bottomslope;
     

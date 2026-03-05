@@ -36,7 +36,9 @@ import javax.vecmath.*;
  */
 public class QSteuerung implements ScalarFunction1d {
 
-    protected FEDecomposition sysdat;
+    private static final long serialVersionUID = 1L;
+
+    protected transient FEDecomposition sysdat;
 
     protected double time = Double.NEGATIVE_INFINITY;
     protected ScalarFunction1d qzeitreihe;

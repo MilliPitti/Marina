@@ -32,7 +32,6 @@ import java.util.Iterator;
  * @author Peter Milbradt
  */
 public class BlueMussel2DData extends Mussel2DData{
-
     private static int id = NO_MODEL_DATA;
     
     public BlueMussel2DData(){

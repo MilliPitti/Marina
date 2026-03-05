@@ -34,8 +34,6 @@ import java.util.Iterator;
 public class Current2DElementData implements ModelData{
     
     private static int id = NO_MODEL_DATA;
-    private static final long serialVersionUID = 1L;
-    
     public double astx, asty;
     
     public double u_mean, v_mean, depth_mean;

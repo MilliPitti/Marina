@@ -31,7 +31,6 @@ import java.util.Iterator;
  * @author milbradt
  */
 public class MeteorologyData2D implements ModelData {
-
     private static int id = NO_MODEL_DATA;
     public double windx,  windy,  windspeed;
     public double temperature = 15.;  // standard Temperatur der Luft in Grad

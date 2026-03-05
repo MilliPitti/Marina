@@ -34,7 +34,6 @@ import java.util.Iterator;
  * @version 
  */
 public class GroundwaterModel1DData implements ModelData {
-
     // Zustandsgroessen
     double h;
     double dhdt;

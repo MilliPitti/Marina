@@ -25,13 +25,10 @@ package de.smile.marina.fem;
 
 import bijava.marina.geom3d.*;
 import de.smile.geom.Rectangle2d;
-import java.io.Serializable;
 import javax.vecmath.*;
 import java.util.*;
  
-public abstract class FElement implements Serializable{
-
-    private static final long serialVersionUID = 1L;
+public abstract class FElement {
   ConvexCell3d element;
   int order=0;
   DOF[] dofs = new DOF[0];

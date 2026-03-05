@@ -33,7 +33,6 @@ import java.util.Iterator;
  * @version 2.7.3
  */
 public class CurrentModel1DData implements ModelData {
-    
     // Zustandsgroessen
     double u; double dudt; double dudx;
     double h; double dhdt; double dhdx;

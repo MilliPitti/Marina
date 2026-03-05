@@ -32,7 +32,6 @@ import java.util.Iterator;
  * @author Peter Milbradt
  */
 public class PacificOyster2DData extends Mussel2DData{
-
     private static int id = NO_MODEL_DATA;
 
     public PacificOyster2DData(){

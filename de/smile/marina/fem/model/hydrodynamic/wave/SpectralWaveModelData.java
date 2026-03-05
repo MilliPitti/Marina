@@ -30,23 +30,22 @@ import bijava.marina.spectra.*;
 
 //Parant-Class 
 public class SpectralWaveModelData implements ModelData{
-    
     private static int id = NO_MODEL_DATA;
     // zustandsgroessen
-    DiscreteSpectrum2D n;
-    DiscreteSpectrum2D dndt;
+    transient DiscreteSpectrum2D n;
+    transient DiscreteSpectrum2D dndt;
     
-    DiscreteSpectrum2D wavenumber;
-    DiscreteSpectrum2D Cg;
+    transient DiscreteSpectrum2D wavenumber;
+    transient DiscreteSpectrum2D Cg;
     
-    DiscreteSpectrum2D wavebreaking;
-    DiscreteSpectrum2D windinput;
+    transient DiscreteSpectrum2D wavebreaking;
+    transient DiscreteSpectrum2D windinput;
     
     // ergebnisvector
-    DiscreteSpectrum2D re;
+    transient DiscreteSpectrum2D re;
     
     // boudary conditions
-    TimeSpectrum2D bc=null;
+    transient TimeSpectrum2D bc=null;
     
     // mean Radiationstresses
     double sxx, sxy, syy;

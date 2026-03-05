@@ -34,9 +34,6 @@ import java.util.Iterator;
  * @version 4.1.0
  */
 public abstract class SurfaceWaterModelData implements ModelData {
-
-    private static final long serialVersionUID = 1L;
-    
     public double eta; // free surface waterlevel
     public double detadt;
     

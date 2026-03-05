@@ -55,9 +55,6 @@ import javax.vecmath.Point2d;
  * @version 3.0
  */
 public class SoilModel3DData extends SedimentModel2DData {
-    
-    private static final long serialVersionUID = 1L;
-
     private static int id = NO_MODEL_DATA;
 
     public static boolean exportDatum = false; // schreibt in den toString() als letztes das Datum, z.B. bei der Nutzung im datenbasierten Modell: SequenceStratigraficModel

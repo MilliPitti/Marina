@@ -31,7 +31,6 @@ import java.util.Iterator;
  * @author milbradt
  */
 public class BathymetryData2D implements ModelData {
-
     private static int id = NO_MODEL_DATA;
     public double z;
 

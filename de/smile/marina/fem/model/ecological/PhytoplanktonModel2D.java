@@ -137,8 +137,8 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         if (phytodata.bsc != null)
             sc = phytodata.bsc.getValue(time);
         else {
-            for (Enumeration e = initsc.elements(); e.hasMoreElements();){
-                DOF ndof= (DOF) e.nextElement();
+            for (Enumeration<DOF> e = initsc.elements(); e.hasMoreElements();){
+                DOF ndof = e.nextElement();
                 PhytoplanktonModel2DData phyto = PhytoplanktonModel2DData.extract(ndof);
                 if ((dof!=ndof) & ( phyto.bsc != null )){
                     d = dof.distance(ndof);
@@ -673,9 +673,9 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
     public ModelData genData(DOF dof){
         PhytoplanktonModel2DData data = new PhytoplanktonModel2DData();
         int dofnumber = (int) dof.number;
-        Enumeration b = bsc.elements();
+        Enumeration<BoundaryCondition> b = bsc.elements();
         while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+            BoundaryCondition bcond = b.nextElement();
             if ( dofnumber == bcond.pointnumber ){
                 data.bsc = bcond.function;
                 bsc.removeElement(bcond);

@@ -23,9 +23,7 @@
  */
 package de.smile.marina.fem;
  
-import java.io.Serializable;
-
-public interface ModelData extends Serializable {
+public interface ModelData {
     public final static int SEARCH_MODEL_DATA = -2;
     public final static int NO_MODEL_DATA = -1;
 }

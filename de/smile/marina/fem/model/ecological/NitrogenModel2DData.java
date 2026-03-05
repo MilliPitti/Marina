@@ -34,7 +34,6 @@ import de.smile.marina.fem.ModelData;
  * @author milbradt
  */
 class NitrogenModel2DData implements ModelData{
-    
     private static int id = NO_MODEL_DATA;
     
     // Zustandsgroeszen

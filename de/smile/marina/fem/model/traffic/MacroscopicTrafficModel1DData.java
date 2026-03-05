@@ -33,7 +33,6 @@ import java.util.Iterator;
  * @version 
  */
 public class MacroscopicTrafficModel1DData implements ModelData {
-  
   // Zustandsgroessen
   double v; double dvdt; double dvdx;
   double rho; double drhodt;

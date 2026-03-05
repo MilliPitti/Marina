@@ -32,7 +32,6 @@ import java.util.*;
  * @version 1.7.18
  */
 public class SaltModel2DData implements ModelData {
-
     private static int id = NO_MODEL_DATA;    // Zustandsgroeszen
     public double C;    // salinity in ppt
     double rsaltconc;

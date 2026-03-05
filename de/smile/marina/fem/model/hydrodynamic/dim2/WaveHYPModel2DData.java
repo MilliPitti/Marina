@@ -37,8 +37,6 @@ import de.smile.marina.fem.model.ground.Pair;
 public class WaveHYPModel2DData implements ModelData{
     
     private static int id = NO_MODEL_DATA;  
-    private static final long serialVersionUID = 1L;
-    
     // Zustandsgroessen
     // ----------------
     double kres; // wavenumber: 2*pi / wavelength in [1/m]

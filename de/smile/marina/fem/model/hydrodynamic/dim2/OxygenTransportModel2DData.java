@@ -33,7 +33,6 @@ import bijava.math.ifunction.*;
  * @version 2.7.17
  */
 class OxygenTransportModel2DData implements ModelData {
-
     /*
      * Der Saettigungswert betraegt bei 0 gradC 14,6 mg O2/l (a. d.) und sinkt bei
      * 20 gradC auf 9,1 mg O2/l (a. d.) bei 1013,25 hPa Luftdruck.

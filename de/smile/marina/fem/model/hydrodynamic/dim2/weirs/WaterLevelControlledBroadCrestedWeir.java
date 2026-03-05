@@ -34,7 +34,6 @@ import bijava.math.ifunction.ScalarFunction1d;
  * @version 1.7.8
  */
 public class WaterLevelControlledBroadCrestedWeir extends BroadCrestedWeir{
-    
     private ScalarFunction1d waterLevel;
     private int[] mesureNodeID;
     private double weirVelocity=0.05; // [m/s]

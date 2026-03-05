@@ -24,13 +24,12 @@
 package de.smile.marina.fem.model.hydrodynamic.dim2.weirs;
 
 import de.smile.marina.fem.DOF;
-import java.io.Serializable;
 
 /**
  * Interface zur Beschreibung von zeitabhaengiger Wehren im CurrentModel2D
  * @author milbradt
  */
-public interface TimeDependentWeir extends Serializable{
+public interface TimeDependentWeir {
     
      public abstract double[] getV(DOF p,double h, double t);
  

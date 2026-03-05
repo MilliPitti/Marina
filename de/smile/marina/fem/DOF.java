@@ -23,6 +23,10 @@
  */
 package de.smile.marina.fem;
 
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.*;
 import javax.vecmath.*;
 
@@ -33,7 +37,6 @@ import javax.vecmath.*;
  */
 public class DOF extends Point3d {
 
-    private static final long serialVersionUID = 1L;
     public int number = -1;
     private ModelData[] modelData = new ModelData[0];
     private FElement[] felements = new FElement[0];
@@ -220,6 +223,14 @@ public class DOF extends Point3d {
                 return i;
         }
         return ModelData.NO_MODEL_DATA;
+    }
+
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        throw new NotSerializableException(getClass().getName());
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        throw new NotSerializableException(getClass().getName());
     }
 
 }

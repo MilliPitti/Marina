@@ -33,7 +33,6 @@ import java.util.Iterator;
  * @version 
  */
  public class SedimentModel1DData implements ModelData {
-  
   // Zustandsgroessen
   double C; double dCdt; double dCdx;
   // Ergebnisvector

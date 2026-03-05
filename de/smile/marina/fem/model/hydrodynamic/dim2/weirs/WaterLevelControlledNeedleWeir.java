@@ -34,7 +34,6 @@ import bijava.math.ifunction.ScalarFunction1d;
  * @version 2.2.1
  */
 public class WaterLevelControlledNeedleWeir extends NeedleWeir{
-    
     private ScalarFunction1d waterLevel;
     private int[] mesureNodeID;
     private double weirVelocity=0.001; // [%/s]

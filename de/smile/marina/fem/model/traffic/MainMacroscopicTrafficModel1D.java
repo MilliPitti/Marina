@@ -28,20 +28,24 @@ import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FEdge;
 import javax.swing.*;
+import java.awt.*;
 
-public class MainMacroscopicTrafficModel1D extends JCanvas {
+public class MainMacroscopicTrafficModel1D extends Object {
 
   FEDecomposition fed = new FEDecomposition();
 
   JFrame frame;
+  JCanvas jcanvas;
 
   /** Creates new Main */
   public MainMacroscopicTrafficModel1D() {
     frame = new JFrame("MacroscopicTrafficModel");
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     frame.setSize(800, 400);
-    setSize(800, 400);
-    frame.getContentPane().add(this);
+    frame.getContentPane().setLayout(new BorderLayout());
+    jcanvas = new JCanvas();
+    jcanvas.setSize(800, 400);
+    frame.getContentPane().add(jcanvas);
     frame.setVisible(true);
 
     int knoten = 301;
@@ -58,20 +62,24 @@ public class MainMacroscopicTrafficModel1D extends JCanvas {
 
     MacroscopicTrafficModel1D mtraffic1d = new MacroscopicTrafficModel1D(fed); 
 
-    double[] mtrafficerg = mtraffic1d.initialSolution(0.); // Anfangswerte (Initialisierung)
-
-    mtraffic1d.setMaxTimeStep(0.001); // Zeitschritt
+    mtraffic1d.initialSolution(0.); // Anfangswerte (Initialisierung)
+    double[] mtrafficerg = getState(mtraffic1d);
 
     double startTime = 0.0; // [sec]
     double endTime = 44700; // [sec]
-    double dt = 10.; // 0.1;
+    double dt = 10.; // Intervall fuer Neuzeichnung
+    long sleepMillis = 500; // Pause pro Bild [ms]
+
+    // Startzustand zeichnen
+    mtraffic1d.draw_it(jcanvas.getGraphics(), mtrafficerg, startTime);
+    frame.setTitle(String.format("MacroscopicTrafficModel - t = %.2f s", startTime));
+    jcanvas.repaint();
 
     // ... Schleife ueber die Zeit ...........................................
-    mtraffic1d.draw_it(getGraphics(), mtrafficerg, startTime);
     for (double t = startTime; t < endTime; t += dt) {
 
-      double ta = t;
-      double te = t + dt;
+      double ta = t;      // Anfangszeit des Ausgabeintervalls
+      double te = t + dt; // Endzeit des Ausgabeintervalls
       do {
         double ts = mtraffic1d.getMaxTimeStep();
         if ((ta + ts) > te) {
@@ -82,8 +90,15 @@ public class MainMacroscopicTrafficModel1D extends JCanvas {
       } while (ta < te);
       mtrafficerg = getState(mtraffic1d);
 
-      mtraffic1d.draw_it(getGraphics(), mtrafficerg, t + dt);
-      repaint();
+      mtraffic1d.draw_it(jcanvas.getGraphics(), mtrafficerg, t + dt);
+      frame.setTitle(String.format("MacroscopicTrafficModel - t = %.2f s", t + dt));
+      jcanvas.repaint();
+      try {
+        Thread.sleep(sleepMillis);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+        break;
+      }
 
     } // end for
 

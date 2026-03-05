@@ -34,7 +34,6 @@ import de.smile.math.Function;
  * @version 1.7.8
  */
 public class NeedleWeir extends Weir implements TimeDependentWeir{
-    
     protected double opening=1.; //oeffeneungsgrad [0.,1.]
     
     /** Creates a new instance of Weir */

@@ -32,7 +32,6 @@ import java.util.Iterator;
  * @author Peter Milbradt
  */
 public class WaveHYPElementData implements ModelData{
-    
     private static int id = SEARCH_MODEL_DATA;
     
     public WaveHYPElementData(){

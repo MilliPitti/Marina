@@ -38,8 +38,6 @@ import java.util.*;
 public class SedimentModel2DData extends SedimentProperties implements ModelData {
 
     private static int id = NO_MODEL_DATA; // Zustandsgroessen
-    private static final long serialVersionUID = 1L;
-
     double u, v; // tiefenintegrierte Geschwindigkeiten, werden durch sekundaerstroemung
                  // angepasst
     double cv;

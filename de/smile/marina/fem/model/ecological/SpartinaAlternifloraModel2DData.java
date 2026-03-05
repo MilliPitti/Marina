@@ -33,7 +33,6 @@ import java.util.Iterator;
  * @author milbradt
  */
 public class SpartinaAlternifloraModel2DData implements ModelData {
-
     private static int id = NO_MODEL_DATA;
     // Pflanzendichte Planzen pro m^2 maximal 10
     double density;

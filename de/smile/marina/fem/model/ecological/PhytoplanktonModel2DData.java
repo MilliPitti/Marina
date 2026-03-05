@@ -33,7 +33,6 @@ import java.util.Iterator;
  * @author abuabed, Milbradt
  */
 public class PhytoplanktonModel2DData implements ModelData {
-    
     private static int id = NO_MODEL_DATA;
     
     //Respiration and mortality

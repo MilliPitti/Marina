@@ -32,7 +32,6 @@ import bijava.math.ifunction.ScalarFunction1d;
  * @author milbradt
  */
 public class TimeDependentNeedleWeir extends NeedleWeir{
-    
     private ScalarFunction1d openingFct;
     private double t;
     private boolean initial=true;

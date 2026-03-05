@@ -23,7 +23,6 @@
  */
 package de.smile.marina.fem.model.ground;
 
-import java.io.Serializable;
 
 /**
  * The class "Pair" provides properties and methods of objects for ordered
@@ -35,9 +34,7 @@ import java.io.Serializable;
  * @param <X>
  * @param <Y>
  */
-public final class Pair<X extends Serializable, Y extends Serializable> implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public final class Pair<X, Y> {
     private X first;
     private Y second;
 

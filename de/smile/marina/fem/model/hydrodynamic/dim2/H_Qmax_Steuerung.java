@@ -39,6 +39,8 @@ import de.smile.math.Function;
  */
 public class H_Qmax_Steuerung extends QSteuerung {
 
+    private static final long serialVersionUID = 1L;
+
     private ScalarFunction1d h_qmax_Relation;
     private double Q_aktuell;
 

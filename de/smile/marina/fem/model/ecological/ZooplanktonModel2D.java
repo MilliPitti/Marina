@@ -128,8 +128,8 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         if (zoodata.bsc != null)
             sc = zoodata.bsc.getValue(time);
         else {
-            for (Enumeration e = initsc.elements(); e.hasMoreElements();){
-                DOF ndof= (DOF) e.nextElement();
+            for (Enumeration<DOF> e = initsc.elements(); e.hasMoreElements();) {
+                DOF ndof = e.nextElement();
                 ZooplanktonModel2DData zoo = ZooplanktonModel2DData.extract(ndof);
                 if ((dof!=ndof) & ( zoo.bsc != null )){
                     d = dof.distance(ndof);
@@ -839,9 +839,9 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
     public ModelData genData(DOF dof){
         ZooplanktonModel2DData data = new ZooplanktonModel2DData();
         int dofnumber = (int) dof.number;
-        Enumeration b = bsc.elements();
+        Enumeration<BoundaryConditionOld> b = bsc.elements();
         while (b.hasMoreElements()) {
-            BoundaryCondition bcond = (BoundaryCondition) b.nextElement();
+            BoundaryConditionOld bcond = b.nextElement();
             if ( dofnumber == bcond.pointnumber ){
                 data.bsc = bcond.function;
                 bsc.removeElement(bcond);

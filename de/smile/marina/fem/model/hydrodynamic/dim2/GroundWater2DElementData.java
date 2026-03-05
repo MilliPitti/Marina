@@ -35,8 +35,6 @@ import java.util.Iterator;
 public class GroundWater2DElementData implements ModelData{
     
     private static int id = NO_MODEL_DATA;
-    private static final long serialVersionUID = 1L;
-    
     public double mean_zG=10.;
     public double kf = 0.001;  // Permeability
     public double S0 = 0.25; // effective porosity

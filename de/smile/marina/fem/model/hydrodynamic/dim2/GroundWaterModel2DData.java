@@ -34,8 +34,6 @@ import java.util.*;
 public class GroundWaterModel2DData implements ModelData {
 
     private static int id = NO_MODEL_DATA;    // Zustandsgroeszen
-    private static final long serialVersionUID = 1L;
-    
     // Zustandsgroessenen
     public double u = 0., dudt = 0.;       // velocity in x-direction
     public double v = 0., dvdt = 0.;       // velocity in y-direction

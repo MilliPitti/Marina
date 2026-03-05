@@ -32,7 +32,6 @@ import java.util.Iterator;
  * @author milbradt
  */
 public class Current3DElementData implements ModelData{
-    
     private static int id = NO_MODEL_DATA;
     public double contiResiduum = 0.;
     

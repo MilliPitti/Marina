@@ -30,7 +30,6 @@ import de.smile.marina.fem.ModelData;
  * @author Peter Milbradt
  */
 public abstract class Mussel2DData implements ModelData {
-
     public MusselSpecies species;
 
     double density = 0.; // zwischen 0 und 1

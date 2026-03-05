@@ -50,10 +50,11 @@ import javax.xml.bind.*;
  * governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.9.2
+ * @version 4.10.2.1
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
+    private static final double INITIAL_MAX_TIMESTEP = 0.001;
 
     CurrentModel2DData[] dof_data = null;
     Current2DElementData[] element_data = null;
@@ -84,6 +85,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
         element_data = new Current2DElementData[fenet.getNumberofFElements()];
 
         setNumberOfThreads(currentdat.NumberOfThreads);
+        // sicherer Startwert fuer den allerersten Substep
+        setMaxTimeStep(INITIAL_MAX_TIMESTEP);
 
         readBoundCond(currentdat.rndwerteReader);
 
@@ -164,6 +167,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             else
                 dof_data[i].eta = -dof_data[i].z;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -291,6 +295,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
             }
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -320,8 +325,42 @@ public class CurrentModel2D extends SurfaceWaterModel {
         }
 
         inith = null;
+        // Courant-Schritt bereits aus dem Initialzustand abschaetzen
+        setMaxTimeStep(estimateCourantTimeStepFromState());
 
         return null;
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final FTriangle ele = (FTriangle) element;
+            final DOF[] dofs = ele.getDOFs();
+
+            double uMean = 0.;
+            double vMean = 0.;
+            double depthMean = 0.;
+            for (int j = 0; j < 3; j++) {
+                final CurrentModel2DData cmd = dof_data[dofs[j].number];
+                uMean += cmd.u / 3.;
+                vMean += cmd.v / 3.;
+                depthMean += cmd.totaldepth / 3.;
+            }
+
+            final double c0 = Math.sqrt(PhysicalParameters.G * Math.max(WATT, depthMean));
+            final double operatorNormX = c0 + Math.abs(uMean);
+            final double operatorNormY = c0 + Math.abs(vMean);
+            final double operatorNorm = Math.sqrt(operatorNormX * operatorNormX + operatorNormY * operatorNormY);
+
+            final double elementSize = ele.minHight;
+            final double ts = 0.5 * elementSize / operatorNorm;
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
     private void initializeWeirRoughness() {
@@ -456,6 +495,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         }
 
         inith = null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
 
         return null;
     }
@@ -563,6 +603,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         }
 
         inith = null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
 
         return null;
     }
@@ -950,7 +991,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
                 // Kontigleichung
                 terms_eta[j] = cmd.totaldepth * (udx + vdy) + (cmd.u * depthdx + cmd.v * depthdy);
-                cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]) * wlambda;
+                 if (!cmd.boundary) cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]) * wlambda;
             }
 
             for (int j = 0; j < 3; j++) {
@@ -978,7 +1019,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
                                 + cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
-                cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
+                 if (!cmd.boundary) cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
                 // Impulsgleichung y
                 terms_v[j] =
@@ -999,7 +1040,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // CouplingTerm from the derivation of the Formulation q -> v
                                 + cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out
                 ;
-                cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
+                if (!cmd.boundary) cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
 
                 // ToDo ins Sedimentmodell
                 if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements

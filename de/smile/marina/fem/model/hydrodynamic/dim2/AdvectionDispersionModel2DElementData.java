@@ -32,7 +32,6 @@ import java.util.Iterator;
  * @author Peter Milbradt
  */
 public class AdvectionDispersionModel2DElementData implements ModelData {
-
     private static int id = NO_MODEL_DATA;
     double absRes=0.; // summer der absoluten lokalen Fehler
     

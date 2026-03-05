@@ -33,7 +33,6 @@ import bijava.math.ifunction.ScalarFunction1d;
  * @version 1.7.7
  */
 public class TimeDependentUnderFlowWeir extends UnderFlowWeir{
-    
     private ScalarFunction1d crestLevelFct;
     private double t;
     private boolean initial=true;

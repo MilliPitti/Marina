@@ -32,7 +32,6 @@ import bijava.math.ifunction.*;
  * @version 2.5.0
  */
 class HeatTransportModel2DData implements ModelData {
-
     private static int id = NO_MODEL_DATA;    
 
     double temperature;  // Zustandsgroeszen

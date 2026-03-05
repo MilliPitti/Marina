@@ -49,8 +49,6 @@ public class FTriangle extends FElement {
     public static final int bit_kante_jki = 3; /* (2^0 + 2^1) Kante jk und ki */
     public static final int bit_kante_kij = 6; /* (2^1 + 2^2) Kante ki und ij */
     public static final int bit_kante_ijki = 7; /* (2^0 + 2^1 + 2^2) alle Kanten */
-    private static final long serialVersionUID = 1L;
-
     private final double koeffmat[][] = new double[3][3];
     private int ken;
     public final double minHight, maxEdgeLength;

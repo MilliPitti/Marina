@@ -34,7 +34,6 @@ import de.smile.math.Function;
  * @version 1.7.14
  */
 public class BroadCrestedWeir extends Weir implements TimeDependentWeir{
-
     protected double crestLevel;
     protected double min, max;
     protected double faktor_l_eff; // Faktor der effektiven Breite 10.09.08

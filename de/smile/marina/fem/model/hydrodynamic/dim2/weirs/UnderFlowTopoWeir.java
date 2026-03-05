@@ -35,7 +35,6 @@ import de.smile.marina.fem.FElement;
  * @author milbradt
  */
 public class UnderFlowTopoWeir extends UnderFlowWeir {
-
     /** Creates a new instance of Weir */
     public UnderFlowTopoWeir(double sluiceLevel, int[] knotennummern, FEDecomposition sysdat) {
         super(sluiceLevel, knotennummern, sysdat);

@@ -33,7 +33,6 @@ import de.smile.marina.PhysicalParameters;
  * @author Peter Milbradt   
  */
 public class FluidMudFlowModel2DData implements ModelData {
-
     private static int id = NO_MODEL_DATA;
     // Zustandsgroessenen
     public double u=0., dudt=0., dudx=0., dudy=0.;       // velocity in x-direction

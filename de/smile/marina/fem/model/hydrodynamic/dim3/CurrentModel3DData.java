@@ -52,8 +52,6 @@ import static java.lang.Math.max;
  **/
 public class CurrentModel3DData extends SurfaceWaterModelData {
     private static int id = NO_MODEL_DATA;
-    private static final long serialVersionUID = 1L;
-
     transient DiscretVectorFunction1d f; // zustandsgroessen
     public static final int _u=0;
     public static final int _v=1;

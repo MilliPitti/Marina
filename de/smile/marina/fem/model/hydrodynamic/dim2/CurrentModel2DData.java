@@ -45,8 +45,6 @@ import java.util.*;
 public class CurrentModel2DData extends SurfaceWaterModelData {
 
     private static int id = NO_MODEL_DATA;  
-    private static final long serialVersionUID = 1L;
-    
     // Zustandsgroessenen
     public double u = 0., dudt = 0.;       // velocity in x-direction
     public double v = 0., dvdt = 0.;       // velocity in y-direction

@@ -27,7 +27,6 @@ import de.smile.geom.LinearPoint;
 import de.smile.geom.MetricPoint;
 import de.smile.marina.PhysicalParameters;
 import static de.smile.math.Function.sqr;
-import java.io.Serializable;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,10 +37,7 @@ import java.util.logging.Logger;
  * @author Peter Milbradt
  * @version 4.0.0
  */
-public class SedimentProperties implements Cloneable, MetricPoint<SedimentProperties>, LinearPoint<SedimentProperties>, Serializable {
-
-    private static final long serialVersionUID = 1L;
-
+public class SedimentProperties implements Cloneable, MetricPoint<SedimentProperties>, LinearPoint<SedimentProperties> {
     public static enum CriticalShieldsFunction {
         /** Classic
          * SHIELDS (1936) gilt fuer Korngroeszen zwischen 0.1 bis 5 mm

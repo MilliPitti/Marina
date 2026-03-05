@@ -32,7 +32,6 @@ import bijava.math.ifunction.*;
  * @version 2.1
  */
 class AdvectionDispersionModel2DData implements ModelData {
-
     private static int id = NO_MODEL_DATA;    // Zustandsgroeszen
     double C;    // Ergebnisvector
     double radconc;

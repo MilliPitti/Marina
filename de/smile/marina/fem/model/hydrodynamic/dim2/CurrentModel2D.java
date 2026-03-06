@@ -989,7 +989,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
                 // Kontigleichung
                 terms_eta[j] = cmd.totaldepth * (udx + vdy) + (cmd.u * depthdx + cmd.v * depthdy);
-                 if (!cmd.boundary) cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]) * wlambda;
+                cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]) * wlambda;
             }
 
             for (int j = 0; j < 3; j++) {

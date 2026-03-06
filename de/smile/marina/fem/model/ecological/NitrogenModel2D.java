@@ -24,7 +24,6 @@
 package de.smile.marina.fem.model.ecological;
 
 import java.io.*;
-import javax.vecmath.*;
 import java.util.*;
 
 import bijava.math.ifunction.*;
@@ -59,7 +58,7 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
     
     private Vector<DOF> initsc = new Vector<>();
     
-    private int n,numberofdofs;
+    private int numberofdofs;
     private Vector<BoundaryCondition> bskonc  = new Vector<>();
     
     private NitrogenDat nitratdat;
@@ -96,7 +95,6 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         initialDOFs();
         
         numberofdofs = fenet.getNumberofDOFs();
-        n = numberofdofs;
         
         try {
             xf_fs = new FileOutputStream(nitratdat.xferg_name);
@@ -116,18 +114,6 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
         return TicadIO.HRES_H;
     }
      
-    /**
-     * @deprecated
-     */
-    
-    //------------------------------------------------------------------------
-    // getResultSize
-    //------------------------------------------------------------------------
-     @Deprecated
-    public int getResultSize() {
-        return n;
-    }//getResultSize
-    
     private double initialNitratConcentration(DOF dof, double time) {
         //    System.out.println("initialSalt");
         double sc=0., R=0., d;
@@ -425,7 +411,6 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                 // Fehlerkorrektur durchfuehren
                 for (int j = 0; j < 3; j++) {
                     DOF dof = ele.getDOF(j);
-                    final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {

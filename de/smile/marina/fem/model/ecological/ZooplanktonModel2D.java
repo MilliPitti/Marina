@@ -32,7 +32,6 @@ import de.smile.marina.fem.FElement;
 import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.ModelData;
 import de.smile.marina.fem.TimeDependentFEApproximation;
-import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryConditionOld;
 import de.smile.marina.fem.model.hydrodynamic.dim2.Current2DElementData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2DData;
@@ -69,7 +68,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
     
     private Vector<BoundaryConditionOld> bsc  = new Vector<>();
     
-    private int n,numberofdofs;
+    private int numberofdofs;
     
     private ZooplanktonDat zoodat;
     
@@ -100,7 +99,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
         initialDOFs();
         
         numberofdofs = fenet.getNumberofDOFs();
-        n = numberofdofs;
         
         try {
             xf_os = new DataOutputStream(new FileOutputStream(zoodat.xferg_name));
@@ -633,7 +631,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                 // Fehlerkorrektur durchfuehren
                 for (int j = 0; j < 3; j++) {
                     DOF dof = ele.getDOF(j);
-                    final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {
@@ -795,7 +792,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
     //------------------------------------------------------------------------
     public void setBoundaryCondition(DOF dof, double t){
         
-        int i = dof.number;
         ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
         
         /* prevention of negative concentration */

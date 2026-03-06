@@ -39,7 +39,8 @@ public class MainCurrentGroundwater1D extends Object {
   FEDecomposition fed = new FEDecomposition();
 
   JFrame frame;
-  JCanvas jcanvas;
+  JCanvas currentCanvas;
+  JCanvas groundwaterCanvas;
 
     
   
@@ -47,11 +48,14 @@ public class MainCurrentGroundwater1D extends Object {
   public MainCurrentGroundwater1D () {
     frame = new JFrame("Groundwater");
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-    frame.setSize(800,400);
-    frame.getContentPane().setLayout( new BorderLayout());
-    jcanvas = new JCanvas();
-    jcanvas.setSize(800,400);
-    frame.getContentPane().add(jcanvas);
+    frame.setSize(900,800);
+    frame.getContentPane().setLayout(new GridLayout(2, 1));
+    currentCanvas = new JCanvas();
+    groundwaterCanvas = new JCanvas();
+    currentCanvas.setSize(900,400);
+    groundwaterCanvas.setSize(900,400);
+    frame.getContentPane().add(currentCanvas);
+    frame.getContentPane().add(groundwaterCanvas);
     frame.setVisible(true);
 
     
@@ -80,62 +84,58 @@ public class MainCurrentGroundwater1D extends Object {
     CurrentModel1D  current1d  = new CurrentModel1D(fed);   // Stroemungsmodell
     GroundwaterModel1D groundwater1d = new GroundwaterModel1D(fed);  // Transportmodell
 
-    double[] currenterg  = current1d.initialSolution(0.);   // Anfangswerte (Initialisierung)
-    double[] groundwatererg = groundwater1d.initialSolution(0.);  // Anfangswerte (Initialisierung)
-
-    //    sediment1d.setNumberOfThreads(2);
-
-    Graphics g = jcanvas.getGraphics();
-    
-    current1d.setMaxTimeStep(0.01);                             // Zeitschritt
-    groundwater1d.setMaxTimeStep(0.01);                            // Zeitschritt
+    current1d.initialSolution(0.);   // Anfangswerte (Initialisierung)
+    groundwater1d.initialSolution(0.);  // Anfangswerte (Initialisierung)
+    double[] groundwatererg = getGroundwaterState(groundwater1d);
 
     double startTime = 0.0;     // [sec]
     double endTime   = 44700;   // [sec]
     double dt        = 1.0;    //0.1;
+    long sleepMillis = 100;      // Pause pro Bild [ms]
+
+    groundwater1d.draw_it(groundwaterCanvas.getGraphics(), groundwatererg, startTime);
+    current1d.draw_it(currentCanvas.getGraphics(), startTime);
+    frame.setTitle(String.format("Current+Groundwater1D - t = %.2f s", startTime));
+    currentCanvas.repaint();
+    groundwaterCanvas.repaint();
 
     //double dt=sd.dt;
     //... Schleife ueber die Zeit ...........................................
     for (double t=startTime;t<endTime;t+=dt) {
 	
-	double ta=t;
-	double te=t+dt;
-	double ts = 0.;
+	double ta = t;
+	double te = t + dt;
+	double ts;
 
 	//...Schleife ueber einen Zeitschritt................................
 	do {
-	    double ts1,ts2;
-	    ts1 = groundwater1d.getMaxTimeStep();
-	    ts2 = current1d.getMaxTimeStep();
-		   
-	    if ((currenterg != null) && (groundwatererg != null)) 
-		ts  = Math.min(ts1,ts2); 
-	    else if (groundwatererg != null) 
-		ts  = ts1; 
-	    else if (currenterg != null) 
-		ts  = ts2; 
+	    double ts1 = groundwater1d.getMaxTimeStep();
+	    double ts2 = current1d.getMaxTimeStep();
+	    ts = Math.min(ts1, ts2);
 	    
 	    if((ta+ts)>te) ts = te - ta;
 
-	    if (currenterg  != null) current1d.timeStep(ts);
-	    if (groundwatererg != null) groundwater1d.timeStep(ts);
+	    current1d.timeStep(ts);
+	    groundwater1d.timeStep(ts);
 
 	    ta+=ts;
 
 	} while (ta<te);
-        if (currenterg != null) {
-            currenterg = getCurrentState(current1d);
-        }
-        if (groundwatererg != null) {
-            groundwatererg = getGroundwaterState(groundwater1d);
-        }
+        groundwatererg = getGroundwaterState(groundwater1d);
 	
         
-	if (groundwatererg  != null) groundwater1d.draw_it(jcanvas.getGraphics(), groundwatererg,  t+dt);
-    if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), t+dt);;
+	groundwater1d.draw_it(groundwaterCanvas.getGraphics(), groundwatererg,  t+dt);
+        current1d.draw_it(currentCanvas.getGraphics(), t+dt);
+        frame.setTitle(String.format("Current+Groundwater1D - t = %.2f s", t + dt));
 	
-	jcanvas.repaint();
-        System.out.println(t);
+	currentCanvas.repaint();
+        groundwaterCanvas.repaint();
+        try {
+            Thread.sleep(sleepMillis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            break;
+        }
 
     } // end for 
     
@@ -165,19 +165,6 @@ public class MainCurrentGroundwater1D extends Object {
    */
   public static void main (String args[]) {
     MainCurrentGroundwater1D e = new MainCurrentGroundwater1D();
-  }
-
-  private double[] getCurrentState(CurrentModel1D current1d) {
-      DOF[] dofs = fed.getDOFs();
-      int n = dofs.length;
-      double[] state = new double[2 * n];
-      for (DOF dof : dofs) {
-          int i = dof.number;
-          CurrentModel1DData data = CurrentModel1DData.extract(dof);
-          state[i] = data.u;
-          state[n + i] = data.h;
-      }
-      return state;
   }
 
   private double[] getGroundwaterState(GroundwaterModel1D groundwater1d) {

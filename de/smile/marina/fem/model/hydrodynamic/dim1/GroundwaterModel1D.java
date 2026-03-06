@@ -35,9 +35,14 @@ import java.awt.*;
 import java.util.*;
 
 public class GroundwaterModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
+    private static final double INITIAL_MAX_TIMESTEP = 0.001;
 
     private int n,  numberofdofs;
     private double previousTimeStep = 0.0;
+    private double drawXMin = Double.NaN;
+    private double drawXMax = Double.NaN;
+    private double drawYMin = Double.NaN;
+    private double drawYMax = Double.NaN;
 
     /** Creates new SedimentModel1D */
     public GroundwaterModel1D(FEDecomposition fe) {
@@ -48,6 +53,7 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
 
         numberofdofs = fenet.getNumberofDOFs();
         n = numberofdofs;
+        setMaxTimeStep(INITIAL_MAX_TIMESTEP);
     }
 
     //------------------------------------------------------------------------
@@ -55,16 +61,32 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
     //------------------------------------------------------------------------
     //...Anfangswertberechnung...............................................  
     public double[] initialSolution(double time) {
-        double x[] = new double[getResultSize()];
-
         System.out.println("GroundwaterModel - Werte Initialisieren");
-        DOF[] dof = fenet.getDOFs();
-        for (int j = 0; j < dof.length; j++) {
-            int i = dof[j].number;
-            GroundwaterModel1DData smd = getGroundwaterModel1DData(dof[j]);
-            x[i] = smd.h;
+        for (DOF dof : fenet.getDOFs()) {
+            GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
+            gwm.dhdt = 0.;
         }
-        return x;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+        return null;
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+        for (FElement element : fenet.getFElements()) {
+            final FEdge edge = (FEdge) element;
+            final GroundwaterModel1DData g0 = getGroundwaterModel1DData(edge.getDOF(0));
+            final GroundwaterModel1DData g1 = getGroundwaterModel1DData(edge.getDOF(1));
+            final double astMean = 0.5 * (g0.kf / g0.S0 + g1.kf / g1.S0);
+            if (astMean <= 1.e-12) {
+                continue;
+            }
+            final double dx = edge.elm_size();
+            final double ts = 0.5 * dx * dx / astMean;
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
     // ----------------------------------------------------------------------
@@ -165,10 +187,12 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         // Modelldaten holen
         //-----------------------------------------------------------------------
 
+        double astMean = 0.;
         //...Schleife ueber Freiheitsgerade der Elemente.........................
         for (int j = 0; j < 2; j++) {
             DOF dof = ele.getDOF(j);
             GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
+            astMean += 0.5 * gwm.kf / gwm.S0;
 
             CurrentModel1DData cmd = getCurrentModel1DData(dof);
 
@@ -186,6 +210,11 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
             }
 
             dhdx += gwm.h * koeffmat[j][1];
+        }
+
+        if (astMean > 1.e-12) {
+            final double dx = ele.elm_size();
+            timeStep = 0.5 * dx * dx / astMean;
         }
 
 
@@ -247,14 +276,6 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         return cmd;
     }
 
-
-    //------------------------------------------------------------------------
-    // getResultSize
-    //------------------------------------------------------------------------
-    public int getResultSize() {
-        return n;
-    }
-
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
     @Override
@@ -301,41 +322,101 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
     // draw_it
     //------------------------------------------------------------------------
     public void draw_it(Graphics g, double[] x, double time) {
+        final DOF[] dofs = fenet.getDOFs();
+        if (g == null || dofs == null || dofs.length < 2) return;
 
-        int anz = fenet.getNumberofDOFs();
-        g.clearRect(0, 0, 800, 400);
-        g.setColor(Color.white);
-        g.fillRect(0, 0, 800, 400);
-
-
-        g.setColor(Color.black);
-        for (int k = 0; k < anz - 1; k++) {
-
-            g.drawLine((int) (5 * fenet.getDOF(k).x) + 100, 400 - ((int) (-50. * fenet.getDOF(k).z) + 200),
-                    (int) (5 * fenet.getDOF(k + 1).x + 100), 400 - ((int) (-50. * fenet.getDOF(k + 1).z) + 200));
+        int width = 800;
+        int height = 400;
+        if (g.getClipBounds() != null) {
+            width = g.getClipBounds().width;
+            height = g.getClipBounds().height;
         }
 
+        g.setColor(Color.white);
+        g.fillRect(0, 0, width, height);
 
-        for (int k = 0; k < anz - 1; k++) {
-            DOF dof0 = fenet.getDOF(k);
-            DOF dof1 = fenet.getDOF(k + 1);
+        final int marginLeft = 55;
+        final int marginRight = 20;
+        final int marginTop = 25;
+        final int marginBottom = 30;
+
+        final int plotWidth = Math.max(10, width - marginLeft - marginRight);
+        final int plotHeight = Math.max(10, height - marginTop - marginBottom);
+        final int x0 = marginLeft;
+        final int x1 = marginLeft + plotWidth;
+        final int yTop = marginTop;
+        final int yBottom = marginTop + plotHeight;
+
+        double xMinNow = Double.POSITIVE_INFINITY;
+        double xMaxNow = Double.NEGATIVE_INFINITY;
+        double yMinNow = Double.POSITIVE_INFINITY;
+        double yMaxNow = Double.NEGATIVE_INFINITY;
+
+        for (DOF dof : dofs) {
+            GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
+            final double zTop = -dof.z;
+            final double zG = -gwm.zG;
+            xMinNow = Math.min(xMinNow, dof.x);
+            xMaxNow = Math.max(xMaxNow, dof.x);
+            yMinNow = Math.min(yMinNow, Math.min(zTop, Math.min(gwm.h, zG)));
+            yMaxNow = Math.max(yMaxNow, Math.max(zTop, Math.max(gwm.h, zG)));
+        }
+
+        if (xMaxNow <= xMinNow) xMaxNow = xMinNow + 1.0;
+        if (yMaxNow <= yMinNow) yMaxNow = yMinNow + 1.0;
+
+        // Skalierung nur erweitern, niemals verkleinern
+        if (!Double.isFinite(drawXMin) || xMinNow < drawXMin) drawXMin = xMinNow;
+        if (!Double.isFinite(drawXMax) || xMaxNow > drawXMax) drawXMax = xMaxNow;
+        if (!Double.isFinite(drawYMin) || yMinNow < drawYMin) drawYMin = yMinNow;
+        if (!Double.isFinite(drawYMax) || yMaxNow > drawYMax) drawYMax = yMaxNow;
+        if (drawXMax <= drawXMin) drawXMax = drawXMin + 1.0;
+        if (drawYMax <= drawYMin) drawYMax = drawYMin + 1.0;
+
+        g.setColor(Color.black);
+        g.drawRect(x0, yTop, plotWidth, plotHeight);
+        g.drawString("Groundwater [m]", x0 + 5, yTop + 14);
+        g.drawString(String.format("t = %.2f s", time), Math.max(x0 + 5, x1 - 120), yTop + 14);
+        g.drawString(String.format("%.2f", drawYMax), 5, yTop + 5);
+        g.drawString(String.format("%.2f", drawYMin), 5, yBottom);
+
+        final int yZero = yBottom - (int) ((0.0 - drawYMin) / (drawYMax - drawYMin) * plotHeight);
+        if (yZero >= yTop && yZero <= yBottom) {
+            g.setColor(Color.lightGray);
+            g.drawLine(x0, yZero, x1, yZero);
+        }
+
+        for (int i = 0; i < dofs.length - 1; i++) {
+            DOF dof0 = dofs[i];
+            DOF dof1 = dofs[i + 1];
             GroundwaterModel1DData gwm0 = getGroundwaterModel1DData(dof0);
             GroundwaterModel1DData gwm1 = getGroundwaterModel1DData(dof1);
 
-            double h0 = gwm0.h;
-            double h1 = gwm1.h;
+            int px0 = x0 + (int) ((dof0.x - drawXMin) / (drawXMax - drawXMin) * plotWidth);
+            int px1 = x0 + (int) ((dof1.x - drawXMin) / (drawXMax - drawXMin) * plotWidth);
+
+            int pyTop0 = yBottom - (int) (((-dof0.z) - drawYMin) / (drawYMax - drawYMin) * plotHeight);
+            int pyTop1 = yBottom - (int) (((-dof1.z) - drawYMin) / (drawYMax - drawYMin) * plotHeight);
+            g.setColor(Color.black);
+            g.drawLine(px0, pyTop0, px1, pyTop1);
+
+            int pyH0 = yBottom - (int) ((gwm0.h - drawYMin) / (drawYMax - drawYMin) * plotHeight);
+            int pyH1 = yBottom - (int) ((gwm1.h - drawYMin) / (drawYMax - drawYMin) * plotHeight);
             g.setColor(Color.magenta);
-            g.drawLine((int) (5 * fenet.getDOF(k).x) + 100, (int) (-50. * h0) + 200,
-                    (int) (5 * fenet.getDOF(k + 1).x + 100), (int) (-50. * h1) + 200);
+            g.drawLine(px0, pyH0, px1, pyH1);
 
-            double z0 = -gwm0.zG;
-            double z1 = -gwm1.zG;
+            int pyZG0 = yBottom - (int) (((-gwm0.zG) - drawYMin) / (drawYMax - drawYMin) * plotHeight);
+            int pyZG1 = yBottom - (int) (((-gwm1.zG) - drawYMin) / (drawYMax - drawYMin) * plotHeight);
             g.setColor(Color.red);
-            g.drawLine((int) (5 * fenet.getDOF(k).x) + 100, (int) (-50. * z0) + 200,
-                    (int) (5 * fenet.getDOF(k + 1).x + 100), (int) (-50. * z1) + 200);
-
+            g.drawLine(px0, pyZG0, px1, pyZG1);
         }
 
+        g.setColor(Color.black);
+        g.drawString("Topographie", x0 + 10, height - 8);
+        g.setColor(Color.magenta);
+        g.drawString("h", x0 + 90, height - 8);
+        g.setColor(Color.red);
+        g.drawString("zG", x0 + 110, height - 8);
     }
 
     @Override

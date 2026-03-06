@@ -39,17 +39,29 @@ public class MainCurrentSediment1D extends Object {
   FEDecomposition fed = new FEDecomposition();
 
   JFrame frame;
-  JCanvas jcanvas;
+  JCanvas currentCanvas;
+  JCanvas sedimentCanvas;
 
   /** Creates new Main */
   public MainCurrentSediment1D () {
     frame = new JFrame("Sediment");
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-    frame.setSize(800,400);
-    frame.getContentPane().setLayout( new BorderLayout());
-    jcanvas = new JCanvas();
-    jcanvas.setSize(800,400);
-    frame.getContentPane().add(jcanvas);
+    frame.setMinimumSize(new Dimension(900, 800));
+    frame.getContentPane().setLayout(new BorderLayout());
+    currentCanvas = new JCanvas();
+    sedimentCanvas = new JCanvas();
+    currentCanvas.setPreferredSize(new Dimension(900, 390));
+    sedimentCanvas.setPreferredSize(new Dimension(900, 390));
+
+    JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, currentCanvas, sedimentCanvas);
+    split.setResizeWeight(0.5);
+    split.setContinuousLayout(true);
+    split.setOneTouchExpandable(true);
+    split.setDividerLocation(0.5);
+
+    frame.getContentPane().add(split, BorderLayout.CENTER);
+    frame.pack();
+    frame.setLocationRelativeTo(null);
     frame.setVisible(true);
 
     // Create FEDecomposition
@@ -64,59 +76,53 @@ public class MainCurrentSediment1D extends Object {
     CurrentModel1D  current1d  = new CurrentModel1D(fed);   // Stroemungsmodell
     SedimentModel1D sediment1d = new SedimentModel1D(fed);  // Transportmodell
 
-    double[] currenterg  = current1d.initialSolution(0.);   // Anfangswerte (Initialisierung)
-    double[] sedimenterg = sediment1d.initialSolution(0.);  // Anfangswerte (Initialisierung)
-
-    //    sediment1d.setNumberOfThreads(2);
-
-    Graphics g = jcanvas.getGraphics();
-    
-    current1d.setMaxTimeStep(0.01);                             // Zeitschritt
-    sediment1d.setMaxTimeStep(0.01);                            // Zeitschritt
+    current1d.initialSolution(0.);   // Anfangswerte (Initialisierung)
+    sediment1d.initialSolution(0.);  // Anfangswerte (Initialisierung)
 
     double startTime = 0.0;     // [sec]
     double endTime   = 44700;   // [sec]
     double dt        = 1.0;    //0.1;
+    long sleepMillis = 100;      // Pause pro Bild [ms]
+
+    current1d.draw_it(currentCanvas.getGraphics(), startTime);
+    sediment1d.draw_it(sedimentCanvas.getGraphics(), startTime);
+    frame.setTitle(String.format("Current+Sediment1D - t = %.2f s", startTime));
+    currentCanvas.repaint();
+    sedimentCanvas.repaint();
 
     //double dt=sd.dt;
     //... Schleife ueber die Zeit ...........................................
     for (double t=startTime;t<endTime;t+=dt) {
 	
-	double ta=t;
-	double te=t+dt;
-	double ts = 0.;
+	double ta = t;
+	double te = t + dt;
+	double ts;
 
 	//...Schleife ueber einen Zeitschritt................................
 	do {
-	    double ts1,ts2;
-	    ts1 = sediment1d.getMaxTimeStep();
-	    ts2 = current1d.getMaxTimeStep();
-		   
-	    if ((currenterg != null) && (sedimenterg != null)) 
-		ts  = Math.min(ts1,ts2); 
-	    else if (sedimenterg != null) 
-		ts  = ts1; 
-	    else if (currenterg != null) 
-		ts  = ts2; 
+	    double ts1 = sediment1d.getMaxTimeStep();
+	    double ts2 = current1d.getMaxTimeStep();
+	    ts = Math.min(ts1, ts2);
 	    
 	    if((ta+ts)>te) ts = te - ta;
 
-	    if (currenterg  != null) current1d.timeStep(ts);
-	    if (sedimenterg != null) sediment1d.timeStep(ts);
+	    current1d.timeStep(ts);
+	    sediment1d.timeStep(ts);
 
 	    ta+=ts;
 
 	} while (ta<te);
-        if (currenterg != null) {
-            currenterg = getCurrentState(current1d);
+		current1d.draw_it(currentCanvas.getGraphics(), t+dt);
+		sediment1d.draw_it(sedimentCanvas.getGraphics(), t+dt);
+        frame.setTitle(String.format("Current+Sediment1D - t = %.2f s", t + dt));
+		currentCanvas.repaint();
+		sedimentCanvas.repaint();
+        try {
+            Thread.sleep(sleepMillis);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            break;
         }
-        if (sedimenterg != null) {
-            sedimenterg = getSedimentState(sediment1d);
-        }
-	
-	if (sedimenterg  != null) sediment1d.draw_it(jcanvas.getGraphics(), sedimenterg, t+dt);
-	if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), t+dt);
-	jcanvas.repaint();
 
     } // end for 
     
@@ -128,31 +134,6 @@ public class MainCurrentSediment1D extends Object {
    */
   public static void main (String args[]) {
     MainCurrentSediment1D e = new MainCurrentSediment1D();
-  }
-
-  private double[] getCurrentState(CurrentModel1D current1d) {
-      DOF[] dofs = fed.getDOFs();
-      int n = dofs.length;
-      double[] state = new double[2 * n];
-      for (DOF dof : dofs) {
-          int i = dof.number;
-          CurrentModel1DData data = CurrentModel1DData.extract(dof);
-          state[i] = data.u;
-          state[n + i] = data.h;
-      }
-      return state;
-  }
-
-  private double[] getSedimentState(SedimentModel1D sediment1d) {
-      DOF[] dofs = fed.getDOFs();
-      int n = dofs.length;
-      double[] state = new double[n];
-      for (DOF dof : dofs) {
-          int i = dof.number;
-          SedimentModel1DData data = SedimentModel1DData.extract(dof);
-          state[i] = data.C;
-      }
-      return state;
   }
 
 }

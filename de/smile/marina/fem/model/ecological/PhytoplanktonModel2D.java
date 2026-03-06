@@ -121,14 +121,6 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         return TicadIO.HRES_H;
     }
      
-    /**
-     * @deprecated
-     */
-     @Deprecated
-    public int getResultSize() {
-        return n;
-    }
-    
     private double initialPhytoConcentration(DOF dof, double time) {
         //    System.out.println("initialSalt");
         double sc=0., R=0., d;
@@ -439,7 +431,6 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                 // Fehlerkorrektur durchfuehren
                 for (int j = 0; j < 3; j++) {
                     DOF dof = ele.getDOF(j);
-                    final int i = dof.number;
                     CurrentModel2DData  cmd  = CurrentModel2DData.extract(dof);
                     
                     synchronized (dof) {

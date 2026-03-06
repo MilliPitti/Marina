@@ -49,6 +49,11 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
 
     private final int numberofdofs;
     private double previousTimeStep = 0.0;
+    private double drawXMin = Double.NaN;
+    private double drawXMax = Double.NaN;
+    private double drawZHMin = Double.NaN;
+    private double drawZHMax = Double.NaN;
+    private double drawUMax = Double.NaN;
 
     /**
      * Creates new CurrentModel1D
@@ -85,6 +90,14 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         return null;
     }
 
+    private double getBedLevel(DOF dof) {
+        SedimentModel1DData smd = SedimentModel1DData.extract(dof);
+        if (smd != null && Double.isFinite(smd.z)) {
+            return smd.z;
+        }
+        return dof.z;
+    }
+
     private double estimateCourantTimeStepFromState() {
         double tsMin = Double.MAX_VALUE;
         for (FElement element : fenet.getFElements()) {
@@ -95,7 +108,7 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
             CurrentModel1DData c1 = CurrentModel1DData.extract(d1);
 
             double uMean = 0.5 * (c0.u + c1.u);
-            double absDepthMean = 0.5 * ((d0.z + c0.h) + (d1.z + c1.h));
+            double absDepthMean = 0.5 * ((getBedLevel(d0) + c0.h) + (getBedLevel(d1) + c1.h));
             double operatorNorm = Math.abs(uMean) + Math.sqrt(G * Math.max(WATT, absDepthMean));
             if (operatorNorm <= 1.e-12) continue;
 
@@ -176,7 +189,7 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
             u[j] = cmd.u;
             u_mean += u[j] / 2.;
             h[j] = cmd.h;
-            absdepth[j] = dof.z + cmd.h;
+            absdepth[j] = getBedLevel(dof) + cmd.h;
             if (absdepth[j] < WATT)
                 iwatt++;
             dhdx += cmd.h * koeffmat[j][1];
@@ -269,8 +282,9 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
     public void timeStep(double dt) {
         for (DOF dof : fenet.getDOFs()) {
             CurrentModel1DData current = CurrentModel1DData.extract(dof);
-            if ((dof.z + current.h) <= 0.) {
-                current.h = -dof.z;
+            double bed = getBedLevel(dof);
+            if ((bed + current.h) <= 0.) {
+                current.h = -bed;
                 current.u = 0.;
             }
             current.dudx = 0.;
@@ -304,8 +318,9 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
             current.u += dt * ru;
             current.h += dt * rh;
 
-            if ((dof.z + current.h) <= 0.) {
-                current.h = -dof.z;
+            double bed = getBedLevel(dof);
+            if ((bed + current.h) <= 0.) {
+                current.h = -bed;
                 current.u = 0.;
             }
         }
@@ -343,23 +358,33 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
 
         double xmin = Double.POSITIVE_INFINITY;
         double xmax = Double.NEGATIVE_INFINITY;
-        double zhMin = Double.POSITIVE_INFINITY;
-        double zhMax = Double.NEGATIVE_INFINITY;
-        double umax = 0.0;
+        double zhMinNow = Double.POSITIVE_INFINITY;
+        double zhMaxNow = Double.NEGATIVE_INFINITY;
+        double uMaxNow = 0.0;
 
         for (DOF dof : dofs) {
             CurrentModel1DData cmd = CurrentModel1DData.extract(dof);
-            final double zDraw = -dof.z; // z-Achse zeigt nach unten
+            final double zDraw = -getBedLevel(dof); // z-Achse zeigt nach unten
             xmin = Math.min(xmin, dof.x);
             xmax = Math.max(xmax, dof.x);
-            zhMin = Math.min(zhMin, Math.min(zDraw, cmd.h));
-            zhMax = Math.max(zhMax, Math.max(zDraw, cmd.h));
-            umax = Math.max(umax, Math.abs(cmd.u));
+            zhMinNow = Math.min(zhMinNow, Math.min(zDraw, cmd.h));
+            zhMaxNow = Math.max(zhMaxNow, Math.max(zDraw, cmd.h));
+            uMaxNow = Math.max(uMaxNow, Math.abs(cmd.u));
         }
 
         if (xmax <= xmin) xmax = xmin + 1.0;
-        if (zhMax <= zhMin) zhMax = zhMin + 1.0;
-        if (umax < 1.0e-9) umax = 1.0;
+        if (zhMaxNow <= zhMinNow) zhMaxNow = zhMinNow + 1.0;
+        if (uMaxNow < 1.0e-9) uMaxNow = 1.0;
+
+        // Skalierung nur erweitern, niemals verkleinern
+        if (!Double.isFinite(drawXMin) || xmin < drawXMin) drawXMin = xmin;
+        if (!Double.isFinite(drawXMax) || xmax > drawXMax) drawXMax = xmax;
+        if (!Double.isFinite(drawZHMin) || zhMinNow < drawZHMin) drawZHMin = zhMinNow;
+        if (!Double.isFinite(drawZHMax) || zhMaxNow > drawZHMax) drawZHMax = zhMaxNow;
+        if (!Double.isFinite(drawUMax) || uMaxNow > drawUMax) drawUMax = uMaxNow;
+        if (drawXMax <= drawXMin) drawXMax = drawXMin + 1.0;
+        if (drawZHMax <= drawZHMin) drawZHMax = drawZHMin + 1.0;
+        if (drawUMax < 1.0e-9) drawUMax = 1.0;
 
         g.setColor(Color.black);
         g.drawRect(x0, yTop, plotWidth, plotHeight);
@@ -375,7 +400,7 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         g.setColor(Color.red);
         g.drawString("u", x0 + 90, yTop + 14);
 
-        int zhZeroY = yBottom - (int) ((0.0 - zhMin) / (zhMax - zhMin) * plotHeight);
+        int zhZeroY = yBottom - (int) ((0.0 - drawZHMin) / (drawZHMax - drawZHMin) * plotHeight);
         if (zhZeroY >= yTop && zhZeroY <= yBottom) {
             g.setColor(Color.lightGray);
             g.drawLine(x0, zhZeroY, x1, zhZeroY);
@@ -385,34 +410,34 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         g.drawLine(x0, uZeroY, x1, uZeroY);
 
         g.setColor(Color.black);
-        g.drawString(String.format("%.2f", zhMax), 5, yTop + 5);
-        g.drawString(String.format("%.2f", zhMin), 5, yBottom);
-        g.drawString(String.format("+%.2f", umax), x1 + 5, yTop + 5);
-        g.drawString(String.format("-%.2f", umax), x1 + 5, yBottom);
+        g.drawString(String.format("%.2f", drawZHMax), 5, yTop + 5);
+        g.drawString(String.format("%.2f", drawZHMin), 5, yBottom);
+        g.drawString(String.format("+%.2f", drawUMax), x1 + 5, yTop + 5);
+        g.drawString(String.format("-%.2f", drawUMax), x1 + 5, yBottom);
 
         for (int i = 0; i < dofs.length - 1; i++) {
             DOF d0 = dofs[i];
             DOF d1 = dofs[i + 1];
             CurrentModel1DData c0 = CurrentModel1DData.extract(d0);
             CurrentModel1DData c1 = CurrentModel1DData.extract(d1);
-            final double z0Draw = -d0.z; // z-Achse zeigt nach unten
-            final double z1Draw = -d1.z; // z-Achse zeigt nach unten
+            final double z0Draw = -getBedLevel(d0); // z-Achse zeigt nach unten
+            final double z1Draw = -getBedLevel(d1); // z-Achse zeigt nach unten
 
-            int px0 = x0 + (int) ((d0.x - xmin) / (xmax - xmin) * plotWidth);
-            int px1 = x0 + (int) ((d1.x - xmin) / (xmax - xmin) * plotWidth);
+            int px0 = x0 + (int) ((d0.x - drawXMin) / (drawXMax - drawXMin) * plotWidth);
+            int px1 = x0 + (int) ((d1.x - drawXMin) / (drawXMax - drawXMin) * plotWidth);
 
-            int pz0 = yBottom - (int) ((z0Draw - zhMin) / (zhMax - zhMin) * plotHeight);
-            int pz1 = yBottom - (int) ((z1Draw - zhMin) / (zhMax - zhMin) * plotHeight);
+            int pz0 = yBottom - (int) ((z0Draw - drawZHMin) / (drawZHMax - drawZHMin) * plotHeight);
+            int pz1 = yBottom - (int) ((z1Draw - drawZHMin) / (drawZHMax - drawZHMin) * plotHeight);
             g.setColor(new Color(139, 69, 19));
             g.drawLine(px0, pz0, px1, pz1);
 
-            int ph0 = yBottom - (int) ((c0.h - zhMin) / (zhMax - zhMin) * plotHeight);
-            int ph1 = yBottom - (int) ((c1.h - zhMin) / (zhMax - zhMin) * plotHeight);
+            int ph0 = yBottom - (int) ((c0.h - drawZHMin) / (drawZHMax - drawZHMin) * plotHeight);
+            int ph1 = yBottom - (int) ((c1.h - drawZHMin) / (drawZHMax - drawZHMin) * plotHeight);
             g.setColor(Color.blue);
             g.drawLine(px0, ph0, px1, ph1);
 
-            int pu0 = yBottom - (int) ((c0.u + umax) / (2.0 * umax) * plotHeight);
-            int pu1 = yBottom - (int) ((c1.u + umax) / (2.0 * umax) * plotHeight);
+            int pu0 = yBottom - (int) ((c0.u + drawUMax) / (2.0 * drawUMax) * plotHeight);
+            int pu1 = yBottom - (int) ((c1.u + drawUMax) / (2.0 * drawUMax) * plotHeight);
             g.setColor(Color.red);
             g.drawLine(px0, pu0, px1, pu1);
         }

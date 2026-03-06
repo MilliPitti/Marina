@@ -107,14 +107,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
         return TicadIO.HRES_H;
     }
      
-    /**
-     * @deprecated
-     */
-     @Deprecated
-    public int getResultSize() {
-        return n;
-    }
-    
     private double initialDetritConcentration(DOF dof, double time) {
         //    System.out.println("initialSalt");
         double sc=0., R=0., d;

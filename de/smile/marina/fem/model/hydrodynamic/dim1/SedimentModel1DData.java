@@ -35,8 +35,12 @@ import java.util.Iterator;
  public class SedimentModel1DData implements ModelData {
   // Zustandsgroessen
   double C; double dCdt; double dCdx;
+  double z;
+  double z0;
+  double dzdt;
   // Ergebnisvector
   double rC;
+  double rZ;
     
   // boudary conditions
   ScalarFunction1d bqx=null;

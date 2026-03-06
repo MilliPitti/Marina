@@ -47,7 +47,7 @@ public class MarinaXML {
     
     public final static int majorversion = 4;
     public final static int minorversion = 10;
-    public final static String update = "1";
+    public final static String update = "3";
 
     public final static boolean release=true;
     
@@ -1050,16 +1050,13 @@ public class MarinaXML {
                     heatTransportModel2D.setStartTime(startTime);
                     heatTransportModel2D.setMaxTimeStep(0.1);
 
-                    double[] heatTransportErg = null;
-
-
                     // Startwerte fuer Temperaturen initialisiert
                     if( configuration.getHeatTransportModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
                         if( configuration.getHeatTransportModel2D().getInitialCondition().getStartFromResult() != null ) {
                             // Die Unterscheidung in Dateiformate fehlt noch ...
                             try {
-                                heatTransportErg = heatTransportModel2D.initialSolutionFromTicadErgFile(base_dir+configuration.getHeatTransportModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getHeatTransportModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
+                                heatTransportModel2D.initialSolutionFromTicadErgFile(base_dir+configuration.getHeatTransportModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getHeatTransportModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
                             } catch (Exception e) {
                                 System.out.println("\t !! StartDatei laesst sich nicht einlesen !!");
                                 System.exit(0);
@@ -1073,24 +1070,24 @@ public class MarinaXML {
                                 if(configuration.getHeatTransportModel2D().getInitialCondition().getTemperature().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     heatTdat.temperatureFileType=SmileIO.MeshFileType.SystemDat;
                                     heatTdat.temperature_name=base_dir+configuration.getHeatTransportModel2D().getInitialCondition().getTemperature().getTriangleMesh().getFileName();
-                                    heatTransportErg = heatTransportModel2D.initialTemperatureFromSysDat(heatTdat.temperature_name,startTime);
+                                    heatTransportModel2D.initialTemperatureFromSysDat(heatTdat.temperature_name,startTime);
                                 }
                                 if(configuration.getHeatTransportModel2D().getInitialCondition().getTemperature().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     heatTdat.temperatureFileType=SmileIO.MeshFileType.JanetBin;
                                     heatTdat.temperature_name=base_dir+configuration.getHeatTransportModel2D().getInitialCondition().getTemperature().getTriangleMesh().getFileName();
 
-                                    heatTransportErg = heatTransportModel2D.initialTemperatureFromJanetBin(heatTdat.temperature_name,startTime);
+                                    heatTransportModel2D.initialTemperatureFromJanetBin(heatTdat.temperature_name,startTime);
                                 }
                             }
                             // Ist eine konstante Konzentration vorgegeben ?
                             else if( configuration.getHeatTransportModel2D().getInitialCondition().getTemperature().getConstant() != null ) {
                               double CTemp = configuration.getHeatTransportModel2D().getInitialCondition().getTemperature().getConstant();
-                              heatTransportErg = heatTransportModel2D.constantInitialSolution(CTemp);
+                              heatTransportModel2D.constantInitialSolution(CTemp);
                             }
                         }
                     } else {
                         //Interpolation aus Randwerten
-                        heatTransportErg = heatTransportModel2D.initialSolution(startTime);
+                        heatTransportModel2D.initialSolution(startTime);
                     }
 
                     timeDependentModels.add(heatTransportModel2D);
@@ -1185,8 +1182,6 @@ public class MarinaXML {
                     groundwatermodel.setStartTime(startTime);
                     groundwatermodel.setMaxTimeStep(0.1);
 
-                    double[] groundwatererg=null;
-
                     // Sollen Startwerte initialisiert werden ?
                     if( configuration.getGroundWaterModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
@@ -1194,7 +1189,7 @@ public class MarinaXML {
                             // Die Unterscheidung in Dateiformate fehlt noch ...
                             groundwaterdat.startWerteDatei=base_dir+configuration.getGroundWaterModel2D().getInitialCondition().getStartFromResult().getFileName();
                             groundwaterdat.startSatz=configuration.getGroundWaterModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter();
-                            groundwatererg = groundwatermodel.initialSolutionFromTicadErgFile(groundwaterdat.startWerteDatei, groundwaterdat.startSatz);
+                            groundwatermodel.initialSolutionFromTicadErgFile(groundwaterdat.startWerteDatei, groundwaterdat.startSatz);
                         } else
                         // Ist ein Initialwasserstandsmodell vorhanden ?
                         if( configuration.getGroundWaterModel2D().getInitialCondition().getWaterLevel() != null ) {
@@ -1202,12 +1197,12 @@ public class MarinaXML {
                                 if(configuration.getGroundWaterModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     groundwaterdat.waterLevelFileType=SmileIO.MeshFileType.SystemDat;
                                     groundwaterdat.waterlevel_name=base_dir+configuration.getGroundWaterModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileName();
-                                    groundwatererg = groundwatermodel.initialHfromASCIIFile(groundwaterdat.waterlevel_name,startTime);
+                                    groundwatermodel.initialHfromASCIIFile(groundwaterdat.waterlevel_name,startTime);
                                 }
                                 if(configuration.getGroundWaterModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     groundwaterdat.waterLevelFileType=SmileIO.MeshFileType.JanetBin;
                                     groundwaterdat.waterlevel_name=base_dir+configuration.getGroundWaterModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileName();
-                                    groundwatererg = groundwatermodel.initialHfromJanetBin(groundwaterdat.waterlevel_name,startTime);
+                                    groundwatermodel.initialHfromJanetBin(groundwaterdat.waterlevel_name,startTime);
                                 }
                             }
 
@@ -1216,17 +1211,17 @@ public class MarinaXML {
                             System.out.println("Lese konstanten Wasserstand!");
                             // Code fehlt noch
                             final double Cwaterlevel = configuration.getGroundWaterModel2D().getInitialCondition().getWaterLevel().getConstant();
-                            groundwatererg = groundwatermodel.ConstantInitialSolution(Cwaterlevel);
+                            groundwatermodel.ConstantInitialSolution(Cwaterlevel);
 
                         }
                     } else {
-                        groundwatererg = groundwatermodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        groundwatermodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                         System.out.println("Keine Startwerte gegeben !");
                     }
 
                     }
                     else{
-                         groundwatererg = groundwatermodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                         groundwatermodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                     }
 
                     timeDependentModels.add(groundwatermodel);
@@ -1304,8 +1299,6 @@ public class MarinaXML {
                     oxygenTransportModel2d.setStartTime(startTime);
                     oxygenTransportModel2d.setMaxTimeStep(0.1);
 
-                    double[] oxygenerg=null;
-
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getOxygenTransportModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
@@ -1334,18 +1327,18 @@ public class MarinaXML {
                         else if( configuration.getOxygenTransportModel2D().getInitialCondition().getConcentration().getConstant() != null ) {
                             double CConc = configuration.getOxygenTransportModel2D().getInitialCondition().getConcentration().getConstant();
 
-                           oxygenerg = oxygenTransportModel2d.constantInitialSolution(CConc);
+                           oxygenTransportModel2d.constantInitialSolution(CConc);
                         }
                     } else {
                         //Interpolation aus den spezifizierten Randbedingungen
-                        oxygenerg = oxygenTransportModel2d.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        oxygenTransportModel2d.initialSolution(controlParameter.getSimulationTime().getStartTime());
                         System.out.println("Keine Startwerte gegeben !");
                     }
 
                     }
                     else{
                          //Interpolation aus den spezifizierten Randbedingungen
-                        oxygenerg = oxygenTransportModel2d.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        oxygenTransportModel2d.initialSolution(controlParameter.getSimulationTime().getStartTime());
 
                     }
 
@@ -1375,8 +1368,6 @@ public class MarinaXML {
                     nitratmodel.setStartTime(startTime);
                     nitratmodel.setMaxTimeStep(0.1);
 
-                    double[] nitraterg=null;
-
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getNitratTransportModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
@@ -1404,18 +1395,18 @@ public class MarinaXML {
                         else if( configuration.getNitratTransportModel2D().getInitialCondition().getConcentration().getConstant() != null ) {
                             double CConc = configuration.getNitratTransportModel2D().getInitialCondition().getConcentration().getConstant();
 
-                           nitraterg = nitratmodel.constantInitialSolution(CConc);
+                           nitratmodel.constantInitialSolution(CConc);
 
                         }
                     } else {
                         //Interpolation aus den spezifizierten Randbedingungen
-                        nitraterg = nitratmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        nitratmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                         System.out.println("Keine Startwerte gegeben !");
                     }
                     }
                     else{
                          //Interpolation aus den spezifizierten Randbedingungen
-                        nitraterg = nitratmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        nitratmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
 
                     }
 
@@ -1444,8 +1435,6 @@ public class MarinaXML {
                     PhytoplanktonModel2D phytomodel =  new PhytoplanktonModel2D(feapp, phytodat);
                     phytomodel.setStartTime(startTime);
                     phytomodel.setMaxTimeStep(0.1);
-
-                    double[] phytoerg=null;
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getPhytoplanktonTransportModel2D().getInitialCondition() != null ) {
@@ -1478,19 +1467,17 @@ public class MarinaXML {
                         else if( configuration.getPhytoplanktonTransportModel2D().getInitialCondition().getConcentration().getConstant() != null ) {
                             System.out.println("Lese konstante Phytoplanktonkonzentration!");
                             double CConc = configuration.getPhytoplanktonTransportModel2D().getInitialCondition().getConcentration().getConstant();
-
-                          phytoerg = phytomodel.constantInitialSolution(CConc);
-
+                            phytomodel.constantInitialSolution(CConc);
                         }
                     } else {
                         //Interpolation aus den spezifizierten Randbedingungen
-                        phytoerg = phytomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        phytomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                         System.out.println("Keine Startwerte gegeben !");
                     }
                     }
                     else{
                          //Interpolation aus den spezifizierten Randbedingungen
-                        phytoerg = phytomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        phytomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
 
                     }
 
@@ -1519,8 +1506,6 @@ public class MarinaXML {
                     ZooplanktonModel2D zoomodel =  new ZooplanktonModel2D(feapp, zoodat);
                     zoomodel.setStartTime(startTime);
                     zoomodel.setMaxTimeStep(0.1);
-
-                    double[] zooerg=null;
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getZooplanktonTransportModel2D().getInitialCondition() != null ) {
@@ -1554,19 +1539,19 @@ public class MarinaXML {
                             System.out.println("Lese konstante Zooplanktonkonzentration!");
                             double CConc = configuration.getZooplanktonTransportModel2D().getInitialCondition().getConcentration().getConstant();
 
-                           zooerg = zoomodel.constantInitialSolution(CConc);
+                           zoomodel.constantInitialSolution(CConc);
 
                         }
                     } else {
                         //Interpolation aus den spezifizierten Randbedingungen
-                        zooerg = zoomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        zoomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                         System.out.println("Keine Startwerte gegeben !");
                     }
 
                     }
                     else{
                          //Interpolation aus den spezifizierten Randbedingungen
-                        zooerg = zoomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        zoomodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
 
                     }
 
@@ -1595,8 +1580,6 @@ public class MarinaXML {
                     DetritusModel2D detritusmodel =  new DetritusModel2D(feapp, detritusdat);
                     detritusmodel.setStartTime(startTime);
                     detritusmodel.setMaxTimeStep(0.1);
-
-                    double[] detrituserg=null;
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getDetritusTransportModel2D().getInitialCondition() != null ) {
@@ -1627,19 +1610,19 @@ public class MarinaXML {
                         else if( configuration.getDetritusTransportModel2D().getInitialCondition().getConcentration().getConstant() != null ) {
                             System.out.println("Lese konstante Detrituskonzentration!");
                             double CConc = configuration.getDetritusTransportModel2D().getInitialCondition().getConcentration().getConstant();
-                           detrituserg = detritusmodel.constantInitialSolution(CConc);
+                            detritusmodel.constantInitialSolution(CConc);
 
                         }
                     } else {
                         //Interpolation aus den spezifizierten Randbedingungen
-                        detrituserg = detritusmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        detritusmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
                         System.out.println("Keine Startwerte gegeben !");
                     }
 
                     }
                     else{
                          //Interpolation aus den spezifizierten Randbedingungen
-                        detrituserg = detritusmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
+                        detritusmodel.initialSolution(controlParameter.getSimulationTime().getStartTime());
 
                     }
 

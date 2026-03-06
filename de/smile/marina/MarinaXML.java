@@ -334,8 +334,6 @@ public class MarinaXML {
                     currentmodel2D =  new CurrentModel2D(feapp, currentdat);
                     currentmodel2D.setStartTime(startTime);
 
-                    double[] currerg=null;
-
                     // Startwerte initialisiert
                     if( configuration.getCurrentModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
@@ -345,7 +343,7 @@ public class MarinaXML {
                             currentdat.startSatz=configuration.getCurrentModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter();
                             boolean useSysDatZ=(configuration.getSedimentTransportModel2D()==null);
                             try {
-                                currerg = currentmodel2D.initialSolutionFromTicadErgFile(currentdat.startWerteDatei, currentdat.startSatz, useSysDatZ);
+                                currentmodel2D.initialSolutionFromTicadErgFile(currentdat.startWerteDatei, currentdat.startSatz, useSysDatZ);
                             } catch (Exception e) {
                                 System.out.println("\t !! Current StartFile:"+ currentdat.startWerteDatei + " can not be opened !!");
                                 System.out.println(e);
@@ -360,30 +358,28 @@ public class MarinaXML {
                                 if(configuration.getCurrentModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     currentdat.waterLevelFileType=SmileIO.MeshFileType.SystemDat;
                                     currentdat.waterlevel_name=base_dir+configuration.getCurrentModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileName();
-                                    currerg = currentmodel2D.initialHfromSysDat(currentdat.waterlevel_name,startTime);
+                                    currentmodel2D.initialHfromSysDat(currentdat.waterlevel_name,startTime);
                                 }
                                 if(configuration.getCurrentModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     currentdat.waterLevelFileType=SmileIO.MeshFileType.JanetBin;
                                     currentdat.waterlevel_name=base_dir+configuration.getCurrentModel2D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileName();
-                                    currerg = currentmodel2D.initialHfromJanetBin(currentdat.waterlevel_name,startTime);
+                                    currentmodel2D.initialHfromJanetBin(currentdat.waterlevel_name,startTime);
                                 }
                             }
 
                             // Ist ein konstanter Initialwasserstand vorhanden ?
                             else if( configuration.getCurrentModel2D().getInitialCondition().getWaterLevel().getConstant() != null ) {
                               double Cwaterlevel = configuration.getCurrentModel2D().getInitialCondition().getWaterLevel().getConstant();
-                              currerg = currentmodel2D.constantInitialWaterLevel(Cwaterlevel);
+                              currentmodel2D.constantInitialWaterLevel(Cwaterlevel);
                             }
                         }
 
                     } else {
                         //Interpolation aus Randwerten
-                        currerg = currentmodel2D.initialSolution(startTime);
+                        currentmodel2D.initialSolution(startTime);
                     }
 
                     currentmodel2D.setBoundaryConditions();
-
-                    currentmodel2D.setMaxTimeStep(Math.min(Math.abs(controlParameter.getSimulationTime().getResultTimeStep())/100.,0.1));
 
                     timeDependentModels.add(currentmodel2D);
                 }
@@ -469,8 +465,6 @@ public class MarinaXML {
                     currentmodel3D.setStartTime(startTime);
                     currentmodel3D.setMaxTimeStep(0.1);
 
-                    double[] currerg;
-
                     // Sollen Startwerte initialisiert werden ?
                     double Cwaterlevel = 0.0;
                     boolean Cwaterlevelset = false;
@@ -491,18 +485,18 @@ public class MarinaXML {
                                 if(configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     currentdat.waterLevelFileType=SmileIO.MeshFileType.SystemDat;
                                     currentdat.waterlevel_name=base_dir+configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileName();
-                                    currerg = currentmodel3D.initialHfromSysDat(currentdat.waterlevel_name,startTime);
+                                    currentmodel3D.initialHfromSysDat(currentdat.waterlevel_name,startTime);
                                 }
                                 if(configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     currentdat.waterLevelFileType=SmileIO.MeshFileType.JanetBin;
                                     currentdat.waterlevel_name=base_dir+configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getTriangleMesh().getFileName();
-                                    currerg = currentmodel3D.initialHfromJanetBin(currentdat.waterlevel_name,startTime);
+                                    currentmodel3D.initialHfromJanetBin(currentdat.waterlevel_name,startTime);
                                 }
                             }
 
                             // Ist ein konstanter Initialwasserstand vorhanden ?
                             else if( configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getConstant() != null ) {
-                              currerg = currentmodel3D.constantInitialWaterLevel(configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getConstant());
+                              currentmodel3D.constantInitialWaterLevel(configuration.getCurrentModel3D().getInitialCondition().getWaterLevel().getConstant());
                             }
                         }
                     } else {
@@ -511,24 +505,24 @@ public class MarinaXML {
                     boolean useSysDatZ=(configuration.getSedimentTransportModel2D()==null); // Peter 20.11.2015 Wenn ein Sedimentmodell
                     if (currentdat.startWerte3DDatei!=null){
                         try {
-                            currerg = currentmodel3D.initialSolutionfromErgFile(currentdat.startWerte3DDatei, currentdat.start3DSatz, useSysDatZ);
+                            currentmodel3D.initialSolutionfromErgFile(currentdat.startWerte3DDatei, currentdat.start3DSatz, useSysDatZ);
                         } catch (Exception e) {
                             System.out.println("Current3DErg-StartDatei laesst sich nicht einlesen!");
-                            currerg = currentmodel3D.initialSolution(startTime);
+                            currentmodel3D.initialSolution(startTime);
                         }
                     } else {
                         if (currentdat.startWerteDatei!=null)
                             try {
-                                currerg = currentmodel3D.initialSolutionFromTicadErgFile(currentdat.startWerteDatei, currentdat.startSatz, useSysDatZ);
+                                currentmodel3D.initialSolutionFromTicadErgFile(currentdat.startWerteDatei, currentdat.startSatz, useSysDatZ);
                             } catch (Exception e) {
                                 System.out.println("TicadSysErg-StartDatei: "+ currentdat.startWerteDatei +" laesst sich nicht einlesen!");
-                                currerg = currentmodel3D.initialSolution(startTime);
+                                currentmodel3D.initialSolution(startTime);
                             } 
                         else
                             if(Cwaterlevelset)
-                                currerg = currentmodel3D.constantInitialWaterLevel(Cwaterlevel);
+                                currentmodel3D.constantInitialWaterLevel(Cwaterlevel);
                             else
-                                currerg = currentmodel3D.initialSolution(startTime);
+                                currentmodel3D.initialSolution(startTime);
                     }
 
                     timeDependentModels.add(currentmodel3D);
@@ -652,15 +646,13 @@ public class MarinaXML {
                         sedimentmodel.setStartTime(startTime);
                         sedimentmodel.setMaxTimeStep(0.1);
 
-                        double[] sedimenterg = null;
-
                         // Startwerte fuer Konzentrationen initialisiert
                         if (configuration.getSedimentTransportModel2D().getInitialCondition() != null) {
                             // Ist eine Startdatei vorhanden ?
                             if (configuration.getSedimentTransportModel2D().getInitialCondition().getStartFromResult() != null) {
                                 // Die Unterscheidung in Dateiformate fehlt noch ...
                                 try {
-                                    sedimenterg = sedimentmodel.initialSolutionFromTicadErgFile(base_dir + configuration.getSedimentTransportModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getSedimentTransportModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
+                                    sedimentmodel.initialSolutionFromTicadErgFile(base_dir + configuration.getSedimentTransportModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getSedimentTransportModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
                                 } catch (Exception e) {
                                     System.out.println("\t !! StartDatei laesst sich nicht einlesen !!");
                                     System.exit(0);
@@ -672,22 +664,22 @@ public class MarinaXML {
                                     if (configuration.getSedimentTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE) {
                                         sedimentdat.concentrationFileType = SmileIO.MeshFileType.SystemDat;
                                         sedimentdat.concentration_name = base_dir + configuration.getSedimentTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileName();
-                                        sedimenterg = sedimentmodel.initialConcentrationFromSysDat(sedimentdat.concentration_name, startTime);
+                                        sedimentmodel.initialConcentrationFromSysDat(sedimentdat.concentration_name, startTime);
                                     }
                                     if (configuration.getSedimentTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE) {
                                         sedimentdat.concentrationFileType = SmileIO.MeshFileType.JanetBin;
                                         sedimentdat.concentration_name = base_dir + configuration.getSedimentTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileName();
-                                        sedimenterg = sedimentmodel.initialConcentrationFromJanetBin(sedimentdat.concentration_name, startTime);
+                                        sedimentmodel.initialConcentrationFromJanetBin(sedimentdat.concentration_name, startTime);
                                     }
                                 } // Ist eine konstante Konzentration vorgegeben ?
                                 else if (configuration.getSedimentTransportModel2D().getInitialCondition().getConcentration().getConstant() != null) {
                                     double CConc = configuration.getSedimentTransportModel2D().getInitialCondition().getConcentration().getConstant();
-                                    sedimenterg = sedimentmodel.constantInitialSolution(CConc);
+                                    sedimentmodel.constantInitialSolution(CConc);
                                 }
                             }
                         } else {
                             //Interpolation aus Randwerten
-                            sedimenterg = sedimentmodel.initialSolution(startTime);
+                            sedimentmodel.initialSolution(startTime);
                         }
 
                         // Sind Duenenparameter definiert ?
@@ -763,17 +755,15 @@ public class MarinaXML {
                     wavehypmodel.setStartTime(startTime);
                     wavehypmodel.setMaxTimeStep(0.1);
 
-                    double[] wavehyperg=null;
-
                     if (wavehypdat.startWerteDatei!=null)
                         try {
-                            wavehyperg = wavehypmodel.initialSolutionFromTicadErgFile(wavehypdat.startWerteDatei, wavehypdat.startSatz);
+                            wavehypmodel.initialSolutionFromTicadErgFile(wavehypdat.startWerteDatei, wavehypdat.startSatz);
                         } catch (Exception e) {
                             System.out.println("\t !! StartDatei laesst sich nicht einlesen !!");
                             System.exit(0);
                         }
                     else
-                        wavehyperg = wavehypmodel.initialSolution(startTime);
+                        wavehypmodel.initialSolution(startTime);
 
                     timeDependentModels.add(wavehypmodel);
 
@@ -805,16 +795,13 @@ public class MarinaXML {
                     saltmodel.setStartTime(startTime);
                     saltmodel.setMaxTimeStep(0.1);
 
-                    double[] salterg = null;
-
-
                     // Startwerte fuer Konzentrationen initialisiert
                     if( configuration.getSaltTransportModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
                         if( configuration.getSaltTransportModel2D().getInitialCondition().getStartFromResult() != null ) {
                             // Die Unterscheidung in Dateiformate fehlt noch ...
                             try {
-                                salterg = saltmodel.initialSolutionFromTicadErgFile(base_dir+configuration.getSaltTransportModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getSaltTransportModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
+                                saltmodel.initialSolutionFromTicadErgFile(base_dir+configuration.getSaltTransportModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getSaltTransportModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
                             } catch (Exception e) {
                                 System.out.println("\t !! StartDatei laesst sich nicht einlesen !!");
                                 System.exit(0);
@@ -826,24 +813,24 @@ public class MarinaXML {
                                 if(configuration.getSaltTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     saltdat.concentrationFileType=SmileIO.MeshFileType.SystemDat;
                                     saltdat.concentration_name=base_dir+configuration.getSaltTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileName();
-                                    salterg = saltmodel.initialSaltConcentrationFromSysDat(saltdat.concentration_name,startTime);
+                                    saltmodel.initialSaltConcentrationFromSysDat(saltdat.concentration_name,startTime);
                                 }
                                 if(configuration.getSaltTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     saltdat.concentrationFileType=SmileIO.MeshFileType.JanetBin;
                                     saltdat.concentration_name=base_dir+configuration.getSaltTransportModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileName();
-                                    salterg = saltmodel.initialSaltConcentrationFromJanetBin(saltdat.concentration_name,startTime);
+                                    saltmodel.initialSaltConcentrationFromJanetBin(saltdat.concentration_name,startTime);
                                 }
                             }
 
                             // Ist eine konstante Konzentration vorgegeben ?
                             else if( configuration.getSaltTransportModel2D().getInitialCondition().getConcentration().getConstant() != null ) {
                               double CConc = configuration.getSaltTransportModel2D().getInitialCondition().getConcentration().getConstant();
-                              salterg = saltmodel.constantInitialSolution(CConc);
+                              saltmodel.constantInitialSolution(CConc);
                             }
                         }
                     } else {
                         //Interpolation aus Randwerten
-                        salterg = saltmodel.initialSolution(startTime);
+                        saltmodel.initialSolution(startTime);
                     }
 
                     timeDependentModels.add(saltmodel);
@@ -870,8 +857,6 @@ public class MarinaXML {
                     FluidMudFlowModel2D fluidMudModel2D = new FluidMudFlowModel2D(feapp, fluidMudDat);
                     fluidMudModel2D.setStartTime(startTime);
 
-                    double[] fluidMudErg=null;
-
                     // Startwerte initialisiert
                     if( configuration.getFluidMudFlowModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
@@ -880,7 +865,7 @@ public class MarinaXML {
                             fluidMudDat.startWerteDatei=base_dir+configuration.getFluidMudFlowModel2D().getInitialCondition().getStartFromResult().getFileName();
                             fluidMudDat.startSatz=configuration.getFluidMudFlowModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter();
                             try {
-                                fluidMudErg = fluidMudModel2D.initialSolutionFromTicadErgFile(fluidMudDat.startWerteDatei, fluidMudDat.startSatz);
+                                fluidMudModel2D.initialSolutionFromTicadErgFile(fluidMudDat.startWerteDatei, fluidMudDat.startSatz);
                             } catch (Exception e) {
                                 System.out.println("\t !! Fluid Mud Flow StartFile:"+ fluidMudDat.startWerteDatei + " can not be opened !!");
                                 System.out.println(e);
@@ -896,19 +881,19 @@ public class MarinaXML {
                                 if(configuration.getFluidMudFlowModel2D().getInitialCondition().getFluidMudLevel().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     fluidMudDat.fluidmudLevelFileType=SmileIO.MeshFileType.SystemDat;
                                     fluidMudDat.fluidmudlevel_name=base_dir+configuration.getFluidMudFlowModel2D().getInitialCondition().getFluidMudLevel().getTriangleMesh().getFileName();
-                                    fluidMudErg = fluidMudModel2D.initialHfromSysDat(fluidMudDat.fluidmudlevel_name,startTime);
+                                    fluidMudModel2D.initialHfromSysDat(fluidMudDat.fluidmudlevel_name,startTime);
                                 }
                                 if(configuration.getFluidMudFlowModel2D().getInitialCondition().getFluidMudLevel().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     fluidMudDat.fluidmudLevelFileType=SmileIO.MeshFileType.JanetBin;
                                     fluidMudDat.fluidmudlevel_name=base_dir+configuration.getFluidMudFlowModel2D().getInitialCondition().getFluidMudLevel().getTriangleMesh().getFileName();
-                                    fluidMudErg = fluidMudModel2D.initialHfromJanetBin(fluidMudDat.fluidmudlevel_name,startTime);
+                                    fluidMudModel2D.initialHfromJanetBin(fluidMudDat.fluidmudlevel_name,startTime);
                                 }
                             }
                             // Ist ein konstanter InitialFluidMudLevel vorhanden ?
                             else if( configuration.getFluidMudFlowModel2D().getInitialCondition().getFluidMudLevel().getConstant() != null ) {
                             System.out.println("Lese konstanten InitialFluidMudLevel!");
                               double Cwaterlevel = configuration.getFluidMudFlowModel2D().getInitialCondition().getFluidMudLevel().getConstant();
-                              fluidMudErg = fluidMudModel2D.constantInitialSolution(Cwaterlevel);
+                              fluidMudModel2D.constantInitialSolution(Cwaterlevel);
                             }
                         }
 
@@ -958,7 +943,7 @@ public class MarinaXML {
 
                     } else {
                         //Interpolation aus Randwerten
-                        fluidMudErg = fluidMudModel2D.initialSolution(startTime);
+                        fluidMudModel2D.initialSolution(startTime);
                     }
 
                     fluidMudModel2D.setBoundaryConditions();
@@ -998,15 +983,13 @@ public class MarinaXML {
                     admodel.setStartTime(startTime);
                     admodel.setMaxTimeStep(0.1);
 
-                    double[] aderg = null;
-
                     // Startwerte fuer Konzentrationen initialisiert
                     if( configuration.getAdvectionDispersionModel2D().getInitialCondition() != null ) {
                         // Ist eine Startdatei vorhanden ?
                         if( configuration.getAdvectionDispersionModel2D().getInitialCondition().getStartFromResult() != null ) {
                             // Die Unterscheidung in Dateiformate fehlt noch ...
                             try {
-                                aderg = admodel.initialSolutionFromTicadErgFile(base_dir+configuration.getAdvectionDispersionModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getAdvectionDispersionModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
+                                admodel.initialSolutionFromTicadErgFile(base_dir+configuration.getAdvectionDispersionModel2D().getInitialCondition().getStartFromResult().getFileName(), configuration.getAdvectionDispersionModel2D().getInitialCondition().getStartFromResult().getTimeStepCounter());
                             } catch (Exception e) {
                                 System.out.println("\t !! StartDatei laesst sich nicht einlesen !!");
                                 e.printStackTrace();
@@ -1019,23 +1002,23 @@ public class MarinaXML {
                                 if(configuration.getAdvectionDispersionModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileType() == TMeshFileType.SYS_DAT_FILE){
                                     admdat.concentrationFileType=SmileIO.MeshFileType.SystemDat;
                                     admdat.concentration_name=base_dir+configuration.getAdvectionDispersionModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileName();
-                                    aderg = admodel.initialConcentrationFromSysDat(admdat.concentration_name,startTime);
+                                    admodel.initialConcentrationFromSysDat(admdat.concentration_name,startTime);
                                 }
                                 if(configuration.getAdvectionDispersionModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileType() == TMeshFileType.JANET_BINARY_FILE){
                                     admdat.concentrationFileType=SmileIO.MeshFileType.JanetBin;
                                     admdat.concentration_name=base_dir+configuration.getAdvectionDispersionModel2D().getInitialCondition().getConcentration().getTriangleMesh().getFileName();
-                                    aderg = admodel.initialConcentrationFromJanetBin(admdat.concentration_name,startTime);
+                                    admodel.initialConcentrationFromJanetBin(admdat.concentration_name,startTime);
                                 }
                             }
                             // Ist eine konstante Konzentration vorgegeben ?
                             else if( configuration.getAdvectionDispersionModel2D().getInitialCondition().getConcentration().getConstant() != null ) {
                               double CConc = configuration.getAdvectionDispersionModel2D().getInitialCondition().getConcentration().getConstant();
-                              aderg = admodel.constantInitialSolution(CConc);
+                              admodel.constantInitialSolution(CConc);
                             }
                         }
                     } else {
                         //Interpolation aus Randwerten
-                        aderg = admodel.initialSolution(startTime);
+                        admodel.initialSolution(startTime);
                     }
 
                     timeDependentModels.add(admodel);

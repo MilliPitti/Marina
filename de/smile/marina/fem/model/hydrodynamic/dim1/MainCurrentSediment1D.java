@@ -114,8 +114,8 @@ public class MainCurrentSediment1D extends Object {
             sedimenterg = getSedimentState(sediment1d);
         }
 	
-	if (sedimenterg  != null) sediment1d.draw_it(jcanvas.getGraphics(), sedimenterg,  t+dt);
-	if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), currenterg,   t+dt);
+	if (sedimenterg  != null) sediment1d.draw_it(jcanvas.getGraphics(), sedimenterg, t+dt);
+	if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), t+dt);
 	jcanvas.repaint();
 
     } // end for 

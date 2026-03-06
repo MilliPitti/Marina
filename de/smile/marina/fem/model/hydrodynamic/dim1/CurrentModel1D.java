@@ -418,10 +418,6 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         }
     }
 
-    public void draw_it(Graphics g, double[] x, double time) {
-        draw_it(g, time);
-    }
-
     @Override
     public void write_erg_xf() {
     }

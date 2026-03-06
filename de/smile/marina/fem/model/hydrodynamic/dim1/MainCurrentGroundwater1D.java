@@ -132,7 +132,7 @@ public class MainCurrentGroundwater1D extends Object {
 	
         
 	if (groundwatererg  != null) groundwater1d.draw_it(jcanvas.getGraphics(), groundwatererg,  t+dt);
-        if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), currenterg,   t+dt);
+    if (currenterg  != null)  current1d.draw_it(jcanvas.getGraphics(), t+dt);;
 	
 	jcanvas.repaint();
         System.out.println(t);

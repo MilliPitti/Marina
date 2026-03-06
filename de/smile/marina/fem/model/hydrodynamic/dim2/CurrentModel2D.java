@@ -44,13 +44,11 @@ import javax.xml.bind.*;
 /**
  * The {@code CurrentModel2D} class extends {@link SurfaceWaterModel} to
  * simulate depth integrated current based on shallow water equations.
- * It manages the flow of water, incorporating factors such as bottom friction,
- * wind stress,
- * and Coriolis force. This model uses finite element methods to solve the
- * governing equations,
+ * It manages the flow of water, incorporating factors such as bottom friction, wind stress,
+ * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.10.2.1
+ * @version 4.10.3
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
@@ -372,8 +370,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final DOF[] dofs = ele.getDOFs();
             final Current2DElementData eleCurrentData = element_data[ele.number];
 
-                    // Wir müssen über alle Knoten des Elements iterieren, um Konsistenz zu gewährleisten
-                    // (Anlog zur ursprünglichen Logik innerhalb der Elementschleife)
+                    // Wir muessen über alle Knoten des Elements iterieren, um Konsistenz zu gewaehrleisten
+                    // (Anlog zur urspruenglichen Logik innerhalb der Elementschleife)
                     eleCurrentData.meanStricklerCoefficient = 20.;
                     for (int j = 0; j < 3; j++) {
                         CurrentModel2DData nodeCmd = dof_data[dofs[j].number];
@@ -1017,7 +1015,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Radiationstresses
                                 + (dsxxdx + dsxydy) / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
-                                + cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out
+                                - cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
                  if (!cmd.boundary) cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
@@ -1038,7 +1036,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // Radiationstresses
                                 + (dsxydx + dsyydy) / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // CouplingTerm from the derivation of the Formulation q -> v
-                                + cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out
+                                - cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
                 if (!cmd.boundary) cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
 

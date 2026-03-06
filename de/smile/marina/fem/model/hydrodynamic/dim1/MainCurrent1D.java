@@ -106,7 +106,6 @@ public class MainCurrent1D extends Object {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        MainCurrent1D e = new MainCurrent1D();
-    }
-    
+        new MainCurrent1D();
+    } 
 }

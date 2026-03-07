@@ -157,6 +157,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
            PhytoplanktonModel2DData phytodata = PhytoplanktonModel2DData.extract(dof);
            phytodata.phytoconc = initalvalue;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -265,6 +266,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                 }
             }          
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -294,6 +296,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
         } else
             System.out.println("The initial file have a different number of nodes.");
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -307,6 +310,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
             phytomodeldata.phytoconc = initialPhytoConcentration(dof, time);
         }
         initsc=null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         write_erg_xf();
         return null;
     }
@@ -314,6 +318,62 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
     
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
+
+    private double estimateCourantTimeStepFromState() {
+        setBoundaryConditions();
+
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
+            if (eleCurrentData == null || eleCurrentData.iwatt >= 3) {
+                continue;
+            }
+
+            final FTriangle ele = (FTriangle) element;
+            final double[][] koeffmat = ele.getkoeffmat();
+
+            final double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (current_mean <= 1.E-5) {
+                continue;
+            }
+
+            double dPhytoConcdx = 0.;
+            double dPhytoConcdy = 0.;
+            for (int j = 0; j < 3; j++) {
+                final DOF dof = ele.getDOF(j);
+                final PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
+                dPhytoConcdx += phytomodeldata.phytoconc * koeffmat[j][1];
+                dPhytoConcdy += phytomodeldata.phytoconc * koeffmat[j][2];
+            }
+
+            final double astx = eleCurrentData.astx;
+            final double asty = eleCurrentData.asty;
+
+            double Koeq1_mean = 0.;
+            for (int j = 0; j < 3; j++) {
+                final DOF dof = ele.getDOF(j);
+                final PhytoplanktonModel2DData phytomodeldata = PhytoplanktonModel2DData.extract(dof);
+                final CurrentModel2DData currentmodeldata = CurrentModel2DData.extract(dof);
+
+                final double term = currentmodeldata.u * dPhytoConcdx + currentmodeldata.v * dPhytoConcdy
+                        - (astx * eleCurrentData.ddepthdx * dPhytoConcdx + asty * eleCurrentData.ddepthdy * dPhytoConcdy)
+                                / ((currentmodeldata.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : currentmodeldata.totaldepth)
+                        + 3. * (koeffmat[j][1] * astx * dPhytoConcdx + koeffmat[j][2] * asty * dPhytoConcdy)
+                        - getPhytoSourceSink(dof);
+
+                Koeq1_mean += 1. / 3. * (phytomodeldata.dPhytoConcdt + term);
+            }
+
+            final double tau_konc = 0.5 * eleCurrentData.elementsize / current_mean;
+            final double ts = tau_konc / (1. + Math.abs(Koeq1_mean));
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
+    }
 
     @Override
     public void timeStep(double dt) {

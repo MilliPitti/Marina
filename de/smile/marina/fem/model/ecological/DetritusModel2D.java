@@ -236,6 +236,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                 }                
             }          
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -269,6 +270,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
             System.out.println(e.getMessage());
             throw new RuntimeException(e);
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -282,6 +284,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
             detritmodeldata.detritconc = initialDetritConcentration(dof, time);
         }
         initsc=null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         write_erg_xf();
         return null;
     }
@@ -297,12 +300,38 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
            DetritusModel2DData detritmodeldata = DetritusModel2DData.extract(dof);
            detritmodeldata.detritconc = initalvalue;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
     
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
+
+    private double estimateCourantTimeStepFromState() {
+        setBoundaryConditions();
+
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
+            if (eleCurrentData == null || eleCurrentData.iwatt >= 3) {
+                continue;
+            }
+
+            final double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (current_mean <= 1.E-5) {
+                continue;
+            }
+
+            final double ts = 0.5 * eleCurrentData.elementsize / current_mean;
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
+    }
 
     @Override
     public void timeStep(double dt) {

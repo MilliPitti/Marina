@@ -68,7 +68,7 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
     // initialSolution
     //------------------------------------------------------------------------
     //...Anfangswertberechnung...............................................  
-    public double[] initialSolution(double time){
+    public void initialSolution(double time){
 	System.out.println("SedimentModel - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
             SedimentModel1DData smd = getSedimentModel1DData(dof);
@@ -79,7 +79,6 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
             smd.rZ = 0.;
         }
         setMaxTimeStep(estimateCourantTimeStepFromState());
-	return null;
     }
 
     private double estimateCourantTimeStepFromState() {
@@ -256,17 +255,16 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
     //------------------------------------------------------------------------
     @Override
     public void timeStep(double dt) {
-	DOF[] dof = fenet.getDOFs();
+	    DOF[] dof = fenet.getDOFs();
         for (DOF value : dof) {
-	    SedimentModel1DData current = getSedimentModel1DData(value);
-	    current.dCdx = 0.;
-	    current.rC = 0.;
+	        SedimentModel1DData current = getSedimentModel1DData(value);
+	        current.dCdx = 0.;
+	        current.rC = 0.;
             current.rZ = 0.;
-	}
+	    }
 
         setBoundaryConditions();
-        maxTimeStep = Double.MAX_VALUE;
-	performElementLoop();
+	    performElementLoop();
 
         final double beta0, beta1;
         if (previousTimeStep == 0.0) {

@@ -125,6 +125,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
             OxygenTransportModel2DData oxygenmodeldata = OxygenTransportModel2DData.extract(dof);
             oxygenmodeldata.oxygenConc = initalvalue;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -137,7 +138,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
      * @throws java.lang.Exception
      */
     @SuppressWarnings("unused")
-    public double[] initialSolutionFromTicadErgFile(String oxygenerg, int record) throws Exception {
+    public void initialSolutionFromTicadErgFile(String oxygenerg, int record) throws Exception {
 
         System.out.println("\t Read inital values from result file " + oxygenerg);
         // erstes Durchscannen
@@ -244,7 +245,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
 
             }
         }
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     /**
@@ -256,7 +257,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
      * @return
      * @throws java.lang.Exception
      */
-    public double[] initialOxygenConcentrationFromSysDat(String filename, double time) throws Exception {
+    public void initialOxygenConcentrationFromSysDat(String filename, double time) throws Exception {
         this.time = time;
         int rand_knoten = 0;
         int gebiets_knoten = 0;
@@ -338,8 +339,8 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
             System.out.println("Fehler beim Lesen der Salzkonzentration-Datei!");
             System.exit(0);
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
 
-        return null;
 
     }
 
@@ -353,7 +354,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
      * @throws java.lang.Exception
      */
     @SuppressWarnings("unused")
-    public double[] initialOxygenConcentrationFromJanetBin(String filename, double time) throws Exception {
+    public void initialOxygenConcentrationFromJanetBin(String filename, double time) throws Exception {
         int anzAttributes = 0;
         double skonc;
 
@@ -451,11 +452,10 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
             System.out.println("Fehler beim Lesen der Salzkonzentration-Datei!");
             System.exit(0);
         }
-
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
-    public double[] initialSolution(double time) {
+    public void initialSolution(double time) {
 
         System.out.println("OxygenModel2D - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
@@ -463,7 +463,28 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
             oxygenmodeldata.oxygenConc = initialOxygenConcentration(dof, time);
         }
         initsc = null;
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
+            if (eleCurrentData == null || eleCurrentData.isDry) {
+                continue;
+            }
+
+            final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (currentMean > 1.E-5) {
+                final double ts = 0.5 * eleCurrentData.elementsize / currentMean;
+                if (Double.isFinite(ts) && ts > 0.) {
+                    tsMin = Math.min(tsMin, ts);
+                }
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
 

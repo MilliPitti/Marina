@@ -246,6 +246,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                 }
             }          
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -493,6 +494,7 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
             zoomodeldata.zooconc = initialZooConcentration(dof, time);
         }
         initsc=null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         write_erg_xf();
         return null;
     }
@@ -503,17 +505,74 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
      */
      public double[] constantInitialSolution(double initalvalue) {
         System.out.println("\tSet initial value "+initalvalue +" mg/l");
-        
+
         for (DOF dof: fenet.getDOFs()){
-           ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
-           zoomodeldata.zooconc = initalvalue;
+            ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
+            zoomodeldata.zooconc = initalvalue;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
     
     //------------------------------------------------------------------------
     //------------------------------------------------------------------------
+
+    private double estimateCourantTimeStepFromState() {
+        setBoundaryConditions();
+
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
+            if (eleCurrentData == null || eleCurrentData.iwatt >= 3) {
+                continue;
+            }
+
+            final FTriangle ele = (FTriangle) element;
+            final double[][] koeffmat = ele.getkoeffmat();
+
+            final double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (current_mean <= 1.E-5) {
+                continue;
+            }
+
+            double dZooConcdx = 0.;
+            double dZooConcdy = 0.;
+            for (int j = 0; j < 3; j++) {
+                final DOF dof = ele.getDOF(j);
+                final ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
+                dZooConcdx += zoomodeldata.zooconc * koeffmat[j][1];
+                dZooConcdy += zoomodeldata.zooconc * koeffmat[j][2];
+            }
+
+            final double astx = eleCurrentData.astx;
+            final double asty = eleCurrentData.asty;
+
+            double Koeq1_mean = 0.;
+            for (int j = 0; j < 3; j++) {
+                final DOF dof = ele.getDOF(j);
+                final ZooplanktonModel2DData zoomodeldata = ZooplanktonModel2DData.extract(dof);
+                final CurrentModel2DData currentmodeldata = CurrentModel2DData.extract(dof);
+
+                final double term = currentmodeldata.u * dZooConcdx + currentmodeldata.v * dZooConcdy
+                        - (astx * eleCurrentData.ddepthdx * dZooConcdx + asty * eleCurrentData.ddepthdy * dZooConcdy)
+                                / ((currentmodeldata.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : currentmodeldata.totaldepth)
+                        + 3. * (koeffmat[j][1] * astx * dZooConcdx + koeffmat[j][2] * asty * dZooConcdy)
+                        - getZooSourceSink(dof);
+
+                Koeq1_mean += 1. / 3. * (zoomodeldata.dZooConcdt + term);
+            }
+
+            final double tau_konc = 0.5 * eleCurrentData.elementsize / current_mean;
+            final double ts = tau_konc / (1. + Math.abs(Koeq1_mean));
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
+    }
 
     @Override
     public void timeStep(double dt) {

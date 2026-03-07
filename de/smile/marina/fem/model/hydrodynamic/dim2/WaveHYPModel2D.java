@@ -89,6 +89,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         element_data = new WaveHYPElementData[fenet.getNumberofFElements()];
 
         setNumberOfThreads(wavehypdat.NumberOfThreads);
+        // sicherer Startwert fuer den allerersten Substep
 
         // DOFs initialisieren
         initialDOFs();
@@ -139,7 +140,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
      * @return the vector of start solution
      * @throws java.lang.Exception
      */
-    public double[] initialSolutionFromTicadErgFile(String waveergPath, int record) throws Exception {
+    public void initialSolutionFromTicadErgFile(String waveergPath, int record) throws Exception {
 
         System.out.println("\tRead inital values from result file " + waveergPath);
         //erstes Durchscannen
@@ -260,14 +261,14 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                 dof_data[i].ky = wly / wl * kres;
             }
         }
-        
-        return null;
+
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     // ----------------------------------------------------------------------
     // initialSolution
     // ----------------------------------------------------------------------
-    public double[] initialSolution(double time) {
+    public void initialSolution(double time) {
         this.time = time;
 
         System.out.println("\tinterpolating initial values");
@@ -281,7 +282,54 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
             dof_data[i].ky = k[1];
         }
 
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        // Setzt aus dem aktuellen Zustand u.a. cgx/cgy fuer die Courant-Abschaetzung.
+        setBoundaryConditions();
+
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final FTriangle ele = (FTriangle) element;
+            final DOF[] dofs = ele.getDOFs();
+
+            double cgxMean = 0.;
+            double cgyMean = 0.;
+            for (int j = 0; j < 3; j++) {
+                final WaveHYPModel2DData wmd = dof_data[dofs[j].number];
+                cgxMean += wmd.cgx / 3.;
+                cgyMean += wmd.cgy / 3.;
+            }
+
+            double elementSize = ele.maxEdgeLength;
+            boolean indicator = false;
+            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > WATT / 10.) {
+                elementSize = Function.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementSize);
+                indicator = true;
+            }
+            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > WATT / 10.) {
+                elementSize = Function.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementSize);
+                indicator = true;
+            }
+            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > WATT / 10.) {
+                elementSize = Function.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementSize);
+                indicator = true;
+            }
+            if (!indicator) {
+                elementSize = ele.minHight;
+            }
+
+            final double operatorNorm = Math.sqrt(cgxMean * cgxMean + cgyMean * cgyMean);
+            final double ts = 0.5 * elementSize / operatorNorm;
+
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
     // ----------------------------------------------------------------------

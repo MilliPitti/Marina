@@ -185,7 +185,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         for (int i=0; i<fenet.getNumberofDOFs(); i++){
             dof_data[i].h = initalvalue;
         }
-
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -301,6 +301,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 
             }
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -328,6 +329,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         });
         
         inith=null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
     
@@ -463,6 +465,7 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         }
         
         inith=null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         
         return null;
     }
@@ -502,7 +505,101 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
         }
         
         inith=null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final FTriangle ele = (FTriangle) element;
+            final DOF[] dofs = element.getDOFs();
+            final GroundWater2DElementData eleData = element_data[ele.number];
+            final double[][] koeffmat = ele.getkoeffmat();
+
+            final double[] m = new double[3];
+            final double[] h = new double[3];
+
+            double hdx = 0.;
+            double hdy = 0.;
+
+            int iwatt = 0;
+            int ibound = 0;
+
+            final double kf = eleData.kf;
+
+            for (int j = 0; j < 3; j++) {
+                final int i = dofs[j].number;
+                final GroundWater2DData gwd = dof_data[i];
+
+                if (gwd.bh != null) {
+                    ibound++;
+                }
+
+                if ((gwd.h + gwd.zG) < WATT) {
+                    iwatt++;
+                } else {
+                    if (gwd.h < -gwd.upperImpermeableLayer) {
+                        m[j] = gwd.h + gwd.zG;
+                    } else {
+                        m[j] = -gwd.upperImpermeableLayer + gwd.zG;
+                    }
+                }
+
+                hdx += gwd.h * koeffmat[j][1];
+                hdy += gwd.h * koeffmat[j][2];
+                h[j] = gwd.h;
+            }
+
+            if (iwatt != 0) {
+                hdx = 0.;
+                hdy = 0.;
+                if (iwatt == 1) {
+                    for (int j = 0; j < 3; j++) {
+                        if (m[j] >= WATT) {
+                            hdx += h[j] * koeffmat[j][1];
+                            hdy += h[j] * koeffmat[j][2];
+                        } else {
+                            if ((h[j] < h[(j + 1) % 3]) || (h[j] < h[(j + 2) % 3])) {
+                                hdx += h[j] * koeffmat[j][1];
+                                hdy += h[j] * koeffmat[j][2];
+                            } else {
+                                hdx += ((1. - m[j] / WATT) * 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]) + m[j] / WATT * h[j]) * koeffmat[j][1];
+                                hdy += ((1. - m[j] / WATT) * 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]) + m[j] / WATT * h[j]) * koeffmat[j][2];
+                            }
+                        }
+                    }
+                } else if (iwatt == 2) {
+                    for (int j = 0; j < 3; j++) {
+                        if ((m[j] >= WATT) && (h[j] > 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]))) {
+                            hdx += h[j] * koeffmat[j][1]
+                                    + 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]) * koeffmat[(j + 1) % 3][1]
+                                    + 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]) * koeffmat[(j + 2) % 3][1];
+                            hdy += h[j] * koeffmat[j][2]
+                                    + 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]) * koeffmat[(j + 1) % 3][2]
+                                    + 0.5 * (h[(j + 1) % 3] + h[(j + 2) % 3]) * koeffmat[(j + 2) % 3][2];
+                        }
+                    }
+                }
+            }
+
+            double u = -kf * hdx;
+            double v = -kf * hdy;
+            if (ibound != 0) {
+                u *= 1. - ibound / 3.;
+                v *= 1. - ibound / 3.;
+            }
+
+            if ((Function.norm(hdx, hdy) > 0.00001) && (ibound == 0)) {
+                final double ts = 0.5 * ele.getVectorSize(hdx, hdy) / Function.norm(u, v);
+                if (Double.isFinite(ts) && ts > 0.) {
+                    tsMin = Math.min(tsMin, ts);
+                }
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
     
     

@@ -138,6 +138,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
             AdvectionDispersionModel2DData adModelData = AdvectionDispersionModel2DData.extract(dof);
             adModelData.C = initalvalue;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -257,6 +258,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
 
             }
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -350,7 +352,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
             System.out.println("Fehler beim Lesen der Salzkonzentration-Datei!");
             System.exit(0);
         }
-
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
 
     }
@@ -463,7 +465,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
             System.out.println("Fehler beim Lesen der Salzkonzentration-Datei!");
             System.exit(0);
         }
-
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -475,7 +477,29 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
             adModelData.C = initialConcentration(dof1, time);
         }
         initsc = null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
+            if (eleCurrentData == null || eleCurrentData.isDry) {
+                continue;
+            }
+
+            final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (currentMean > 1.E-5) {
+                final double ts = 0.5 * eleCurrentData.elementsize / currentMean;
+                if (Double.isFinite(ts) && ts > 0.) {
+                    tsMin = Math.min(tsMin, ts);
+                }
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
 

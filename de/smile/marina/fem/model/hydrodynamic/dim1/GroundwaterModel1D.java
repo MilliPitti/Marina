@@ -60,14 +60,13 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
     // initialSolution
     //------------------------------------------------------------------------
     //...Anfangswertberechnung...............................................  
-    public double[] initialSolution(double time) {
+    public void initialSolution(double time) {
         System.out.println("GroundwaterModel - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
             GroundwaterModel1DData gwm = getGroundwaterModel1DData(dof);
             gwm.dhdt = 0.;
         }
         setMaxTimeStep(estimateCourantTimeStepFromState());
-        return null;
     }
 
     private double estimateCourantTimeStepFromState() {
@@ -237,7 +236,7 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
                 } else {
                     vorfaktor = 1. / 6.;
                 }
-                gwm.rh -= (ast * dhdx * koeffmat[j][1] - q[j]);
+                gwm.rh -= vorfaktor * (ast * dhdx * koeffmat[j][1] - q[j]);
             }
 
         }
@@ -290,7 +289,6 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         }
 
         setBoundaryConditions();
-        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
 
         final double beta0, beta1;

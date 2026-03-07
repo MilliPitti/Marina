@@ -463,7 +463,6 @@ public class MarinaXML {
 
                     currentmodel3D =  new CurrentModel3D(feapp, currentdat, tiefen);
                     currentmodel3D.setStartTime(startTime);
-                    currentmodel3D.setMaxTimeStep(0.1);
 
                     // Sollen Startwerte initialisiert werden ?
                     double Cwaterlevel = 0.0;
@@ -644,7 +643,6 @@ public class MarinaXML {
 
                     if (sedimentmodel != null) {
                         sedimentmodel.setStartTime(startTime);
-                        sedimentmodel.setMaxTimeStep(0.1);
 
                         // Startwerte fuer Konzentrationen initialisiert
                         if (configuration.getSedimentTransportModel2D().getInitialCondition() != null) {
@@ -753,7 +751,6 @@ public class MarinaXML {
 
                     WaveHYPModel2D wavehypmodel = new WaveHYPModel2D(feapp, wavehypdat);
                     wavehypmodel.setStartTime(startTime);
-                    wavehypmodel.setMaxTimeStep(0.1);
 
                     if (wavehypdat.startWerteDatei!=null)
                         try {
@@ -793,7 +790,6 @@ public class MarinaXML {
                         System.exit(0);
                     }
                     saltmodel.setStartTime(startTime);
-                    saltmodel.setMaxTimeStep(0.1);
 
                     // Startwerte fuer Konzentrationen initialisiert
                     if( configuration.getSaltTransportModel2D().getInitialCondition() != null ) {
@@ -948,7 +944,6 @@ public class MarinaXML {
 
                     fluidMudModel2D.setBoundaryConditions();
 
-                    fluidMudModel2D.setMaxTimeStep(Math.min(Math.abs(controlParameter.getSimulationTime().getResultTimeStep())/100.,0.1));
 
                     timeDependentModels.add(fluidMudModel2D);
                 }
@@ -981,7 +976,6 @@ public class MarinaXML {
 
                     AdvectionDispersionModel2D admodel = new AdvectionDispersionModel2D(feapp, admdat);
                     admodel.setStartTime(startTime);
-                    admodel.setMaxTimeStep(0.1);
 
                     // Startwerte fuer Konzentrationen initialisiert
                     if( configuration.getAdvectionDispersionModel2D().getInitialCondition() != null ) {
@@ -1048,7 +1042,6 @@ public class MarinaXML {
 
                     HeatTransportModel2D heatTransportModel2D = new HeatTransportModel2D(feapp, heatTdat);
                     heatTransportModel2D.setStartTime(startTime);
-                    heatTransportModel2D.setMaxTimeStep(0.1);
 
                     // Startwerte fuer Temperaturen initialisiert
                     if( configuration.getHeatTransportModel2D().getInitialCondition() != null ) {
@@ -1180,7 +1173,6 @@ public class MarinaXML {
 
                     GroundWaterModel2D groundwatermodel =  new GroundWaterModel2D(feapp, groundwaterdat);
                     groundwatermodel.setStartTime(startTime);
-                    groundwatermodel.setMaxTimeStep(0.1);
 
                     // Sollen Startwerte initialisiert werden ?
                     if( configuration.getGroundWaterModel2D().getInitialCondition() != null ) {
@@ -1297,7 +1289,6 @@ public class MarinaXML {
 
                     OxygenTransportModel2D oxygenTransportModel2d =  new OxygenTransportModel2D(feapp, oxygendat);
                     oxygenTransportModel2d.setStartTime(startTime);
-                    oxygenTransportModel2d.setMaxTimeStep(0.1);
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getOxygenTransportModel2D().getInitialCondition() != null ) {
@@ -1366,7 +1357,6 @@ public class MarinaXML {
 
                     NitrogenModel2D nitratmodel =  new NitrogenModel2D(feapp, nitratdat);
                     nitratmodel.setStartTime(startTime);
-                    nitratmodel.setMaxTimeStep(0.1);
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getNitratTransportModel2D().getInitialCondition() != null ) {
@@ -1434,7 +1424,6 @@ public class MarinaXML {
 
                     PhytoplanktonModel2D phytomodel =  new PhytoplanktonModel2D(feapp, phytodat);
                     phytomodel.setStartTime(startTime);
-                    phytomodel.setMaxTimeStep(0.1);
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getPhytoplanktonTransportModel2D().getInitialCondition() != null ) {
@@ -1505,7 +1494,6 @@ public class MarinaXML {
 
                     ZooplanktonModel2D zoomodel =  new ZooplanktonModel2D(feapp, zoodat);
                     zoomodel.setStartTime(startTime);
-                    zoomodel.setMaxTimeStep(0.1);
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getZooplanktonTransportModel2D().getInitialCondition() != null ) {
@@ -1579,7 +1567,6 @@ public class MarinaXML {
 
                     DetritusModel2D detritusmodel =  new DetritusModel2D(feapp, detritusdat);
                     detritusmodel.setStartTime(startTime);
-                    detritusmodel.setMaxTimeStep(0.1);
 
                      // Sollen Startwerte initialisiert werden ?
                     if( configuration.getDetritusTransportModel2D().getInitialCondition() != null ) {

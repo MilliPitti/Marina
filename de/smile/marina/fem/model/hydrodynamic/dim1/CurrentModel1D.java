@@ -75,9 +75,8 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
      * compute the initial solutions
      * 
      * @param time starttime
-     * @return the result vector
      */
-    public double[] initialSolution(double time) {
+    public void initialSolution(double time) {
         System.out.println("CurrentModel - Werte Initialisieren");
         for (DOF dof : fenet.getDOFs()) {
             CurrentModel1DData cmd = CurrentModel1DData.extract(dof);
@@ -87,7 +86,6 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         }
         // Courant-Schritt schon aus Initialzustand abschaetzen
         setMaxTimeStep(Math.min(INITIAL_MAX_TIMESTEP, estimateCourantTimeStepFromState()));
-        return null;
     }
 
     private double getBedLevel(DOF dof) {
@@ -293,7 +291,6 @@ public class CurrentModel1D extends TimeDependentFEApproximation implements FEMo
         }
 
         setBoundaryConditions();
-        maxTimeStep = Double.MAX_VALUE;
         performElementLoop();
 
         final double beta0, beta1;

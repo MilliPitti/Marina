@@ -28,15 +28,17 @@ import java.util.OptionalDouble;
 
 /**  FE-Approximation of a System of timedependent partial differential equations
  * @author Peter Milbradt
- * @version 3.10
+ * @version 4.10
  */
 public abstract class TimeDependentFEApproximation extends FEApproximation {
     
+    protected static final double INITIAL_MAX_TIMESTEP = 0.001;
+
     public String referenceDate = "1970-01-01 00:00:00 UTC+1"; // Reference date [yyyy-MM-dd HH:mm:ss z]
     
     protected boolean first = true; // Indikator ob der erste Zeitintegration-Schritt noch zu machen ist
     
-    protected double maxTimeStep = Double.MAX_VALUE;
+    protected double maxTimeStep = INITIAL_MAX_TIMESTEP;
     protected double time;
     public abstract void setBoundaryCondition(DOF dof, double t);
     

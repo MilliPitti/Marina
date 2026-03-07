@@ -165,7 +165,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         
     }
     
-    public double[] constantInitialWaterLevel(double initalWaterLevel) {
+    public void constantInitialWaterLevel(double initalWaterLevel) {
         System.out.println("\tSet constant inital waterlevel "+initalWaterLevel);
         
         for (int i=0; i<fenet.getNumberofDOFs(); i++){
@@ -181,10 +181,11 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
             cmd.setWaterLevel_synchronized(initalWaterLevel);
             
         }
-        return null;
+
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
     
-    public double[] initialHfromSysDat(String systemDatPath, double time) {
+    public void initialHfromSysDat(String systemDatPath, double time) {
         this.time=time;
 
         try {
@@ -234,11 +235,9 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         }
         
         inith=null;
-        
-        return null;
     }
     @SuppressWarnings("unused")
-    public double[] initialHfromJanetBin(String filename, double time) {
+    public void initialHfromJanetBin(String filename, double time) {
         this.time=time;
         
         int anzAttributes=0;
@@ -336,14 +335,12 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         }
         
         inith=null;
-        
-        return null;
     }
     
     // ----------------------------------------------------------------------
     // initialSolution
     // ----------------------------------------------------------------------
-    public double[] initialSolution(double time){
+    public void initialSolution(double time){
         
         System.out.println("CurrentModel3D - Werte Initialisieren");
         for (int i=0;i<fenet.getNumberofDOFs();i++) {
@@ -360,8 +357,8 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                 cmd.setBottomLevel(dof.z);
         }
         inith=null;
-        
-        return null;
+
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
     
     // ----------------------------------------------------------------------
@@ -397,7 +394,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
      * @return the vector of start solution = null, if depricated interface
      */
     @SuppressWarnings("unused")
-    public double[] initialSolutionfromErgFile(String currentergPath, int record, boolean sysDatZ) {
+    public void initialSolutionfromErgFile(String currentergPath, int record, boolean sysDatZ) {
 
         System.out.println("\tRead inital values from Current3DErg-result file " + currentergPath);
         File ergFile = new File(currentergPath);
@@ -476,7 +473,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
 
         inith = null;
 
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
     
     /** Read the start solution from TicadSyserg-file from depth integrated hydrodynamic values
@@ -486,7 +483,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
      * @return the vector of start solution
      */
     @SuppressWarnings("unused")
-    public double[] initialSolutionFromTicadErgFile(String currentergPath, int record, boolean sysDatZ) {
+    public void initialSolutionFromTicadErgFile(String currentergPath, int record, boolean sysDatZ) {
 
         double u_mean,v_mean;
         
@@ -610,8 +607,8 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                 }
             }
         }        
-        
-        return null;
+
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
     
     // ----------------------------------------------------------------------
@@ -2242,5 +2239,37 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             } catch (IOException e) {}
             System.exit(1);
         }
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final FTriangle ele = (FTriangle) element;
+            final DOF[] dofs = ele.getDOFs();
+
+            double uMean = 0.;
+            double vMean = 0.;
+            double depthMean = 0.;
+            for (int j = 0; j < 3; j++) {
+                final CurrentModel3DData cmd = dof_data[dofs[j].number];
+                uMean += cmd.qx / Math.max(WATT, cmd.totaldepth)/3.;
+                vMean += cmd.qy / Math.max(WATT, cmd.totaldepth)/3.;
+                depthMean += cmd.totaldepth / 3.;
+            }
+
+            final double c0 = Math.sqrt(PhysicalParameters.G * Math.max(WATT, depthMean));
+            final double operatorNormX = c0 + Math.abs(uMean);
+            final double operatorNormY = c0 + Math.abs(vMean);
+            final double operatorNorm = Math.sqrt(operatorNormX * operatorNormX + operatorNormY * operatorNormY);
+
+            final double elementSize = ele.minHight;
+            final double ts = 0.5 * elementSize / operatorNorm;
+            if (Double.isFinite(ts) && ts > 0.) {
+                tsMin = Math.min(tsMin, ts);
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 }

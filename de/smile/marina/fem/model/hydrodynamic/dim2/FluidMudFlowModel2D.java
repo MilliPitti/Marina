@@ -123,6 +123,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         for (int i = 0; i < fenet.getNumberofDOFs(); i++) {
             dof_data[i].m = initalvalue;
         }
+        setMaxTimeStep(estimateCourantTimeStepFromState());
         return null;
     }
 
@@ -143,7 +144,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
      * @throws java.lang.Exception
      */
     @SuppressWarnings("unused")
-    public double[] initialSolutionFromTicadErgFile(String currentergPath, int record) throws Exception {
+    public void initialSolutionFromTicadErgFile(String currentergPath, int record) throws Exception {
 
         System.out.println("\tRead initial values from result file " + currentergPath);
         // erstes Durchscannen
@@ -265,7 +266,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                 }
             }
         }
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     /**
@@ -274,7 +275,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
      * @param time the time to generate a initial solution
      * @return
      */
-    public double[] initialSolution(double time) {
+    public void initialSolution(double time) {
         this.time = time;
 
         System.out.println("\tinterpolating initial water level");
@@ -294,8 +295,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         }
 
         inith = null;
-
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     @Override
@@ -369,7 +369,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         return h;
     }
 
-    public double[] initialHfromSysDat(String systemDatPath, double time) throws Exception {
+    public void initialHfromSysDat(String systemDatPath, double time) throws Exception {
         this.time = time;
 
         try (BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(systemDatPath)))) {
@@ -421,12 +421,11 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         }
 
         inith = null;
-
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     @SuppressWarnings("unused")
-    public double[] initialHfromJanetBin(String filename, double time) throws Exception {
+    public void initialHfromJanetBin(String filename, double time) throws Exception {
         this.time = time;
 
         int anzAttributes = 0;
@@ -532,8 +531,61 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         }
 
         inith = null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+    }
 
-        return null;
+    private double estimateCourantTimeStepFromState() {
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final FTriangle ele = (FTriangle) element;
+            final DOF[] dofs = element.getDOFs();
+
+            int dry = 0;
+            for (int j = 0; j < 3; j++) {
+                final double totaldepth = dof_data[dofs[j].number].thickness;
+                if (totaldepth < halfWATT) {
+                    dry++;
+                }
+            }
+            if (dry == 3) {
+                continue;
+            }
+
+            double uMean = 0.;
+            double vMean = 0.;
+            double thicknessMean = 0.;
+            for (int j = 0; j < 3; j++) {
+                final FluidMudFlowModel2DData fmd = dof_data[dofs[j].number];
+                uMean += fmd.u / 3.;
+                vMean += fmd.v / 3.;
+                thicknessMean += fmd.thickness / 3.;
+            }
+
+            final double elementSize = (norm(uMean, vMean) > WATT / 10.) ? ele.getVectorSize(uMean, vMean) : ele.minHight;
+            final double c0 = Math.sqrt(PhysicalParameters.G * ((thicknessMean < WATT) ? WATT : thicknessMean));
+            final double operatornorm1 = Math.abs(uMean) + c0;
+            final double operatornorm2 = Math.abs(vMean) + c0;
+            final double operatornorm = Math.sqrt(operatornorm1 * operatornorm1 + operatornorm2 * operatornorm2);
+
+            final double tauCur = 0.5 * elementSize / operatornorm;
+            if (Double.isFinite(tauCur) && tauCur > 0.) {
+                tsMin = Math.min(tsMin, tauCur);
+            }
+
+            final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
+            if (eleCurrentData != null) {
+                final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+                if (currentMean > 1.E-5) {
+                    final double tauC = 0.5 * eleCurrentData.elementsize / currentMean;
+                    if (Double.isFinite(tauC) && tauC > 0.) {
+                        tsMin = Math.min(tsMin, tauC);
+                    }
+                }
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
         /**

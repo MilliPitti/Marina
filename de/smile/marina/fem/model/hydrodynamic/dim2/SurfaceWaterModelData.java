@@ -34,6 +34,7 @@ import java.util.Iterator;
  * @version 4.1.0
  */
 public abstract class SurfaceWaterModelData implements ModelData {
+    
     public double eta; // free surface waterlevel
     public double detadt;
     

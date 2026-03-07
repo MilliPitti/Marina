@@ -328,6 +328,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // initialisieren der punktbezogenen Gradienten
         initialBottomGradientsAtPoints();
 
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+
         try {
             xf_os = new DataOutputStream(new FileOutputStream(sedimentdat.xferg_name));
             // Setzen der Ergebnismaske
@@ -390,7 +392,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     // ------------------------------------------------------------------------
     // initalSolution
     // ------------------------------------------------------------------------
-    public double[] initialSolution(double time) {
+    public void initialSolution(double time) {
 
         System.out.println("\tinitialization of values");
         DOF[] dof = fenet.getDOFs();
@@ -409,7 +411,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // initialisieren der punktbezogenen Gradienten
         initialBottomGradientsAtPoints();
 
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     public void readInitialSoilModel3DDataFromCVS(String csvFileame) {
@@ -592,6 +594,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // initialisieren der punktbezogenen Gradienten
         initialBottomGradientsAtPoints();
 
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+
         return null;
     }
 
@@ -603,7 +607,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
      * @return the vector of start solution
      * @throws java.lang.Exception
      */
-    public double[] initialSolutionFromTicadErgFile(String sedimentergPath, int record) throws Exception {
+    public void initialSolutionFromTicadErgFile(String sedimentergPath, int record) throws Exception {
 
         System.out.println("\tRead inital values from result file " + sedimentergPath);
         // erstes Durchscannen
@@ -712,7 +716,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 SoilModel3DData.extract(dof).update(time);
             }
 
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
     }
 
     /**
@@ -724,7 +728,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
      * @throws java.lang.Exception
      */
     // private final void readConcentrationDat(String filename) {
-    public double[] initialConcentrationFromSysDat(String filename, double time) throws Exception {
+    public void initialConcentrationFromSysDat(String filename, double time) throws Exception {
         this.time = time;
         int knoten_nr;
 
@@ -802,7 +806,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             System.exit(0);
         }
 
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
 
     }
 
@@ -815,7 +819,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
      * @return
      * @throws java.lang.Exception
      */
-    public double[] initialConcentrationFromJanetBin(String filename, double time) throws Exception {
+    public void initialConcentrationFromJanetBin(String filename, double time) throws Exception {
         @SuppressWarnings("unused")
         int anzAttributes = 0;
         double skonc;
@@ -932,7 +936,62 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             System.exit(0);
         }
 
-        return null;
+        setMaxTimeStep(estimateCourantTimeStepFromState());
+
+    }
+
+    private double estimateCourantTimeStepFromState() {
+        // Setzt u.a. u_bank/v_bank fuer die initiale Courant-Abschaetzung.
+        setBoundaryConditions();
+
+        double tsMin = Double.MAX_VALUE;
+
+        for (FElement element : fenet.getFElements()) {
+            final Current2DElementData eleCurrentData = element_currentdata[element.number];
+            if (eleCurrentData == null || eleCurrentData.isDry) {
+                continue;
+            }
+
+            final FTriangle ele = (FTriangle) element;
+
+            double morph_x = 0.;
+            double morph_y = 0.;
+            for (int j = 0; j < 3; j++) {
+                final SedimentModel2DData smd = dof_data[ele.getDOF(j).number];
+                morph_x += 1. / 3. * smd.u_bank;
+                morph_y += 1. / 3. * smd.v_bank;
+            }
+
+            // Noch kein Zeitschritt gelaufen: vereinfachte Initial-Approximation.
+            final double lambda_x = morph_x;
+            final double lambda_y = morph_y;
+
+            final double lambda_mean = Function.norm(lambda_x, lambda_y);
+            if (lambda_mean > 1.E-7) {
+                final double tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
+                if (Double.isFinite(tau_z) && tau_z > 0.) {
+                    tsMin = Math.min(tsMin, tau_z);
+                }
+            }
+
+            final double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (current_mean > WATT / 10. / 3.) {
+                final double tauC = 0.5 * eleCurrentData.elementsize / current_mean;
+                if (Double.isFinite(tauC) && tauC > 0.) {
+                    tsMin = Math.min(tsMin, tauC);
+                }
+            }
+
+            final double morph_mean = Function.norm(morph_x, morph_y);
+            if (morph_mean > 1.E-7) {
+                final double tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
+                if (Double.isFinite(tau_d50) && tau_d50 > 0.) {
+                    tsMin = Math.min(tsMin, tau_d50);
+                }
+            }
+        }
+
+        return tsMin < Double.MAX_VALUE ? tsMin : INITIAL_MAX_TIMESTEP;
     }
 
     // ------------------------------------------------------------------------

@@ -43,7 +43,6 @@ import java.awt.*;
  * @version 1.1
  */
 public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
-  private static final double INITIAL_MAX_TIMESTEP = 0.001;
 
   private int numberofdofs;
   private double previousTimeStep = 0.0;
@@ -79,15 +78,17 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
    * @param time starttime
    * @return the result vector
    */
-  public double[] initialSolution(double time) {
+  // initialSolution now returns void like the other models; caller ignores return
+  // value
+  public void initialSolution(double time) {
     System.out.println("MacroscopicTrafficModel - Werte Initialisieren");
     for (DOF dof : fenet.getDOFs()) {
       MacroscopicTrafficModel1DData mtmd = getMacroscopicTrafficModel1DData(dof);
       mtmd.drhodt = 0.;
       mtmd.dvdt = 0.;
     }
+    // compute a safe starting timestep based on current state
     setMaxTimeStep(estimateCourantTimeStepFromState());
-    return null;
   }
 
   private double estimateCourantTimeStepFromState() {
@@ -97,7 +98,8 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
       MacroscopicTrafficModel1DData d0 = getMacroscopicTrafficModel1DData(edge.getDOF(0));
       MacroscopicTrafficModel1DData d1 = getMacroscopicTrafficModel1DData(edge.getDOF(1));
       double vMean = 0.5 * (d0.v + d1.v);
-      double a1 = Math.abs(vMean) + c0;
+      double rhoMean = 0.5 * (d0.rho + d1.rho);
+      double a1 = Math.abs(vMean) + c0/rhoMean;
       if (a1 <= 1.e-12) {
         continue;
       }
@@ -169,7 +171,8 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     final double[] rho = new double[2];
     // compute element derivations
     double dvdx = 0.;
-    double dv2dx2 = 0.;
+    // viscous second derivative not needed for linear elements
+    // double dv2dx2 = 0.;
     double drhodx = 0.;
     double v_mean = 0.;
     double rho_mean = 0.;
@@ -185,18 +188,11 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
       drhodx += cmd.rho * koeffmat[j][1];
       rho_mean += rho[j] / 2.;
     }
-    double A1 = Math.abs(v_mean) + c0;
+
+    double A1 = Math.abs(v_mean) + c0/rho_mean;
+    // use same stabilization parameter as in CurrentModel1D/2D
     double tauupwind = 0.5 * ele.elm_size() / A1;
     timeStep = tauupwind;
-
-    //double a_opt = 1.;
-    //if ((mu > 0.0) && (rho_mean > 0.01)) {
-    //  final double A2 = mu / rho_mean;
-    //  double peclet = A1 * ele.elm_size() / A2;
-    //  a_opt = Function.coth(Math.abs(peclet)) - 1.0 / Math.abs(peclet);
-    //}
-
-    //tauupwind *= a_opt;
 
     double residum1_mean = 0.;
     double residum2_mean = 0.;
@@ -211,8 +207,8 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
       residum2_mean += 0.5 * (cmd.dvdt + cmd.v * dvdx
           - (V(cmd.rho) - cmd.v) / tau
           + c02 / cmd.rho * drhodx
-          - mu / cmd.rho * dv2dx2
-      // - zufall.nextGaussian(0.0, 0.063*0.063)
+      // viscous term omitted for linear elements
+      // - mu / cmd.rho * dv2dx2
       );
     }
     // System.out.println("Fehler = "+cureq1_mean+" "+cureq2_mean);
@@ -254,6 +250,7 @@ public class MacroscopicTrafficModel1D extends TimeDependentFEApproximation impl
     }
     return cmd;
   }
+
   @Override
   public void timeStep(double dt) {
     DOF[] dof = fenet.getDOFs();

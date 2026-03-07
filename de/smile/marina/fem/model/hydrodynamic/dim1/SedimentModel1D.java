@@ -43,7 +43,6 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
     static final double MAX_DZ_PER_STEP = 0.002;
     static final double MAX_EROSION_DEPTH = 5.0;
 
-    private int n,numberofdofs;
     private double previousTimeStep = 0.0;
     private double drawXMin = Double.NaN;
     private double drawXMax = Double.NaN;
@@ -59,8 +58,6 @@ public class SedimentModel1D extends TimeDependentFEApproximation implements FEM
 	// DOFs initialisieren
 	initialDOFs();
 
-	numberofdofs = fenet.getNumberofDOFs();
-	n = numberofdofs;
         setMaxTimeStep(INITIAL_MAX_TIMESTEP);
     }
 

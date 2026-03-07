@@ -59,8 +59,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
     
     private Vector<BoundaryCondition> bsc  = new Vector<>();
     
-    private int n,numberofdofs;
-    
     private double previousTimeStep = 0.0;
     
     static final double AST      = 0.0012;      // 0.0012 Austauschkoeffizient fuer Stroemung
@@ -86,9 +84,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
         
         // DOFs initialisieren
         initialDOFs();
-        
-        numberofdofs = fenet.getNumberofDOFs();
-        n = numberofdofs;
         
         try {
             xf_os = new DataOutputStream(new FileOutputStream(detritdat.xferg_name));

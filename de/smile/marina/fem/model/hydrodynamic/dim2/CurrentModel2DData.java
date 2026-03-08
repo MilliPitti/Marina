@@ -26,6 +26,8 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 import bijava.math.ifunction.*;
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
+import de.smile.marina.fem.FElement;
+import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.ModelData;
 import static de.smile.marina.fem.model.hydrodynamic.dim2.SurfaceWaterModel.halfWATT;
 import de.smile.marina.fem.model.hydrodynamic.dim2.weirs.TimeDependentWeir;
@@ -69,6 +71,10 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
     public ScalarFunction1d sourceh = null;
     public double source_dhdt = 0.;
     public TimeDependentWeir bWeir = null;
+
+    // Outflow-Randbedingungen, bei denen die Stroemung nur aus dem Gebiet herausgeht, aber nicht hinein, z.B. gesetzter WasserstandRB, werden mit extrapolierten Wasserstandswerten berechnet, damit die Stroemung nicht in das Gebiet hinein geht, wenn der gesetzte Wasserstand zu hoch ist. Das ist wichtig bei Dammbruchsimulationen, damit die Stroemung nicht in das Gebiet hinein geht, wenn der gesetzte Wasserstand zu hoch ist. Bei einem Outflow wird die Stroemung nur aus dem Gebiet herausgehen, aber nicht hinein, z.B. gesetzter WasserstandRB
+    boolean outflow = false; // true, wenn die Randbedingung ein Outflow ist, die Stroemung nur aus dem Gebiet herausgeht, aber nicht hinein, z.B. gesetzter WasserstandRB
+    DOF leftDof, rightDof; // fuer die restrictVelocityToOutflow bei Outflow-Randbedingungen
 
     public CurrentModel2DData(DOF dof) {
         super(dof);
@@ -339,5 +345,91 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
 
     public static double WhiteColebrookCoeffizient2ManningStrickler(double cf) {
         return 1. / cf / cf;
+    }
+
+    /**
+     * Initialisiert die linken und rechten Nachbarknoten für die Outflow-Randbedingung.
+     * Wird einmalig in genData() aufgerufen, um die Randkanten zu identifizieren.
+     */
+    public void initalizeOutflowBoundaryCondition(DOF dof) {
+        FElement[] elements = dof.getFElements();
+        Map<Integer, Integer> neighborCount = new HashMap<>();
+        List<DOF> boundaryNeighbors = new ArrayList<>();
+        
+        // Zähle, wie oft jede Kante vorkommt (Randkanten haben Count == 1)
+        for (FElement elem : elements) {
+            FTriangle tri = (FTriangle) elem;
+            int nodeIndex = -1;
+            for (int i = 0; i < 3; i++) {
+                if (tri.getDOF(i) == dof) {
+                    nodeIndex = i;
+                    break;
+                }
+            }
+            if (nodeIndex != -1) {
+                DOF n1 = tri.getDOF((nodeIndex + 1) % 3);
+                DOF n2 = tri.getDOF((nodeIndex + 2) % 3);
+                neighborCount.merge(n1.number, 1, Integer::sum);
+                neighborCount.merge(n2.number, 1, Integer::sum);
+            }
+        }
+        
+        // Sammle Randnachbarn (Count == 1)
+        for (FElement elem : elements) {
+            FTriangle tri = (FTriangle) elem;
+            int nodeIndex = -1;
+            for (int i = 0; i < 3; i++) {
+                if (tri.getDOF(i) == dof) {
+                    nodeIndex = i;
+                    break;
+                }
+            }
+            if (nodeIndex != -1) {
+                DOF n1 = tri.getDOF((nodeIndex + 1) % 3);
+                DOF n2 = tri.getDOF((nodeIndex + 2) % 3);
+                if (neighborCount.getOrDefault(n1.number, 0) == 1 && !boundaryNeighbors.contains(n1)) {
+                    boundaryNeighbors.add(n1);
+                }
+                if (neighborCount.getOrDefault(n2.number, 0) == 1 && !boundaryNeighbors.contains(n2)) {
+                    boundaryNeighbors.add(n2);
+                }
+            }
+        }
+        
+        // Setze leftDof und rightDof (angenommen 2 Randnachbarn)
+        if (boundaryNeighbors.size() == 2) {
+            leftDof = boundaryNeighbors.get(0);
+            rightDof = boundaryNeighbors.get(1);
+        }
+    }
+
+    /**
+     * Beschränkt die Geschwindigkeit auf reine Ausströmung.
+     * Wenn beide Skalarprodukte (v · richtung_zu_leftDof) und (v · richtung_zu_rightDof) >= 0 sind,
+     * wird die Geschwindigkeit beibehalten. Wenn eines negativ ist, wird sie auf 0 gesetzt.
+     * Wird in jedem Zeitschritt in setBoundaryCondition() aufgerufen.
+     */
+    public void restrictVelocityToOutflowOnly(DOF dof) {
+        if (leftDof == null || rightDof == null) return;
+        
+        // Richtungsvektoren von dof zu den Nachbarn
+        double dy1 = (leftDof.x - dof.x);
+        double dx1 = -(leftDof.y - dof.y);
+        double dy2 = -(rightDof.x - dof.x);
+        double dx2 = (rightDof.y - dof.y);
+        
+        // Skalarprodukte: Geschwindigkeit · Richtung zu Nachbar
+        double dot1 = u * dx1 + v * dy1;  // v · (leftDof - dof)
+        double dot2 = u * dx2 + v * dy2;  // v · (rightDof - dof)
+        
+        // Wenn eines der Skalarprodukte negativ ist (Rückströmung), Geschwindigkeit auf 0 setzen
+        if (dot1 < 0.0 || dot2 < 0.0) {
+            synchronized (this) {
+                u = 0.0;
+                v = 0.0;
+                cv = 0.0;
+            }
+        }
+        // Ansonsten bleibt die Geschwindigkeit unverändert
     }
 }

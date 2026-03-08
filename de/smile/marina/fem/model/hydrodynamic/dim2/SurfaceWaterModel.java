@@ -76,7 +76,7 @@ public abstract class SurfaceWaterModel extends TimeDependentFEApproximation imp
      * @param rndwerteReader
      */
     public final void readBoundCond(BoundaryConditionsReader rndwerteReader) {
-        String[] boundary_condition_key_mask = new String[9];
+        String[] boundary_condition_key_mask = new String[10];
         boundary_condition_key_mask[0] = BoundaryCondition.absolute_flowrate_x;
         boundary_condition_key_mask[1] = BoundaryCondition.absolute_flowrate_y;
         boundary_condition_key_mask[2] = BoundaryCondition.specific_flowrate_x;
@@ -86,6 +86,7 @@ public abstract class SurfaceWaterModel extends TimeDependentFEApproximation imp
         boundary_condition_key_mask[6] = BoundaryCondition.velocity_v;
         boundary_condition_key_mask[7] = BoundaryCondition.pointbased_Q_source;
         boundary_condition_key_mask[8] = BoundaryCondition.pointbased_h_source;
+        boundary_condition_key_mask[9] = BoundaryCondition.free_surface_outflow;
         if (rndwerteReader != null) {
             try {
                 for (BoundaryCondition bc : rndwerteReader.readBoundaryConditions(boundary_condition_key_mask)) {
@@ -102,6 +103,9 @@ public abstract class SurfaceWaterModel extends TimeDependentFEApproximation imp
                         bqy.add(bc);
                     }
                     if (bc.boundary_condition_key.equals(BoundaryCondition.free_surface)) {
+                        bh.add(bc);
+                    }
+                    if (bc.boundary_condition_key.equals(BoundaryCondition.free_surface_outflow)) {
                         bh.add(bc);
                     }
                     if (bc.boundary_condition_key.equals(BoundaryCondition.velocity_u)) {

@@ -47,6 +47,7 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
     public final static byte qy_GESETZT = 2; // m^3/s/m
     public final static byte H_GESETZT = 3;
     public final static byte SALT_GESETZT = 4;
+    public final static byte H_OUTFLOW_GESETZT = 5;
     public final static byte TEMPERATURE_GESETZT = 6;
     public final static byte CONCENTRATION_GESETZT = 8; // g/l oder kg/m^3
     public final static byte BOTTOM_GESETZT = 10; // m unter NN
@@ -69,6 +70,7 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
     private boolean qx_FLAG = false;
     private boolean qy_FLAG = false;
     private boolean H_FLAG = false;
+    private boolean H_Outflow_FLAG = false;
     private boolean SALT_FLAG = false;
     private boolean TEMPERATURE_FLAG = false;
     private boolean BOTTOM_FLAG = false;
@@ -114,6 +116,7 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
         qx_FLAG = false;
         qy_FLAG = false;
         H_FLAG = false;
+        H_Outflow_FLAG = false;
         SALT_FLAG = false;
         TEMPERATURE_FLAG = false;
         BOTTOM_FLAG = false;
@@ -138,6 +141,9 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
             }
             if (boundary_condition_key.equals(BoundaryCondition.free_surface)) {
                 H_FLAG = true;
+            }
+            if (boundary_condition_key.equals(BoundaryCondition.free_surface_outflow)) {
+                H_Outflow_FLAG = true;
             }
             if (boundary_condition_key.equals(BoundaryCondition.concentration_salt)) {
                 SALT_FLAG = true;
@@ -476,6 +482,12 @@ public class RndwerteBAWReader implements BoundaryConditionsReader {
                             case H_GESETZT:
                                 if (H_FLAG) {
                                     bc.add(new BoundaryCondition(BoundaryCondition.free_surface, KnotenNr[K],
+                                            boundcond));
+                                }
+                                break;
+                            case H_OUTFLOW_GESETZT:
+                                if (H_Outflow_FLAG) {
+                                    bc.add(new BoundaryCondition(BoundaryCondition.free_surface_outflow, KnotenNr[K],
                                             boundcond));
                                 }
                                 break;

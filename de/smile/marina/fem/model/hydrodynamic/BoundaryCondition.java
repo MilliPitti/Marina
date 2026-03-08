@@ -33,7 +33,8 @@ public class BoundaryCondition{
     //Stroemungsmodell 
     public final static String velocity_u		="VELOCITY U";
     public final static String velocity_v		="VELOCITY V";      
-    public final static String free_surface		="FREE SURFACE";
+    public final static String free_surface		="FREE SURFACE";     
+    public final static String free_surface_outflow		="FREE SURFACE_OUTFLOW";
     public final static String specific_flowrate_x      ="SPECIFIC FLOWRATE X";
     public final static String specific_flowrate_y      ="SPECIFIC FLOWRATE Y";
     public final static String absolute_flowrate_x      ="ABSOLUTE FLOWRATE X";

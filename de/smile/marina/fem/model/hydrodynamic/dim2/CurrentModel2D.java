@@ -1332,6 +1332,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // *(depthdt+currentdata.detadt))/(currentdata.z+x[H + i]);
         }
 
+        if(currentdata.outflow) {
+                currentdata.restrictVelocityToOutflowOnly(dof);
+        }
+
         /* Wattstrategie fuer Stroemung */
         currentdata.wlambda = Function.min(1., currentdata.totaldepth / WATT);
         currentdata.w1_lambda = 1. - currentdata.wlambda;
@@ -1526,6 +1530,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
         for (BoundaryCondition bcond : bh) {
             if (dofnumber == bcond.pointnumber) {
                 data.bh = bcond.function;
+                if (bcond.boundary_condition_key == BoundaryCondition.free_surface_outflow) {
+                    data.outflow = true;
+                    data.initalizeOutflowBoundaryCondition(dof);
+                }
                 bh.remove(bcond);
                 data.boundary = true;
                 break;

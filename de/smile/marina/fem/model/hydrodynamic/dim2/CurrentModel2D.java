@@ -1333,7 +1333,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         }
 
         if(currentdata.outflow) {
-                currentdata.restrictVelocityToOutflowOnly(dof);
+                currentdata.restrictVelocityToOutflowOnly();
         }
 
         /* Wattstrategie fuer Stroemung */

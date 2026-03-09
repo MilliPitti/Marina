@@ -702,7 +702,6 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                     if(elem.getDOF(ll)==dof){
                         for(int ii=1;ii<3;ii++){
                             tmpdata = PhytoplanktonModel2DData.extract(elem.getDOF((ll+ii)%3));
-                            int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
                                 phytomodeldata.phytoconc = (9. * phytomodeldata.phytoconc + 1. * tmpdata.phytoconc) / 10.;
                             }

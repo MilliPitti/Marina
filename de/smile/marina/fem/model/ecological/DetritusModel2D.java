@@ -601,7 +601,6 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                     if(elem.getDOF(ll)==dof){
                         for(int ii=1;ii<3;ii++){
                             tmpdata = DetritusModel2DData.extract(elem.getDOF((ll+ii)%3));
-                            int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
                                 detritmodeldata.detritconc = (9. * detritmodeldata.detritconc + 1. * tmpdata.detritconc) / 10.;
                             }

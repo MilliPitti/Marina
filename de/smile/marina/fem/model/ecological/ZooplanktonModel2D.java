@@ -872,7 +872,6 @@ public class ZooplanktonModel2D extends TimeDependentFEApproximation implements 
                     if(elem.getDOF(ll)==dof){
                         for(int ii=1;ii<3;ii++){
                             tmpdata = ZooplanktonModel2DData.extract(elem.getDOF((ll+ii)%3));
-                            int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
                                 zoomodeldata.zooconc = (9. * zoomodeldata.zooconc + 1. * tmpdata.zooconc) / 10.;
                             }

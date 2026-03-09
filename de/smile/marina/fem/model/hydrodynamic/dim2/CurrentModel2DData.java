@@ -41,7 +41,7 @@ import java.util.*;
 /**
  * ModelDatas for shallow water equations
  *
- * @version 4.7.2
+ * @version 4.10.3
  * @author Peter Milbradt
  */
 public class CurrentModel2DData extends SurfaceWaterModelData {
@@ -74,7 +74,8 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
 
     // Outflow-Randbedingungen, bei denen die Stroemung nur aus dem Gebiet herausgeht, aber nicht hinein, z.B. gesetzter WasserstandRB, werden mit extrapolierten Wasserstandswerten berechnet, damit die Stroemung nicht in das Gebiet hinein geht, wenn der gesetzte Wasserstand zu hoch ist. Das ist wichtig bei Dammbruchsimulationen, damit die Stroemung nicht in das Gebiet hinein geht, wenn der gesetzte Wasserstand zu hoch ist. Bei einem Outflow wird die Stroemung nur aus dem Gebiet herausgehen, aber nicht hinein, z.B. gesetzter WasserstandRB
     boolean outflow = false; // true, wenn die Randbedingung ein Outflow ist, die Stroemung nur aus dem Gebiet herausgeht, aber nicht hinein, z.B. gesetzter WasserstandRB
-    DOF leftDof, rightDof; // fuer die restrictVelocityToOutflow bei Outflow-Randbedingungen
+    private DOF leftDof, rightDof; // fuer die restrictVelocityToOutflow bei Outflow-Randbedingungen
+    private double dx1, dy1, dx2, dy2; // nach außen gerichteten Normalenvektor zu den benachbarten Kanten (dof, neighbor)
 
     public CurrentModel2DData(DOF dof) {
         super(dof);
@@ -355,9 +356,10 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
         FElement[] elements = dof.getFElements();
         Map<Integer, Integer> neighborCount = new HashMap<>();
         List<DOF> boundaryNeighbors = new ArrayList<>();
-        
+
         // Zähle, wie oft jede Kante vorkommt (Randkanten haben Count == 1)
         for (FElement elem : elements) {
+            if (!(elem instanceof FTriangle)) continue;
             FTriangle tri = (FTriangle) elem;
             int nodeIndex = -1;
             for (int i = 0; i < 3; i++) {
@@ -373,9 +375,10 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
                 neighborCount.merge(n2.number, 1, Integer::sum);
             }
         }
-        
+
         // Sammle Randnachbarn (Count == 1)
         for (FElement elem : elements) {
+            if (!(elem instanceof FTriangle)) continue;
             FTriangle tri = (FTriangle) elem;
             int nodeIndex = -1;
             for (int i = 0; i < 3; i++) {
@@ -395,12 +398,91 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
                 }
             }
         }
-        
+
         // Setze leftDof und rightDof (angenommen 2 Randnachbarn)
         if (boundaryNeighbors.size() == 2) {
             leftDof = boundaryNeighbors.get(0);
             rightDof = boundaryNeighbors.get(1);
         }
+
+        // Berechne für jede Randkante den nach außen (vom Dof/Inneren des Elements weg)
+        // gerichteten Normalenvektor. Das ist wichtig, denn die Orientierung hängt vom
+        // zugehörigen Dreieck ab.
+        dx1 = dy1 = dx2 = dy2 = 0.0;
+        if (leftDof != null) {
+            double[] n = computeOutwardNormal(dof, leftDof, elements);
+            dx1 = n[0];
+            dy1 = n[1];
+        }
+        if (rightDof != null) {
+            double[] n = computeOutwardNormal(dof, rightDof, elements);
+            dx2 = n[0];
+            dy2 = n[1];
+        }
+    }
+
+    /**
+     * Berechnet den nach außen gerichteten Normalenvektor zur Kante (dof, neighbor).
+     * Dabei wird das Dreieck gewählt, in dem die Kante Randkante ist (nur ein
+     * angrenzendes Element) und der Außenvektor wird so gedreht, dass er vom
+     * Dreieckszentrum weg zeigt.
+     */
+    private static double[] computeOutwardNormal(DOF dof, DOF neighbor, FElement[] elements) {
+        // Finde das Dreieck, das die Kante (dof, neighbor) enthält.
+        FTriangle edgeTri = null;
+        for (FElement elem : elements) {
+            if (!(elem instanceof FTriangle)) continue;
+            FTriangle tri = (FTriangle) elem;
+            boolean hasDof = false, hasNeighbor = false;
+            for (int i = 0; i < 3; i++) {
+                DOF d = tri.getDOF(i);
+                if (d == dof) hasDof = true;
+                if (d == neighbor) hasNeighbor = true;
+            }
+            if (hasDof && hasNeighbor) {
+                edgeTri = tri;
+                break;
+            }
+        }
+
+        // Fallback: wenn kein passendes Dreieck gefunden wird, benutzen wir
+        // die alte Heuristik (perpendicular zum Kantenvektor). Die Orientierung
+        // ist dabei nicht garantiert.
+        double ex = neighbor.x - dof.x;
+        double ey = neighbor.y - dof.y;
+        double nx = ey;
+        double ny = -ex;
+
+        if (edgeTri == null) {
+            return normalize(nx, ny);
+        }
+
+        // Mittelpunkt der Kante
+        double mx = (dof.x + neighbor.x) * 0.5;
+        double my = (dof.y + neighbor.y) * 0.5;
+
+        // Dreieckszentrum
+        double cx = (edgeTri.getDOF(0).x + edgeTri.getDOF(1).x + edgeTri.getDOF(2).x) / 3.0;
+        double cy = (edgeTri.getDOF(0).y + edgeTri.getDOF(1).y + edgeTri.getDOF(2).y) / 3.0;
+
+        // Richtung vom Zentrum zur Kante => außen
+        double vx = mx - cx;
+        double vy = my - cy;
+
+        // Normalrichtung so drehen, dass sie nach außen zeigt
+        double dot = vx * nx + vy * ny;
+        if (dot < 0) {
+            nx = -nx;
+            ny = -ny;
+        }
+
+        return normalize(nx, ny);
+    }
+
+    private static double[] normalize(double x, double y) {
+        double len = Math.sqrt(x * x + y * y);
+        if (len <= 0) return new double[] {0.0, 0.0};
+        return new double[] {x / len, y / len};
     }
 
     /**
@@ -409,15 +491,9 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
      * wird die Geschwindigkeit beibehalten. Wenn eines negativ ist, wird sie auf 0 gesetzt.
      * Wird in jedem Zeitschritt in setBoundaryCondition() aufgerufen.
      */
-    public void restrictVelocityToOutflowOnly(DOF dof) {
+    public void restrictVelocityToOutflowOnly() {
         if (leftDof == null || rightDof == null) return;
-        
-        // Richtungsvektoren von dof zu den Nachbarn
-        double dy1 = (leftDof.x - dof.x);
-        double dx1 = -(leftDof.y - dof.y);
-        double dy2 = (rightDof.x - dof.x);
-        double dx2 = -(rightDof.y - dof.y);
-        
+
         // Skalarprodukte: Geschwindigkeit · Richtung zu Nachbar
         double dot1 = u * dx1 + v * dy1;  // v · (leftDof - dof)
         double dot2 = u * dx2 + v * dy2;  // v · (rightDof - dof)

@@ -518,7 +518,6 @@ public class  NitrogenModel2D extends TimeDependentFEApproximation implements FE
                     if(elem.getDOF(ll)==dof){
                         for(int ii=1;ii<3;ii++){
                             tmpdata = NitrogenModel2DData.extract(elem.getDOF((ll+ii)%3));
-                            int jtmp = elem.getDOF((ll+ii)%3).number;
                             if (!tmpdata.extrapolate){
                                 nitmodeldata.skonc = (9. * nitmodeldata.skonc + 1. * tmpdata.skonc) / 10.;
                             }

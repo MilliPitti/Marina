@@ -415,15 +415,15 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
         // Richtungsvektoren von dof zu den Nachbarn
         double dy1 = (leftDof.x - dof.x);
         double dx1 = -(leftDof.y - dof.y);
-        double dy2 = -(rightDof.x - dof.x);
-        double dx2 = (rightDof.y - dof.y);
+        double dy2 = (rightDof.x - dof.x);
+        double dx2 = -(rightDof.y - dof.y);
         
         // Skalarprodukte: Geschwindigkeit · Richtung zu Nachbar
         double dot1 = u * dx1 + v * dy1;  // v · (leftDof - dof)
         double dot2 = u * dx2 + v * dy2;  // v · (rightDof - dof)
         
-        // Wenn eines der Skalarprodukte negativ ist (Rückströmung), Geschwindigkeit auf 0 setzen
-        if (dot1 < 0.0 || dot2 < 0.0) {
+        // Wenn beide Skalarprodukte negativ sind (Rückströmung), Geschwindigkeit auf 0 setzen
+        if (dot1 < 0.0 && dot2 < 0.0) {
             synchronized (this) {
                 u = 0.0;
                 v = 0.0;

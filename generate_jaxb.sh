@@ -10,7 +10,7 @@ fi
 # Libraries
 LIB_DIR=lib
 JARS="$LIB_DIR/jaxb-xjc.jar:$LIB_DIR/jaxb-impl.jar:$LIB_DIR/jaxb-core.jar:$LIB_DIR/jaxb-api.jar:$LIB_DIR/activation.jar:$LIB_DIR/vecmath.jar"
-GENERATED_SRC_DIR="bin/generated-src"
+GENERATED_SRC_DIR="generated-src"
 
 # Check if jars exist (checking one is enough usually)
 if [ ! -f "$LIB_DIR/jaxb-api.jar" ]; then

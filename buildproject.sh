@@ -16,7 +16,7 @@ done < <(find bijava de -name "*.java" \
 JAXB_FILES=()
 while IFS= read -r -d '' file; do
   JAXB_FILES+=("$file")
-done < <(find bin/generated-src -name "*.java" -print0)
+done < <(find generated-src -name "*.java" -print0)
 
 javac --release 17 -Xlint -cp "lib/*:bin" -d bin "${SRC_FILES[@]}" "${JAXB_FILES[@]}"
 

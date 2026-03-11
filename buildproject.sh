@@ -18,7 +18,7 @@ while IFS= read -r -d '' file; do
   JAXB_FILES+=("$file")
 done < <(find bin/generated-src -name "*.java" -print0)
 
-javac -Xlint -cp "lib/*:bin" -d bin "${SRC_FILES[@]}" "${JAXB_FILES[@]}"
+javac --release 17 -Xlint -cp "lib/*:bin" -d bin "${SRC_FILES[@]}" "${JAXB_FILES[@]}"
 
 mkdir -p dist
 jar --create --file dist/Marina.jar -C bin .

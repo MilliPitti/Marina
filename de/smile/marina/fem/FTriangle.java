@@ -141,7 +141,7 @@ public class FTriangle extends FElement {
         //// Christoph Original
         // elemFormParameter = Math.tanh(xi*si*3.0)/Math.tanh(3.0); 
 
-        //// Shape-Faktor (Standard in FEM)
+        //// Shape-Faktor (Standard in FEM) ab Marina 4.10.4
         final double sumEdgeSq = distance[0][1]*distance[0][1] 
                  + distance[1][2]*distance[1][2] 
                  + distance[2][0]*distance[2][0];

@@ -48,7 +48,7 @@ import javax.xml.bind.*;
  * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.10.3
+ * @version 4.10.4
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
@@ -1069,7 +1069,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb * ele.elemFormParameter;
             timeStep = tau_cur * timeStepScale;
 
-            // Beruecksichtigung der Elementform ab Version 1.3.8
+            // Beruecksichtigung der Elementform ab Version 4.10.4
             tau_cur *= ele.elemFormParameter;
 
 

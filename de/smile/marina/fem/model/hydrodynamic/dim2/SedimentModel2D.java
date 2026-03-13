@@ -1295,12 +1295,21 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
         if (smd.bz != null) {
             smd.z = smd.bz.getValue(t);
-        } else if (cmd.boundary) {
+            smd.d50 = smd.d50init;
+            smd.sC = sl.getConcentration(dof);
+        } else if (cmd.inflowBoundaryCondition) {
             smd.z = dof.z;
+            smd.d50 = smd.d50init;
+            smd.sC = sl.getConcentration(dof);
         }
 
-        if (smd.bd50 != null)
+        if (smd.bd50 != null){
             smd.d50 = smd.bd50.getValue(t);
+            smd.sC = sl.getConcentration(dof);
+        } else if (cmd.inflowBoundaryCondition) {
+            smd.d50 = smd.d50init;
+            smd.sC = sl.getConcentration(dof);
+        }
 
         if (smd.maintainedDepth > smd.z && smd.maintainedDepth - 0.001 <= smd.zh
                 && cmd.totaldepth > CurrentModel2D.WATT) { // einfache Variante des Baggern // ToDo Die Einschraenkung

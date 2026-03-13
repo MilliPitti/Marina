@@ -32,9 +32,10 @@ import de.smile.marina.fem.model.meteorology.*;
 import de.smile.marina.io.*;
 import de.smile.xml.marina.*;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.*;
@@ -47,7 +48,7 @@ public class MarinaXML {
     
     public final static int majorversion = 4;
     public final static int minorversion = 10;
-    public final static String update = "3";
+    public final static String update = "5";
 
     public final static boolean release=true;
     
@@ -100,6 +101,7 @@ public class MarinaXML {
             System.out.println("   "+lizenz);
             System.out.println("  ==========================");
             System.out.println("  start on host " + InetAddress.getLocalHost().getHostAddress());
+            System.out.println("  start at " + ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")));
             System.out.println("");
             // Lesen
             try {
@@ -1696,71 +1698,4 @@ public class MarinaXML {
             }
         }
     }
-
-//    Zeitbeschraenkung
-    public static boolean allowStart(java.util.Date date) {
-        long currentTime=System.currentTimeMillis();
-        long expire=date.getTime();
-        return (currentTime<expire);
-    }
-
-//MAC-Adressen Abfrage
-    public static boolean check(String address) throws Exception {
-        java.util.regex.Pattern macadresse =
-                java.util.regex.Pattern.compile("[0-9a-fA-F]{2}-[0-9a-fA-F]{2}-[0-9a-fA-F]{2}-[0-9a-fA-F]{2}-[0-9a-fA-F]{2}-[0-9a-fA-F]{2}");
-        java.util.regex.Matcher input = macadresse.matcher(address);
-        // 1.Test: zu testende MAC-Adresse entspricht Pattern
-        if (input.groupCount() == 0) {
-            return false;
-        }
-
-        java.io.BufferedReader br;
-        // Windows
-        try {
-            Process proc = Runtime.getRuntime().exec("ipconfig /all");
-            br = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()));
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            br = null;
-        }
-        // Linux
-        if (br == null) {
-            try {
-                Process proc = Runtime.getRuntime().exec("ifconfig");
-                br = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                br = null;
-            }
-        }
-        if (br != null) {
-            try {
-                StringBuilder buffer = new StringBuilder();
-                for (;;) {
-                    int c = br.read();
-                    if (c == -1) {
-                        break;
-                    }
-                    buffer.append((char) c);
-                }
-                String outputText = buffer.toString();
-                br.close();
-
-                // 2.Test: zu testende MAC-Adresse entspricht gefundenen MAC-Adressen
-                java.util.regex.Matcher matcher =
-                        macadresse.matcher(outputText);
-                int matches = matcher.groupCount();
-                for (int i = 0; i < matches; i++) {
-                    String match = matcher.group(i);
-                    if (match.equals(address)) {
-                        return true;
-                    }
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-        return false;
-    }
-
 }

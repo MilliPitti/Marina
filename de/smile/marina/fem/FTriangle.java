@@ -56,7 +56,7 @@ public class FTriangle extends FElement {
     public final double area;
 
     public double dzdx, dzdy, bottomslope;
-    // public double elemFormParameter=1;
+    public double elemFormParameter=1;
 
     public double[][] distance = new double[3][3]; // Feld mit den Kantenlaengen
 
@@ -97,6 +97,10 @@ public class FTriangle extends FElement {
         maxEdgeLength = Math.max(maxEdgeLength, distance[2][0]);
         this.maxEdgeLength = maxEdgeLength;
 
+        double minEdgeLength = distance[0][1];
+        minEdgeLength = Math.min(minEdgeLength, distance[1][2]);
+        minEdgeLength = Math.min(minEdgeLength, distance[2][0]);
+
         minHight = 2 * area / maxEdgeLength;
 
         dzdx = dofs[0].z * koeffmat[0][1] + dofs[1].z * koeffmat[1][1] + dofs[2].z * koeffmat[2][1];
@@ -113,7 +117,8 @@ public class FTriangle extends FElement {
         //// ab Marina 1.3.8
         // final double xi = minEdgeLength/maxEdgeLength;
         // elemFormParameter = 1.-Math.tanh((xi-1.)/20.);
-        // Christoph
+
+        //// Christoph
         // final double xi = minEdgeLength/maxEdgeLength;
         // double ax,ay,bx,by;
         // double[] angles=new double[3];
@@ -131,16 +136,20 @@ public class FTriangle extends FElement {
         // for (int i=0; i<angles.length; i++)
         // shape+=Math.abs(angles[i]-Math.PI/3.);
         // double si=1.-shape/Math.toRadians(240.);
-        // elemFormParameter = Math.pow( Math.tanh(xi*si*3.0)/Math.tanh(3.0) , 3. ); //
-        // Christoph Original
-        //// elemFormParameter = Math.tanh(xi*si*3.0)/Math.tanh(3.0); //
-        /// Peters Anpassung
-        // Heller-Milbradt
-        // final double xi = area
-        // /(dofs[0].distance(dofs[1])*dofs[0].distance(dofs[1])+dofs[1].distance(dofs[2])*dofs[1].distance(dofs[2])+dofs[2].distance(dofs[0])*dofs[2].distance(dofs[0]))
-        // / 0.144338;
-        // elemFormParameter = 1.-Math.tanh((xi-1.)/20.);
+        // elemFormParameter = Math.pow( Math.tanh(xi*si*3.0)/Math.tanh(3.0) , 3. );
+        
+        //// Christoph Original
+        // elemFormParameter = Math.tanh(xi*si*3.0)/Math.tanh(3.0); 
 
+        //// Shape-Faktor (Standard in FEM)
+        final double sumEdgeSq = distance[0][1]*distance[0][1] 
+                 + distance[1][2]*distance[1][2] 
+                 + distance[2][0]*distance[2][0];
+        final double xi = area / (sumEdgeSq * 0.144338);
+        elemFormParameter = xi;
+        
+        //// Heller-Milbradt
+        // elemFormParameter = 1.-Math.tanh((xi-1.)/20.);
     }
 
     /**

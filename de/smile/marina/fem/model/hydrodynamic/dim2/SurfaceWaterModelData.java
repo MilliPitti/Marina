@@ -67,6 +67,7 @@ public abstract class SurfaceWaterModelData implements ModelData {
     public boolean closedBoundary = false; // indicator that the node is at the cloused boundary
     
     public boolean boundary = false; // indicator that the node has boundary conditions - is nessesery for z-boundarycondition in SedimentModel2D
+    public boolean inflowBoundaryCondition = false; // indicator that the node has inflow boundary conditions - is nessesery for z-boundarycondition in SedimentModel2D
     
     protected SurfaceWaterModelData() {
     }

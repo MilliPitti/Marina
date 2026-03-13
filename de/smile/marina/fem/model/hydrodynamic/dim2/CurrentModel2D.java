@@ -997,8 +997,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 + (cmd.u * udx + cmd.v * udy)
                                 // Coriolis
                                 - cmd.v * Coriolis
-                                // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.u * Math.max(0.1, 1.-dzdx) / nonZeroTotalDepth
+                                // bottom friction, der Term Math.sqrt(1+dzdx*dzdx) beruecksichtigt die Oberflaechenvergroeßerung des geneigten Bodens bzgl. der ebenen Elementausdehnung
+                                + cmd.bottomFrictionCoefficient * cmd.u * Math.sqrt(1+dzdx*dzdx) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windx / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
@@ -1018,8 +1018,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 + (cmd.u * vdx + cmd.v * vdy)
                                 // Coriolis
                                 + cmd.u * Coriolis
-                                // bottom friction
-                                + cmd.bottomFrictionCoefficient * cmd.v * Math.max(0.1, 1.-dzdy) / nonZeroTotalDepth
+                                // bottom friction, der Term Math.sqrt(1+dzdy*dzdy) beruecksichtigt die Oberflaechenvergroeßerung des geneigten Bodens bzgl. der ebenen Elementausdehnung
+                                + cmd.bottomFrictionCoefficient * cmd.v * Math.sqrt(1+dzdy*dzdy) / nonZeroTotalDepth
                                 // wind
                                 - cmd.tau_windy / cmd.rho / nonZeroTotalDepth * cmd.wlambda
                                 // Radiationstresses
@@ -1058,13 +1058,20 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double operatornorm_x = c0 + Math.abs(u_mean);
             final double operatornorm_y = c0 + Math.abs(v_mean);
             final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
-            final double tau_cur = 0.5 * elementsize / operatornorm;
+            double tau_cur = 0.5 * elementsize / operatornorm;
             
             // Neuer, konservativer Skalierungsfaktor
             final double residual_norm = Math.sqrt(cureq1_mean * cureq1_mean + cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean);
             final double lmb = Math.min(1, 10.*residual_norm);
             final double scaleFactor = lmb + (1 - lmb) * 2;
-            timeStep = tau_cur*scaleFactor;
+            // timeStep = tau_cur*scaleFactor;
+            // NEU: Blend zwischen scaleFactor (aggressiv) und elemFormParameter (konservativ + Shape-Dämpfung)
+            final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb * ele.elemFormParameter;
+            timeStep = tau_cur * timeStepScale;
+
+            // Beruecksichtigung der Elementform ab Version 1.3.8
+            tau_cur *= ele.elemFormParameter;
+
 
             for (int j = 0; j < 3; j++) {
 
@@ -1073,21 +1080,22 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                 // Fehlerkorrektur durchfuehren
                 double result_U_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq2_mean
-                        + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean
+                                                + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean * wlambda
                                                 + koeffmat[j][2] * v_mean * cureq2_mean) * ele.area;
                         result_U_i -=  (koeffmat[j][1] * astx * udx + koeffmat[j][2] * asty * udy) * wlambda * ele.area
                                         - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * udx + depthdy * asty * udy) * wlambda * ele.area;
 
                 double result_V_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq3_mean
-                        + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean
+                                                + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean * wlambda
                                                 + koeffmat[j][2] * v_mean * cureq3_mean) * ele.area;
                         result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
                                         - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;
 
                 double result_H_i = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean * wlambda
-                        + koeffmat[j][1] * u_mean * cureq1_mean
-                        + koeffmat[j][2] * depth_mean * cureq3_mean * wlambda
-                                                + koeffmat[j][2] * v_mean * cureq1_mean) * ele.area;
+                                                + koeffmat[j][1] * u_mean * cureq1_mean
+                                                + koeffmat[j][2] * depth_mean * cureq3_mean * wlambda
+                                                + koeffmat[j][2] * v_mean * cureq1_mean
+                                            ) * ele.area;
 
                 double puddleLambda = cmd.puddleLambda;
 
@@ -1496,6 +1504,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 data.bqx = bcond.function;
                 bqx.remove(bcond);
                 data.boundary = true;
+                data.inflowBoundaryCondition = true;
                 break;
             }
         }
@@ -1505,6 +1514,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 data.bqy = bcond.function;
                 bqy.remove(bcond);
                 data.boundary = true;
+                data.inflowBoundaryCondition = true;
                 break;
             }
         }
@@ -1514,6 +1524,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 data.bu = bcond.function;
                 bu.remove(bcond);
                 data.boundary = true;
+                data.inflowBoundaryCondition = true;
                 break;
             }
         }
@@ -1523,6 +1534,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 data.bv = bcond.function;
                 bv.remove(bcond);
                 data.boundary = true;
+                data.inflowBoundaryCondition = true;
                 break;
             }
         }
@@ -1545,6 +1557,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 data.bQx = (QSteuerung) bcond.function;
                 bQx.remove(bcond);
                 data.boundary = true;
+                data.inflowBoundaryCondition = true;
                 break;
             }
         }
@@ -1554,6 +1567,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 data.bQy = (QSteuerung) bcond.function;
                 bQy.remove(bcond);
                 data.boundary = true;
+                data.inflowBoundaryCondition = true;
                 break;
             }
         }

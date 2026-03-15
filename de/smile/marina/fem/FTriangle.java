@@ -28,7 +28,7 @@ import de.smile.math.Function;
 import javax.vecmath.Point3d;
 
 /**
- * @version 4.4.11
+ * @version 4.10.4
  * @author Peter Milbradt
  */
 
@@ -56,7 +56,7 @@ public class FTriangle extends FElement {
     public final double area;
 
     public double dzdx, dzdy, bottomslope;
-    public double elemFormParameter=1;
+    //public double elemFormParameter=1;
 
     public double[][] distance = new double[3][3]; // Feld mit den Kantenlaengen
 
@@ -114,42 +114,11 @@ public class FTriangle extends FElement {
         dx = xmax - xmin;
         dy = ymax - ymin;
 
-        //// ab Marina 1.3.8
-        // final double xi = minEdgeLength/maxEdgeLength;
-        // elemFormParameter = 1.-Math.tanh((xi-1.)/20.);
-
-        //// Christoph
-        // final double xi = minEdgeLength/maxEdgeLength;
-        // double ax,ay,bx,by;
-        // double[] angles=new double[3];
-        // for (int i=0; i<3; i++) {
-        // DOF pi=dofs[i];
-        // DOF piplus1=dofs[(i+1)%3];
-        // DOF piminus1=dofs[(i+2)%3];
-        // ax=(piplus1.x-pi.x);
-        // ay=(piplus1.y-pi.y);
-        // bx=(piminus1.x-pi.x);
-        // by=(piminus1.y-pi.y);
-        // angles[i]=Math.acos((ax*bx+ay*by)/(Math.sqrt(ax*ax+ay*ay)*Math.sqrt(bx*bx+by*by)));
-        // }
-        // double shape=0.0;
-        // for (int i=0; i<angles.length; i++)
-        // shape+=Math.abs(angles[i]-Math.PI/3.);
-        // double si=1.-shape/Math.toRadians(240.);
-        // elemFormParameter = Math.pow( Math.tanh(xi*si*3.0)/Math.tanh(3.0) , 3. );
-        
-        //// Christoph Original
-        // elemFormParameter = Math.tanh(xi*si*3.0)/Math.tanh(3.0); 
-
         //// Shape-Faktor (Standard in FEM) ab Marina 4.10.4
-        final double sumEdgeSq = distance[0][1]*distance[0][1] 
-                 + distance[1][2]*distance[1][2] 
-                 + distance[2][0]*distance[2][0];
-        final double xi = area / (sumEdgeSq * 0.144338);
-        elemFormParameter = xi;
-        
-        //// Heller-Milbradt
-        // elemFormParameter = 1.-Math.tanh((xi-1.)/20.);
+        //final double sumEdgeSq = distance[0][1]*distance[0][1] 
+        //         + distance[1][2]*distance[1][2] 
+        //         + distance[2][0]*distance[2][0];
+        //elemFormParameter = area / (sumEdgeSq * 0.144338);
     }
 
     /**

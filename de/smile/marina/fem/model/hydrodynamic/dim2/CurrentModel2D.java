@@ -48,7 +48,7 @@ import javax.xml.bind.*;
  * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.10.4
+ * @version 4.10.5
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
@@ -990,7 +990,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 // Impulsgleichung x
                 terms_u[j] =
                         // Druckterm
-                        PhysicalParameters.G * detadx * wlambda
+                        PhysicalParameters.G * detadx //* wlambda
                                 // density term
                                 - 0.5 * PhysicalParameters.G * rhodx * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
@@ -1011,7 +1011,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 // Impulsgleichung y
                 terms_v[j] =
                         // Druckterm
-                        PhysicalParameters.G * detady * wlambda
+                        PhysicalParameters.G * detady //* wlambda
                                 // density term
                                 - 0.5 * PhysicalParameters.G * rhody * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
@@ -1053,25 +1053,37 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
             }
 
+            // NEU: residual-basierte Elementausdehnung
+            final double cont_res = Math.abs(cureq1_mean);
+            final double mom_res  = Math.sqrt(cureq2_mean*cureq2_mean + cureq3_mean*cureq3_mean);
+
+            // ----- residual-basierte, DIMENSIONSLOSE Elementausdehnung -----
             final double c0 = Math.sqrt(PhysicalParameters.G * ((depth_mean < WATT) ? WATT : depth_mean)); // the shallow water wave velocity
             // Operatornorm for each direction component and then again as euclidean vector norm
             final double operatornorm_x = c0 + Math.abs(u_mean);
             final double operatornorm_y = c0 + Math.abs(v_mean);
             final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
+            final double cont_dimless = cont_res / operatornorm;
+            final double mom_dimless  = mom_res / (operatornorm * operatornorm / Math.max(depth_mean, WATT));
+
+            // r_ratio > 1  → Kontinuität dominiert (Wetting/Drying, Fronten) → minHight
+            // r_ratio < 1  → Impuls dominiert (reine Advektion)            → getVectorSize
+            final double r_ratio = cont_dimless / (mom_dimless + 1e-12);
+
+            // Stetiges, sanftes Morphing (wie dein lmb-Mechanismus)
+            final double alpha = Math.min(1.0, 8.0 * r_ratio);   // 8.0 ist ein guter Tuning-Faktor
+            
+            // Morphing der Elementausdehnung
+            elementsize = (1.0 - alpha) * elementsize + alpha * ele.minHight;
+
             double tau_cur = 0.5 * elementsize / operatornorm;
             
-            // Neuer, konservativer Skalierungsfaktor
+            // Skalierungsfaktor
             final double residual_norm = Math.sqrt(cureq1_mean * cureq1_mean + cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean);
             final double lmb = Math.min(1, 10.*residual_norm);
-            final double scaleFactor = lmb + (1 - lmb) * 2;
-            // timeStep = tau_cur*scaleFactor;
-            // NEU: Blend zwischen scaleFactor (aggressiv) und elemFormParameter (konservativ + Shape-Dämpfung)
-            final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb * ele.elemFormParameter;
+            final double scaleFactor = lmb + (1 - lmb) * 4;
+            final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
             timeStep = tau_cur * timeStepScale;
-
-            // Beruecksichtigung der Elementform ab Version 4.10.4
-            tau_cur *= ele.elemFormParameter;
-
 
             for (int j = 0; j < 3; j++) {
 
@@ -1080,13 +1092,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                 // Fehlerkorrektur durchfuehren
                 double result_U_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq2_mean
-                                                + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean * wlambda
+                                                + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean //* wlambda
                                                 + koeffmat[j][2] * v_mean * cureq2_mean) * ele.area;
                         result_U_i -=  (koeffmat[j][1] * astx * udx + koeffmat[j][2] * asty * udy) * wlambda * ele.area
                                         - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * udx + depthdy * asty * udy) * wlambda * ele.area;
 
                 double result_V_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq3_mean
-                                                + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean * wlambda
+                                                + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean //* wlambda
                                                 + koeffmat[j][2] * v_mean * cureq3_mean) * ele.area;
                         result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
                                         - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;

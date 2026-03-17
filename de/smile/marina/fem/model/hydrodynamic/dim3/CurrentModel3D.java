@@ -69,7 +69,7 @@ import static java.lang.Math.min;
 import static java.lang.Math.sqrt;
 
 /** 3-dimensional current model with stabilized linear triangle finite elements
- * @version 4.6.0
+ * @version 4.10.6
  * @author Peter Milbradt
  */
 public class  CurrentModel3D extends SurfaceWaterModel  {
@@ -911,7 +911,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             final double operatornorm2 = c0 + abs(vI_mean);
             // Satbilisierungsparameter fuer Konti-Gleichung
             double operatornorm = Math.sqrt(operatornorm1*operatornorm1 + operatornorm2*operatornorm2);
-            final double tau_cur2D = 0.5 * elementsize2D / operatornorm ;
+            final double tau_cur2D = 0.5 * elementsize2D / operatornorm * ele.elemFormParameter;
             courant=Function.min(courant, tau_cur2D);
 
             final double cv_mean = Function.norm(u_mean, v_mean);
@@ -953,7 +953,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             final double operatornorm_y = c0 + abs(v_mean);
             operatornorm= Math.sqrt(operatornorm_x*operatornorm_x + operatornorm_y*operatornorm_x);
             // Stabilisierungsparameter fuer Impuls der Schichten
-            double tau_cur = 0.5 * elementsize / operatornorm;
+            double tau_cur = 0.5 * elementsize / operatornorm * ele.elemFormParameter;
 
             courant=Function.min(courant, tau_cur);
 

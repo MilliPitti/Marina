@@ -56,7 +56,7 @@ public class FTriangle extends FElement {
     public final double area;
 
     public double dzdx, dzdy, bottomslope;
-    //public double elemFormParameter=1;
+    public double elemFormParameter=1;
 
     public double[][] distance = new double[3][3]; // Feld mit den Kantenlaengen
 
@@ -114,11 +114,10 @@ public class FTriangle extends FElement {
         dx = xmax - xmin;
         dy = ymax - ymin;
 
-        //// Shape-Faktor (Standard in FEM) ab Marina 4.10.4
-        //final double sumEdgeSq = distance[0][1]*distance[0][1] 
-        //         + distance[1][2]*distance[1][2] 
-        //         + distance[2][0]*distance[2][0];
-        //elemFormParameter = area / (sumEdgeSq * 0.144338);
+        // Shape-Faktor (Standard in FEM) ab Marina 4.10.4
+        final double sumEdgeSq = distance[0][1] * distance[0][1] + distance[1][2] * distance[1][2]
+                + distance[2][0] * distance[2][0];
+        elemFormParameter = area / (sumEdgeSq * 0.144338);
     }
 
     /**

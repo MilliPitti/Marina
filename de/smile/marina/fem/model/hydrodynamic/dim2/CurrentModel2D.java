@@ -48,7 +48,7 @@ import javax.xml.bind.*;
  * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.10.5
+ * @version 4.10.6
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
@@ -65,6 +65,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
     private double previousTimeStep = 0.0; // Speichert den vorherigen Zeitschritt für das gesamte Modell
 
+    protected static double speedUpFactor = 1.; 
+
     // Konstruktor
     public CurrentModel2D(FEDecomposition fe, CurrentDat currentdat) {
         System.out.println("CurrentModel2D initialization");
@@ -76,12 +78,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
         WATT = Function.max(0.01, currentdat.watt); // verhindert das jemand als Wattgrenze 0 angibt
         halfWATT = WATT / 2.;
         infiltrationRate = currentdat.infiltrationRate;
+        speedUpFactor = currentdat.speedUp;
 
         dof_data = new CurrentModel2DData[fenet.getNumberofDOFs()];
         element_data = new Current2DElementData[fenet.getNumberofFElements()];
 
         setNumberOfThreads(currentdat.NumberOfThreads);
-        // sicherer Startwert fuer den allerersten Substep
 
         readBoundCond(currentdat.rndwerteReader);
 
@@ -2055,7 +2057,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
         return TicadIO.HRES_Z | TicadIO.HRES_V | TicadIO.HRES_H | TicadIO.HRES_SHEAR;
     }
 
-    /** The method write_erg_xf */
     @Override
     public final void write_erg_xf() {
         try {
@@ -2092,8 +2093,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             System.exit(1);
         }
     }
-    // end readBoundCond
-    // end write_erg_xf
 
     private void readWeirXML(String wehrDateiName) {
         try {
@@ -2440,7 +2439,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         // Aktualisiere den vorherigen Zeitschritt für das gesamte Modell
         this.previousTimeStep = dt;
-        this.time += dt;
+        this.time += dt*speedUpFactor;
 
         if (resultIsNaN) {
             System.out.println("Time=" + this.time + " and timestep is " + dt);

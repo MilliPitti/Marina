@@ -1066,7 +1066,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double operatornorm_y = c0 + Math.abs(v_mean);
             final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
             final double cont_dimless = cont_res / operatornorm;
-            final double mom_dimless  = mom_res / (operatornorm * operatornorm / Math.max(depth_mean, WATT));
+            final double mom_dimless  = mom_res * depth_mean / (operatornorm * operatornorm);
 
             // r_ratio > 1  → Kontinuität dominiert (Wetting/Drying, Fronten) → minHight
             // r_ratio < 1  → Impuls dominiert (reine Advektion)            → getVectorSize
@@ -1080,10 +1080,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             double tau_cur = 0.5 * elementsize / operatornorm;
             
-            // Skalierungsfaktor
-            final double residual_norm = Math.sqrt(cureq1_mean * cureq1_mean + cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean);
-            final double lmb = Math.min(1, 10.*residual_norm);
-            final double scaleFactor = lmb + (1 - lmb) * 4;
+            // energynorm based time step scaling
+            final double energy_norm = Math.sqrt(PhysicalParameters.G * cureq1_mean * cureq1_mean + depth_mean * (cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean));
+            final double lmb = Math.min(1, 3.0 * energy_norm); // 3.0 ist ein guter Tuning-Faktor
+            // final double energy_norm = Math.sqrt(cureq1_mean * cureq1_mean + cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean);
+            // final double lmb = Math.min(1, 10.*energy_norm);
+            final double scaleFactor = lmb + (1 - lmb) * 3; // 3 ist ein guter Tuning-Faktor
             final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
             timeStep = tau_cur * timeStepScale;
 

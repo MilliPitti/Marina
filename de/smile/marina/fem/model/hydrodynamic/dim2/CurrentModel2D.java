@@ -992,7 +992,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 // Impulsgleichung x
                 terms_u[j] =
                         // Druckterm
-                        PhysicalParameters.G * detadx //* wlambda
+                        PhysicalParameters.G * detadx 
                                 // density term
                                 - 0.5 * PhysicalParameters.G * rhodx * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
@@ -1012,8 +1012,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                 // Impulsgleichung y
                 terms_v[j] =
-                        // Druckterm
-                        PhysicalParameters.G * detady //* wlambda
+                        // Druckter
+                        PhysicalParameters.G * detady 
                                 // density term
                                 - 0.5 * PhysicalParameters.G * rhody * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
@@ -1073,7 +1073,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final double r_ratio = cont_dimless / (mom_dimless + 1e-12);
 
             // Stetiges, sanftes Morphing (wie dein lmb-Mechanismus)
-            final double alpha = Math.min(1.0, 8.0 * r_ratio);   // 8.0 ist ein guter Tuning-Faktor
+            final double alpha = Math.min(1.0, 8.0 * r_ratio);   // factor 8.0 is typically in the range of O(10)
             
             // Morphing der Elementausdehnung
             elementsize = (1.0 - alpha) * elementsize + alpha * ele.minHight;
@@ -1082,10 +1082,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             
             // energynorm based time step scaling
             final double energy_norm = Math.sqrt(PhysicalParameters.G * cureq1_mean * cureq1_mean + depth_mean * (cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean));
-            final double lmb = Math.min(1, 3.0 * energy_norm); // 3.0 ist ein guter Tuning-Faktor
-            // final double energy_norm = Math.sqrt(cureq1_mean * cureq1_mean + cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean);
-            // final double lmb = Math.min(1, 10.*energy_norm);
-            final double scaleFactor = lmb + (1 - lmb) * 3; // 3 ist ein guter Tuning-Faktor
+            final double lmb = Math.min(1, 3.2 * energy_norm); // 3.2 dimensional empirical threshold
+            final double scaleFactor = lmb + (1 - lmb) * 4; // 4 ist ein guter Tuning-Faktor
             final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
             timeStep = tau_cur * timeStepScale;
 
@@ -1096,13 +1094,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                 // Fehlerkorrektur durchfuehren
                 double result_U_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq2_mean
-                                                + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean //* wlambda
+                                                + koeffmat[j][1] * PhysicalParameters.G * cureq1_mean
                                                 + koeffmat[j][2] * v_mean * cureq2_mean) * ele.area;
                         result_U_i -=  (koeffmat[j][1] * astx * udx + koeffmat[j][2] * asty * udy) * wlambda * ele.area
                                         - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * udx + depthdy * asty * udy) * wlambda * ele.area;
 
                 double result_V_i = -tau_cur * (  koeffmat[j][1] * u_mean * cureq3_mean
-                                                + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean //* wlambda
+                                                + koeffmat[j][2] * PhysicalParameters.G * cureq1_mean
                                                 + koeffmat[j][2] * v_mean * cureq3_mean) * ele.area;
                         result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
                                         - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;

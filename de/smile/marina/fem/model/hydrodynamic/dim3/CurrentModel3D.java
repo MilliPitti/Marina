@@ -69,7 +69,7 @@ import static java.lang.Math.min;
 import static java.lang.Math.sqrt;
 
 /** 3-dimensional current model with stabilized linear triangle finite elements
- * @version 4.10.6
+ * @version 4.10.7
  * @author Peter Milbradt
  */
 public class  CurrentModel3D extends SurfaceWaterModel  {
@@ -904,15 +904,6 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             if(!indicator2D) elementsize2D = ele.minHight;
             
             final double nonZeroMeanDepth = (aktuelletiefemean < WATT) ? WATT : aktuelletiefemean;
-            
-            double c0 = sqrt(PhysicalParameters.G * nonZeroMeanDepth); // the shallow water wave velocity
-            // Formulierung mit dem betragsgroeszten Eigenwert fuer JEDE Richtungskomponente und dann wiederum als euklidische Vektornorm
-            final double operatornorm1 = c0 + abs(uI_mean);
-            final double operatornorm2 = c0 + abs(vI_mean);
-            // Satbilisierungsparameter fuer Konti-Gleichung
-            double operatornorm = Math.sqrt(operatornorm1*operatornorm1 + operatornorm2*operatornorm2);
-            final double tau_cur2D = 0.5 * elementsize2D / operatornorm * ele.elemFormParameter;
-            courant=Function.min(courant, tau_cur2D);
 
             final double cv_mean = Function.norm(u_mean, v_mean);
             
@@ -946,16 +937,6 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             double impuls1_mean = 0.;
             double impuls2_mean = 0.;
             double contieq_mean = 0.;
-
-            c0 = sqrt(PhysicalParameters.G * nonZeroMeanDepth); // the shallow water wave velocity
-            // Formulierung mit dem betragsgroeszten Eigenwert fuer JEDE Richtungskomponente und dann wiederum als euklidische Vektornorm
-            final double operatornorm_x = c0 + abs(u_mean);
-            final double operatornorm_y = c0 + abs(v_mean);
-            operatornorm= Math.sqrt(operatornorm_x*operatornorm_x + operatornorm_y*operatornorm_x);
-            // Stabilisierungsparameter fuer Impuls der Schichten
-            double tau_cur = 0.5 * elementsize / operatornorm * ele.elemFormParameter;
-
-            courant=Function.min(courant, tau_cur);
 
             // Elementfehler berechnen
             // -----------------------
@@ -1034,6 +1015,63 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                 astz += (bottomslope-1.) * Function.norm(u_mean, v_mean);
             // residualbased turbulenz
             astz += abs(contieq_mean);
+
+            double c0 = sqrt(PhysicalParameters.G * nonZeroMeanDepth); // the shallow water wave velocity
+
+            // residual-basierte Elementausdehnung
+            final double cont_res = Math.abs(contieq_mean);
+            final double mom_res  = Math.sqrt(dimpuls1_mean*dimpuls1_mean + dimpuls2_mean*dimpuls2_mean);
+
+            // Formulierung mit dem betragsgroeszten Eigenwert fuer JEDE Richtungskomponente und dann wiederum als euklidische Vektornorm
+            final double operatornorm1 = c0 + abs(uI_mean);
+            final double operatornorm2 = c0 + abs(vI_mean);
+            // Satbilisierungsparameter fuer Konti-Gleichung
+            double operatornorm = Math.sqrt(operatornorm1*operatornorm1 + operatornorm2*operatornorm2);
+
+            final double cont_dimless = cont_res / operatornorm;
+            final double mom_dimless  = mom_res * aktuelletiefemean / (operatornorm * operatornorm);
+
+            // r_ratio > 1  → Kontinuität dominiert (Wetting/Drying, Fronten) → minHight
+            // r_ratio < 1  → Impuls dominiert (reine Advektion)            → getVectorSize
+            final double r_ratio = cont_dimless / (mom_dimless + 1e-12);
+
+            // Stetiges, sanftes Morphing (wie dein lmb-Mechanismus)
+            final double alpha = Math.min(1.0, 8.0 * r_ratio);   // factor 8.0 is typically in the range of O(10)
+            
+            // Morphing der Elementausdehnung
+            elementsize2D = (1.0 - alpha) * elementsize2D + alpha * ele.minHight;
+            final double tau_cur2D = 0.5 * elementsize2D / operatornorm;
+
+            // energynorm based time step scaling
+            final double energy_norm = Math.sqrt(PhysicalParameters.G * contieq_mean * contieq_mean + aktuelletiefemean * (dimpuls1_mean * dimpuls1_mean + dimpuls2_mean * dimpuls2_mean));
+            final double lmb = Math.min(1, 3.2 * energy_norm); // 3.2 dimensional empirical threshold
+            final double scaleFactor = lmb + (1 - lmb) * 4; // 4 ist ein guter Tuning-Faktor
+            final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
+            courant=Function.min(courant, tau_cur2D*timeStepScale);
+
+            // Mittlere vertikale Geschwindigkeit der aktuellen Schicht 's' berechnen
+            final double w_mean = (w[0] + w[1] + w[2]) / 3.0;
+
+            // ====================================================================
+            // KONZEPT 1: Elementausdehnung (Direktional)
+            // ====================================================================
+            // Wir betrachten NUR die Strömungsrichtung in dieser Schicht.
+            final double dz    = schichtdicke_mean[s]; // Schichtdicke
+            final double h_xyz = Math.sqrt(elementsize*elementsize+dz*dz);
+            // ====================================================================
+            // KONZEPT 2: Stabilisierungsparameter (tau_cur für die Schicht)
+            // ====================================================================
+            // 3D Informationsausbreitung (Advektion + Welle)
+            final double operatornorm_x = c0 + Math.abs(u_mean); // u_mean der Schicht!
+            final double operatornorm_y = c0 + Math.abs(v_mean); // v_mean der Schicht!
+            final double op_xyz  = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y + w_mean*w_mean);
+            final double tau_cur = 0.5 * h_xyz / op_xyz;    
+            // ====================================================================
+            // KONZEPT 3: Element-Courant-Zeitschritt
+            // ====================================================================
+            // Der lokale physikalische Basis-Zeitschritt der Schicht ist tau_cur.
+            courant = Function.min(courant, tau_cur);
+
 
             for (int j = 0; j < 3; j++) {
 

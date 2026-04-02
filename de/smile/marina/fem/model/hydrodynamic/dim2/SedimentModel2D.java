@@ -50,7 +50,7 @@ import java.util.logging.Logger;
  * load, suspened transport and bottom evolution
  * 
  * @author Peter Milbradt
- * @version 4.10.0
+ * @version 4.10.7
  */
 public class SedimentModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
 
@@ -1037,10 +1037,12 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             // sediment
             double dskoncdx = 0.;
             double dskoncdy = 0.;
+            double c_mean = 0.;
             double dzdx = 0.; // Tiefeableitung nach x
             double dzdy = 0.; // Tiefeableitung nach y
             double d50dx = 0.;
             double d50dy = 0.;
+            double d50_mean = 0.;
 
             double dQxdx = 0.; // Ableitung des totalen Sedimenttransportes
             double dQydy = 0.;
@@ -1065,9 +1067,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
                 dskoncdx += smd.sC * koeffmat[j][1];
                 dskoncdy += smd.sC * koeffmat[j][2];
+                c_mean += smd.sC / 3.;
 
                 d50dx += smd.d50 * koeffmat[j][1];
                 d50dy += smd.d50 * koeffmat[j][2];
+                d50_mean += smd.d50 / 3.;
 
                 morph_x += 1. / 3. * smd.u_bank; // mittlere Geschwindigkeit mit der sich Sedimentpakete bewegen
                 morph_y += 1. / 3. * smd.v_bank;
@@ -1148,14 +1152,29 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double tau_z;
             if (lambda_mean > 1.E-7) {
                 tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
-                timeStep = Math.min(timeStep, tau_z);
+                // thresholdZ = 1000.0 bedeutet: 
+                // Wenn sich der Boden schneller als 1 mm/s ändern will, greift die Drosselung ein.
+                final double thresholdZ = 1000.0; 
+                final double lmb_z = Math.min(1.0, thresholdZ * Math.abs(localResZTransport));
+                final double scaleFactor_z = lmb_z + (1.0 - lmb_z) * 3.0;
+                final double timeStepScale_z = (1.0 - lmb_z) * scaleFactor_z + lmb_z;
+                timeStep = Math.min(timeStep, tau_z*timeStepScale_z);
             } else
                 tau_z = 0.;
 
             final double tauC;
             if (current_mean > WATT / 10. / 3.) {
                 tauC = 0.5 * eleCurrentData.elementsize / current_mean;
-                timeStep = Math.min(timeStep, tauC);
+                // Relative change rate [1/s] (How many percent of the current value change per second?)
+                final double relative_change_rate = localResC / Math.max(c_mean, 1e-6);
+                // threshold_time ist nun eine Zeitkonstante [s]. 
+                // Wert 2.0 bedeutet: Wenn sich 50% der Konzentration in 1 Sekunde ändern, riegelt lmb_C ab.
+                // Wert 1.0 bedeutet: Wenn sich 100% der Konzentration in 1 Sekunde ändern, riegelt lmb_C ab.
+                final double threshold_time = 2.0; 
+                final double lmb_C = Math.min(1.0, threshold_time * relative_change_rate); 
+                final double scaleFactor_C = lmb_C + (1.0 - lmb_C) * 3.0;
+                final double timeStepScale_C = (1.0 - lmb_C) * scaleFactor_C + lmb_C;
+                timeStep = Math.min(timeStep, tauC*timeStepScale_C);
             } else
                 tauC = 0.;
 
@@ -1163,7 +1182,18 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double tau_d50;
             if (morph_mean > 1.E-7) {
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
-                timeStep = Math.min(timeStep, tau_d50);
+
+                // 2. Relativer Fehler für das Zeitschritt-Scaling
+                final double relative_change_rate_d50 = Math.abs(localResD50) / d50_mean; // [1/s]
+                // 3. Threshold: Ab wie viel % Änderung pro Sekunde soll gedrosselt werden?
+                // z.B. 5.0 -> drosselt voll ab, wenn sich der d50 um 20% in 1 Sekunde ändern will
+                final double threshold_time_d50 = 5.0; 
+                final double lmb_d50 = Math.min(1.0, threshold_time_d50 * relative_change_rate_d50);
+                // 4. Sanftes Scaling berechnen
+                final double scaleFactor_d50 = lmb_d50 + (1.0 - lmb_d50) * 3.0; // Dein Faktor 3
+                final double timeStepScale_d50 = (1.0 - lmb_d50) * scaleFactor_d50 + lmb_d50;
+                // 5. Globalen Zeitschritt mit dem skalierten d50-Limit abgleichen
+                timeStep = Math.min(timeStep, tau_d50 * timeStepScale_d50);
             } else
                 tau_d50 = 0.;
 

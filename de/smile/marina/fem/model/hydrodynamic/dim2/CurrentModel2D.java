@@ -1055,11 +1055,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
             }
 
-            // NEU: residual-basierte Elementausdehnung
+            // residual-basierte Elementausdehnung
             final double cont_res = Math.abs(cureq1_mean);
             final double mom_res  = Math.sqrt(cureq2_mean*cureq2_mean + cureq3_mean*cureq3_mean);
 
-            // ----- residual-basierte, DIMENSIONSLOSE Elementausdehnung -----
             final double c0 = Math.sqrt(PhysicalParameters.G * ((depth_mean < WATT) ? WATT : depth_mean)); // the shallow water wave velocity
             // Operatornorm for each direction component and then again as euclidean vector norm
             final double operatornorm_x = c0 + Math.abs(u_mean);

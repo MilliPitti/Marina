@@ -612,10 +612,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                     // Begin standart Galerkin-step
                     for (int l = 0; l < 3; l++) {
                         final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
-                        final double gl = (l == j) ? 1.
-                                : Function.min(CurrentModel2DData.extract(ele.getDOF(l)).wlambda,
-                                        CurrentModel2DData.extract(ele.getDOF(l)).totaldepth
-                                                / Function.max(CurrentModel2D.WATT, cmd.totaldepth));
+                        final double gl = (l == j) ? 1. : CurrentModel2DData.extract(ele.getDOF(l)).wlambda;
                         result_ADConc_i -= vorfak * terms_AD[l] * gl;
                     }
                     synchronized (adModelData) {

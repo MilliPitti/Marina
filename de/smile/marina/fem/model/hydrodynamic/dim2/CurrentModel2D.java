@@ -1119,15 +1119,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
                             : dof_data[ele.getDOF(l).number].wlambda);
 
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
-                    double gl = (l == j) ? 1.
-                            : Math.min(wlambda_l, dof_data[ele.getDOF(l).number].totaldepth
-                                    / Math.max(CurrentModel2D.WATT, cmd.totaldepth));
 
                     // Impulse Equations
-                    result_U_i -= vorfak * terms_u[l] * gl;
-                    result_V_i -= vorfak * terms_v[l] * gl;
+                    result_U_i -= vorfak * terms_u[l];
+                    result_V_i -= vorfak * terms_v[l];
 
-                    gl = (l == j) ? 1. : wlambda_l;
+                    double gl = (l == j) ? 1. : wlambda_l;
                     if (l != j && eleCurrentData.iwatt != 0) {
                         if (terms_eta[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten

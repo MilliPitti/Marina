@@ -1110,31 +1110,29 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                 for (int l = 0; l < 3; l++) {
                     final double wlambda_l = (flood > dof_data[ele.getDOF(l).number].wlambda ? flood : dof_data[ele.getDOF(l).number].wlambda);
                     final double vorfak =  ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
-                    double gl = (l == j) ? 1. : Math.min(wlambda_l,dof_data[ele.getDOF(l).number].f.getValueAt(_layerThickness, s)/Math.max(WATT,cmd.f.getValueAt(_layerThickness, s)));
+                    double gl = (l == j) ? 1. : wlambda_l;
                     
                     ru -= vorfak * terms_u[l]*gl;
                     rv -= vorfak * terms_v[l]*gl;
-                    
-                    double glH = (l == j) ? 1. : wlambda_l;
 // ToDo muss nicht in jeder Schicht berechnet werden, da s gar nicht enthalten - koennte so wie die Koeffmat umgesetzt werden !!
                     if ((l != j) && (iwatt != 0)) {
                         if (terms_h < 0) { // Wasserstand am abgelegenen Knoten will steigen
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                                glH = cmd.wlambda * Function.max(0., 1. - (cmd.eta - dof_data[ele.getDOF(l).number].eta) / ele.distance[l][j]);
+                                gl = cmd.wlambda * Function.max(0., 1. - (cmd.eta - dof_data[ele.getDOF(l).number].eta) / ele.distance[l][j]);
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-//                                glH = dof_data[ele.getDOF(l).number].wlambda;
+//                                gl = dof_data[ele.getDOF(l).number].wlambda;
                             }
                         } else { // Wasserstand am abgelegenen Knoten will fallen
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                                glH=1.;
+                                gl=1.;
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                glH = wlambda * Function.max(0., 1. - (dof_data[ele.getDOF(l).number].eta - cmd.eta) / ele.distance[l][j]);
+                                gl = wlambda * Function.max(0., 1. - (dof_data[ele.getDOF(l).number].eta - cmd.eta) / ele.distance[l][j]);
                             }
                         }
                     }
 // ToDo  rw -= vorfak * terms_h*glH[s][l]; mit l=s -> 1
                     // Conti Equation
-                    rw -= vorfak * terms_h * glH;
+                    rw -= vorfak * terms_h * gl;
                 }
                 synchronized (cmd) {
                     cmd.f.setValueAt(_ru,s,cmd.f.getValueAt(_ru,s)+ru);

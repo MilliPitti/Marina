@@ -1234,10 +1234,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 for (int l = 0; l < 3; l++) {
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
 
-                    double gl = (l == j) ? 1.
-                            : Math.min(dof_currentdata[ele.getDOF(l).number].wlambda,
-                                    dof_currentdata[ele.getDOF(l).number].totaldepth
-                                            / Math.max(CurrentModel2D.WATT, cmd.totaldepth));
+                    double gl = (l == j) ? 1. : dof_currentdata[ele.getDOF(l).number].wlambda;
                     result_SKonc_i -= vorfak * terms_C[l] * gl;
 
                     gl = 1.;

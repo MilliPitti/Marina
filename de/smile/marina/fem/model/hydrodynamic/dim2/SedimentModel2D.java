@@ -1218,17 +1218,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 double result_d50_i = -tau_d50 * (koeffmat[j][1] * morph_x + koeffmat[j][2] * morph_y) * localResD50
                         * ele.area;
                 // smoothing-term
-                result_d50_i -= (koeffmat[j][1] * d50dx + koeffmat[j][2] * d50dy) * nu_sed * cmd.wlambda * ele.area; // spontaner
-                                                                                                                     // und
-                                                                                                                     // gravitationeller
-                                                                                                                     // Transport
+                result_d50_i -= (koeffmat[j][1] * d50dx + koeffmat[j][2] * d50dy) * nu_sed * cmd.wlambda * ele.area; // spontaner und gravitationeller Transport
 
                 // Fehlerkorrektur Z
                 double resCorrect = -tau_z * (koeffmat[j][1] * lambda_x + koeffmat[j][2] * lambda_y)
-                        * localResZTransport;
-                // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion
-                // in die Ebene
-                resCorrect -= (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed;
+                        * localResZTransport * ele.area;
+                // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
+                resCorrect -= (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
 
                 double result_Z_i = 0;
                 for (int l = 0; l < 3; l++) {

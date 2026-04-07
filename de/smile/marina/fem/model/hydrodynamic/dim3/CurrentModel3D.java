@@ -1112,8 +1112,8 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                     final double vorfak =  ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
                     double gl = (l == j) ? 1. : wlambda_l;
                     
-                    ru -= vorfak * terms_u[l]*gl;
-                    rv -= vorfak * terms_v[l]*gl;
+                    ru -= vorfak * terms_u[l];
+                    rv -= vorfak * terms_v[l];
 // ToDo muss nicht in jeder Schicht berechnet werden, da s gar nicht enthalten - koennte so wie die Koeffmat umgesetzt werden !!
                     if ((l != j) && (iwatt != 0)) {
                         if (terms_h < 0) { // Wasserstand am abgelegenen Knoten will steigen

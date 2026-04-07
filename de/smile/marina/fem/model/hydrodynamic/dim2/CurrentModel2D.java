@@ -1115,16 +1115,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 // Begin standart Galerkin-step
                 for (int l = 0; l < 3; l++) {
 
-                    final double wlambda_l = (flood > dof_data[ele.getDOF(l).number].wlambda ? flood
-                            : dof_data[ele.getDOF(l).number].wlambda);
-
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
 
                     // Impulse Equations
                     result_U_i -= vorfak * terms_u[l];
                     result_V_i -= vorfak * terms_v[l];
 
-                    double gl = (l == j) ? 1. : wlambda_l;
+                    final double gl;
                     if (l != j && eleCurrentData.iwatt != 0) {
                         if (terms_eta[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
@@ -1132,7 +1129,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 gl = cmd.wlambda * Function.max(0.,
                                         1. - (cmd.eta - dof_data[ele.getDOF(l).number].eta) / ele.distance[l][j]);
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                // gl = dof_data[ele.getDOF(l).number].wlambda;
+                                gl = (flood > dof_data[ele.getDOF(l).number].wlambda ? flood
+                                        : dof_data[ele.getDOF(l).number].wlambda);
                             }
                         } else { // Wasserstand am abgelegenen Knoten will fallen
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
@@ -1143,6 +1141,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                         1. - (dof_data[ele.getDOF(l).number].eta - cmd.eta) / ele.distance[l][j]);
                             }
                         }
+                    }else{
+                        gl = 1;
                     }
 
                     // Conti Equation

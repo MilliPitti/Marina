@@ -1222,9 +1222,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
                 // Fehlerkorrektur Z
                 double resCorrect = -tau_z * (koeffmat[j][1] * lambda_x + koeffmat[j][2] * lambda_y)
-                        * localResZTransport * ele.area;
+                        * localResZTransport; // multiplication with area is done later
                 // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
-                resCorrect -= (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
+                resCorrect -= (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed; // multiplication with area is done later
 
                 double result_Z_i = 0;
                 for (int l = 0; l < 3; l++) {
@@ -1303,8 +1303,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         smd.tauB = tauB;
         if (!basedOnCurrentModel3D) {
             final double normTauB = Function.norm(cmd.tauBx, cmd.tauBy);
-            if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer
-                                    // Stroemung
+            if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer Stroemung
                 final double lambda = Function.min(1,
                         Function.norm(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
                 smd.u = (1. - lambda) * smd.u + lambda * cmd.tauBx / normTauB * cmd.cv;

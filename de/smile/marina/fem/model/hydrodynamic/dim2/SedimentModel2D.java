@@ -1111,12 +1111,21 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     lambda_y = morph_y;
                 }
             } else {
-                final double lambda = bs / (bs2 + 0.25); // 1 bei bs=0,5
+                double lambda = bs / (bs2 + 0.25); // 1 bei bs=0,5
+                // Aggressives Abklingen ab dem natuerlichen Schuettwinkel (ca. 31° -> bs = 0.6)
+                final double bs_crit = 0.6;
+                if (bs > bs_crit) {
+                    // Exponentieller Abfall Richtung 0 fuer alles was steiler als 31° ist
+                    lambda = lambda * Math.exp(-(bs - bs_crit) * 4.0);
+                }
                 lambda_x = lambda * lambda_x + (1 - lambda) * morph_x;
                 lambda_y = lambda * lambda_y + (1 - lambda) * morph_y;
             }
             lambda_x = (lambda_x * eleSed + (1 - eleSed) * morph_x);
             lambda_y = (lambda_y * eleSed + (1 - eleSed) * morph_y);
+
+            // double lambda_x = morph_x;
+            // double lambda_y = morph_y;
 
             final double current_mean = Function.norm(u_mean, v_mean);
             double localResC = 0., localResZTransport = 0., localResD50 = 0.;
@@ -1223,28 +1232,27 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // Fehlerkorrektur Z
                 double resCorrect = -tau_z * (koeffmat[j][1] * lambda_x + koeffmat[j][2] * lambda_y)
                         * localResZTransport; // multiplication with area is done later
-                // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
-                resCorrect -= (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed; // multiplication with area is done later
 
-                double result_Z_i = 0;
+                // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
+                double result_Z_i = -(koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
                 for (int l = 0; l < 3; l++) {
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
 
-                    double gl = (l == j) ? 1. : dof_currentdata[ele.getDOF(l).number].wlambda;
-                    result_SKonc_i -= vorfak * terms_C[l] * gl;
+                    result_SKonc_i -= vorfak * terms_C[l];
 
-                    gl = 1.;
+                    double gl = 1.;
                     if (l != j) { // ToDo siehe Marina-Version 2.8.9
                         if (terms_z[l] > 0) { // abgelegener Knoten sedimentiert
                             if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
-                                gl = cmd.wlambda * Function.max(0.,
-                                        1. - (dof_data[ele.getDOF(l).number].z - smd.z) / ele.distance[l][j]);
+                                gl = cmd.wlambda * dof_data[ele.getDOF(l).number].lambdaQs
+                                 * Function.max(0., 1. - (dof_data[ele.getDOF(l).number].z - smd.z) / ele.distance[l][j])
+                                ;
                             } else { // abgelegener Knoten liegt oberhalb
-                                gl = dof_currentdata[ele.getDOF(l).number].wlambda;
+                                gl = 1.;
                             }
                         } else { // abgelegener Knoten erodiert
                             if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
-                                gl = smd.lambdaQs;
+                                gl = 1.;
                             } else { // abgelegenen Knoten liegt oberhalb
                                 gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Function.max(0.,
                                         1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]);

@@ -1159,7 +1159,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             }
             final double lambda_mean = Function.norm(lambda_x, lambda_y);
             final double tau_z;
-            if (lambda_mean > 1.E-7) {
+            if (lambda_mean > FTriangle.minV) {
                 tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
                 // thresholdZ = 1000.0 bedeutet: 
                 // Wenn sich der Boden schneller als 1 mm/s ändern will, greift die Drosselung ein.
@@ -1169,10 +1169,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final double timeStepScale_z = (1.0 - lmb_z) * scaleFactor_z + lmb_z;
                 timeStep = Math.min(timeStep, tau_z*timeStepScale_z);
             } else
-                tau_z = 0.;
+                tau_z = ele.minHight/FTriangle.minV;// 0.;
 
             final double tauC;
-            if (current_mean > WATT / 10. / 3.) {
+            if (current_mean > FTriangle.minV) {
                 tauC = 0.5 * eleCurrentData.elementsize / current_mean;
                 // Relative change rate [1/s] (How many percent of the current value change per second?)
                 final double relative_change_rate = localResC / Math.max(c_mean, 1e-6);
@@ -1185,11 +1185,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final double timeStepScale_C = (1.0 - lmb_C) * scaleFactor_C + lmb_C;
                 timeStep = Math.min(timeStep, tauC*timeStepScale_C);
             } else
-                tauC = 0.;
+                tauC = ele.minHight/FTriangle.minV;// 0.;
 
             final double morph_mean = Function.norm(morph_x, morph_y);
             final double tau_d50;
-            if (morph_mean > 1.E-7) {
+            if (morph_mean > FTriangle.minV) {
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
 
                 // 2. Relativer Fehler für das Zeitschritt-Scaling
@@ -1204,12 +1204,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // 5. Globalen Zeitschritt mit dem skalierten d50-Limit abgleichen
                 timeStep = Math.min(timeStep, tau_d50 * timeStepScale_d50);
             } else
-                tau_d50 = 0.;
+                tau_d50 = ele.minHight/FTriangle.minV;// 0.;
 
             for (int j = 0; j < 3; j++) {
                 final int i = ele.getDOF(j).number;
                 SedimentModel2DData smd = dof_data[i];
                 final CurrentModel2DData cmd = dof_currentdata[i];
+                
                 // Fehlerkorrektur C
                 double result_SKonc_i = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC
                         * ele.area;

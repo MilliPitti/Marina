@@ -33,6 +33,7 @@ import javax.vecmath.Point3d;
  */
 
 public class FTriangle extends FElement {
+    public static final double minV = 1.E-6; // minimal velocity to be considered for vectorLength computation
     /*----------------------------------------------------------------------*/
     /* Elementkennung (Bits von Element[].kennung) */
     /*----------------------------------------------------------------------*/
@@ -131,7 +132,7 @@ public class FTriangle extends FElement {
 
         final double normV = Function.norm(vx, vy);
 
-        if (normV >= 0.001) {
+        if (normV >= minV) {
             do {
                 i1 = (i + 1) % 3;
                 i2 = (i + 2) % 3;

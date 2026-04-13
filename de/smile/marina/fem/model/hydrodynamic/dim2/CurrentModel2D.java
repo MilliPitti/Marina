@@ -1035,7 +1035,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements
                     double reduceFactor = (Math.abs(cureq1_mean * cmd.totaldepth) + 1.) * bottomslope;
                     reduceFactor *= reduceFactor * reduceFactor;
-                    reduceFactor *= reduceFactor; // hoch 6
+                    // reduceFactor *= reduceFactor; // hoch 6
                     // final double chezy = cmd.kst * Math.pow(cmd.totaldepth, 1./6.);
                     final double chezy = Math.sqrt(PhysicalParameters.G * smd.cv / smd.bedDragCoeff); // siehe Berechnung des grainShearStress
                     final double alphaStar = 1; // 1 nach MIKE 21C mit gravitationellem Transport; 0.5 ohne grav. Transport;

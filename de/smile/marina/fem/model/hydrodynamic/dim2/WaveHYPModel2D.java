@@ -305,15 +305,15 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
 
             double elementSize = ele.maxEdgeLength;
             boolean indicator = false;
-            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > WATT / 10.) {
+            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > FTriangle.minV) {
                 elementSize = Function.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementSize);
                 indicator = true;
             }
-            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > WATT / 10.) {
+            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > FTriangle.minV) {
                 elementSize = Function.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementSize);
                 indicator = true;
             }
-            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > WATT / 10.) {
+            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > FTriangle.minV) {
                 elementSize = Function.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementSize);
                 indicator = true;
             }
@@ -765,15 +765,15 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         
             double elementsize = ele.maxEdgeLength;
             boolean indicator = false;
-            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > WATT / 10.) {
+            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > FTriangle.minV) {
                 elementsize = Function.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementsize);
                 indicator=true;
             }
-            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > WATT / 10.) {
+            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > FTriangle.minV) {
                 elementsize = Function.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementsize);
                 indicator=true;
             }
-            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > WATT / 10.) {
+            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > FTriangle.minV) {
                 elementsize = Function.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementsize);
                 indicator=true;
             }

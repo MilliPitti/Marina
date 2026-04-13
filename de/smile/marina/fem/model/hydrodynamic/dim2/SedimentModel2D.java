@@ -1451,7 +1451,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         CurrentModel2DData cmd = (CurrentModel2DData) dof_currentdata[dofnumber];
         if (cmd != null) {
             if (cmd.boundary) {
-
+// ToDo was wollt ich hier machen?
             }
         }
 

@@ -28,7 +28,7 @@ import de.smile.math.Function;
 import javax.vecmath.Point3d;
 
 /**
- * @version 4.10.4
+ * @version 4.10.7
  * @author Peter Milbradt
  */
 
@@ -140,16 +140,20 @@ public class FTriangle extends FElement {
                 double p1x = dofs[i].x + vx;
                 double p1y = dofs[i].y + vy;
 
+                // denominator of s and t are negatives of each other (denom_t = -denom_s)
+                final double denomS = dofs[i].x * (dofs[i1].y - dofs[i2].y) +
+                        p1x * (dofs[i2].y - dofs[i1].y) + dofs[i1].x * (p1y - dofs[i].y) +
+                        dofs[i2].x * (dofs[i].y - p1y);
+
+                if (Math.abs(denomS) < 1e-14 * Math.abs(area)) { // ray parallel to edge
+                    i++;
+                    continue;
+                }
+
                 double s = (dofs[i].x * (dofs[i1].y - dofs[i2].y) + dofs[i1].x * (dofs[i2].y - dofs[i].y) +
-                        dofs[i2].x * (dofs[i].y - dofs[i1].y))
-                        / (dofs[i].x * (dofs[i1].y - dofs[i2].y) +
-                                p1x * (dofs[i2].y - dofs[i1].y) + dofs[i1].x * (p1y - dofs[i].y) +
-                                dofs[i2].x * (dofs[i].y - p1y));
+                        dofs[i2].x * (dofs[i].y - dofs[i1].y)) / denomS;
                 double t = (dofs[i].x * (p1y - dofs[i1].y) + p1x * (dofs[i1].y - dofs[i].y) +
-                        dofs[i1].x * (dofs[i].y - p1y))
-                        / (dofs[i].x * (dofs[i2].y - dofs[i1].y) +
-                                p1x * (dofs[i1].y - dofs[i2].y) + dofs[i1].x * (dofs[i].y - p1y) +
-                                dofs[i2].x * (p1y - dofs[i].y));
+                        dofs[i1].x * (dofs[i].y - p1y)) / (-denomS);
 
                 if (t < 1.00001 && t > -0.00001) // geschnitten
                     dl = Math.abs(s) * normV;
@@ -161,8 +165,8 @@ public class FTriangle extends FElement {
                 System.out.println("kann keine Elementausdehnung berechnen");
                 return minHight;
             }
-            if (normV < minV/10.) {
-                final double lambda = (normV - minV)/(minV/10. - minV);
+            if (normV < minV*10.) {
+                final double lambda = (normV - minV)/(minV*10. - minV);
                 return lambda*dl +(1-lambda)*minHight;
             }
         } else {
@@ -283,8 +287,8 @@ public class FTriangle extends FElement {
     public Rectangle2d getBounds() {
         double xmin = Double.MAX_VALUE;
         double ymin = Double.MAX_VALUE;
-        double xmax = (-1) * Double.MAX_VALUE;
-        double ymax = (-1) * Double.MAX_VALUE;
+        double xmax = -Double.MAX_VALUE;
+        double ymax = -Double.MAX_VALUE;
 
         // minimales, maximales x und y ermitteln
         for (Point3d point : dofs) {

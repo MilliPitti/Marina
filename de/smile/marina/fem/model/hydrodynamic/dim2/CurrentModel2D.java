@@ -720,7 +720,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         wavebreaking = (wavebreaking > wave.epsilon_b) ? wavebreaking : wave.epsilon_b; // max(wavebreaking,wave.epsilon_b);
                 }
 
-                if (cmd.cv > WATT / 10.) {
+                if (cmd.cv > FTriangle.minV) {
                     elementsize = Function.min(ele.getVectorSize(cmd.u, cmd.v), elementsize);
                     indicator = true;
                 }

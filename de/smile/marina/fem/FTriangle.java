@@ -161,6 +161,10 @@ public class FTriangle extends FElement {
                 System.out.println("kann keine Elementausdehnung berechnen");
                 return minHight;
             }
+            if (normV < minV/10.) {
+                final double lambda = (normV - minV)/(minV/10. - minV);
+                return lambda*dl +(1-lambda)*minHight;
+            }
         } else {
             return minHight;
         }

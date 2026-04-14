@@ -60,7 +60,7 @@ public abstract class SurfaceWaterModelData implements ModelData {
     public double tauBx=0., tauBy=0., tauBz=0.; // resultierende Bodenschubspannungen
     
     public double wlambda = 1.;
-    public double w1_lambda = 0.; // lambda und (1-lambda) zur Beruecksichtigung des Trockenfallens: lambda=Function.min(1.,totaldepth/WATT);
+    public double w1_lambda = 0.; // lambda und (1-lambda) zur Beruecksichtigung des Trockenfallens: lambda=Math.min(1.,totaldepth/WATT);
     
     public double puddleLambda = 0.; // ist 0 wenn alle Knoten im Patch trocken sind (initialisieren mit 0, dann max mit cmd.wlambda)
 

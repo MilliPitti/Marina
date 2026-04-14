@@ -29,7 +29,6 @@ import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.FTriangleMesh;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2DData;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -138,7 +137,7 @@ public class WasseSpiegelLagenExport {
                 if ((ergMaske & TicadIO.HRES_V) == TicadIO.HRES_V) {
                     cmd.u = inStream.readFloat();
                     cmd.v = inStream.readFloat();
-                    cmd.cv = Function.norm(cmd.u, cmd.v);
+                    cmd.cv = Math.hypot(cmd.u, cmd.v);
                 }
 
                 if ((ergMaske & TicadIO.HRES_Q) == TicadIO.HRES_Q) {

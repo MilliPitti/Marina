@@ -61,32 +61,32 @@ public class BedLoad2DEngelundHansen implements BedLoad2DFormulation {
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         
-        final double wlambda = Function.min(1., cmd.totaldepth / .1);
+        final double wlambda = Math.min(1., cmd.totaldepth / .1);
 
         double sfx = (smd.lambda * cmd.tauBx * wlambda) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         double sfy = (smd.lambda * cmd.tauBy * wlambda) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
 
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         double sfwave = 0.;
         if (wmd != null) {
-            sfwave = wlambda * (cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
+            sfwave = wlambda * (cmd.rho * PhysicalParameters.G / Math.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Math.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         }
         
         if((sf + sfwave)<Double.MIN_NORMAL*100.) return smd.bedloadVector;
 
         smd.bedload = 0.05 * (sf + sfwave) * Math.sqrt(sf + sfwave) * PhysicalParameters.RHO_SEDIM * cmd.cv * wlambda * cmd.cv * wlambda * Math.sqrt((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER * PhysicalParameters.G * Math.pow(smd.d50, 3.))
                 * (1. / (1. - smd.porosity)) // Beruecksichtigung der Prositaet
-                / (2.* PhysicalParameters.G /* Function.max(1., cmd.totaldepth)*/) // ++ warum hier durch 2 * G * depth geteilt wird ist mir nicht mehr klar! ++ // Peter 18.08.16 Wassertiefe auskommentiert
+                / (2.* PhysicalParameters.G /* Math.max(1., cmd.totaldepth)*/) // ++ warum hier durch 2 * G * depth geteilt wird ist mir nicht mehr klar! ++ // Peter 18.08.16 Wassertiefe auskommentiert
                 ;
 
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
             
         smd.bedloadVector[0] = smd.bedload * sfx;
         smd.bedloadVector[1] = smd.bedload * sfy;
-        smd.bedload = Function.norm(smd.bedloadVector[0], smd.bedloadVector[1]);
+        smd.bedload = Math.hypot(smd.bedloadVector[0], smd.bedloadVector[1]);
 
         return smd.bedloadVector;
     }
@@ -112,19 +112,19 @@ public class BedLoad2DEngelundHansen implements BedLoad2DFormulation {
         
         final CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         
-        final double wlambda = Function.min(1., cmd.totaldepth / .1);
+        final double wlambda = Math.min(1., cmd.totaldepth / .1);
 
         double sfx = smd.lambda * cmd.tauBx * wlambda / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         double sfy = smd.lambda * cmd.tauBy * wlambda / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
 
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
         
         if(sf<Double.MIN_NORMAL*100.) return smd.bedloadVector;
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         double sfwave = 0.;
         if (wmd != null) {
-            sfwave = wlambda * (cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
+            sfwave = wlambda * (cmd.rho * PhysicalParameters.G / Math.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Math.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         }
 
         smd.bedload = 0.05 * cmd.rho * cmd.cv * cmd.cv / smd.tauB
@@ -137,7 +137,7 @@ public class BedLoad2DEngelundHansen implements BedLoad2DFormulation {
             smd.bedload *= Math.max(0., (smd.d50 - dminTenth) / (dmin - dminTenth));
         }
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity)/sf, smd.bedload);
+        smd.bedload = Math.min(cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity)/sf, smd.bedload);
 
 //         dirctional bed load
         smd.bedloadVector[0] = smd.bedload * sfx;
@@ -180,7 +180,7 @@ public class BedLoad2DEngelundHansen implements BedLoad2DFormulation {
             smd.bedload *= Math.max(0., (smd.d50 - dminTenth) / (dmin - dminTenth));
         }
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
         
         smd.bedloadVector[0] = smd.bedload * cmd.u;
         smd.bedloadVector[1] = smd.bedload * cmd.v;

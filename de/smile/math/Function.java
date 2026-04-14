@@ -183,20 +183,21 @@ public abstract class Function {
         return factorial(n) / (factorial(n - 1) * factorial(k));
     }
     
-    public static double max(double a, double b) {
-        return (a > b) ? a : b;
-    }
-    public static double min(double a, double b) {
-        return (a < b) ? a : b;
-    }
-    /** compute the euclidian vectornorm
-     * @param x first component of the vector
-     * @param y the second component of the vector
-     * @return norm of the vector (x,y)
-     */
-    public static double norm(double x, double y){
-        return Math.sqrt(x*x+y*y);
-    }
+    // public static double max(double a, double b) {
+    //     return (a > b) ? a : b;
+    // }
+    // public static double min(double a, double b) {
+    //     return (a < b) ? a : b;
+    // }
+    // /** compute the euclidian vectornorm
+    //  * @param x first component of the vector
+    //  * @param y the second component of the vector
+    //  * @return norm of the vector (x,y)
+    //  */
+    // @Deprecated // use Math.hypot instead
+    // public static double norm(double x, double y){
+    //     return Math.sqrt(x*x+y*y);
+    // }
     /** compute the euclidian vectornorm
      * @param x first component of the vector
      * @param y the second component of the vector
@@ -214,7 +215,7 @@ public abstract class Function {
      * @return
      */
     public static double getAngle(double vx, double vy) {
-        final double w = Function.norm(vx, vy);
+        final double w = Math.hypot(vx, vy);
         if (w > Double.MIN_NORMAL) {
             final double wx = vx / w;
             final double wy = vy / w;

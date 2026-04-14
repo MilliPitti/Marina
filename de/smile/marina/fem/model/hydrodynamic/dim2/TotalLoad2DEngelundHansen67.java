@@ -81,7 +81,7 @@ public class TotalLoad2DEngelundHansen67 implements TotalLoad2DFormulation {
             smd.bedload *= Math.max(0., (smd.d50 - dminTenth) / (dmin - dminTenth));
         }
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
         
         smd.bedloadVector[0] = smd.bedload * cmd.u;
         smd.bedloadVector[1] = smd.bedload * cmd.v;
@@ -115,7 +115,7 @@ public class TotalLoad2DEngelundHansen67 implements TotalLoad2DFormulation {
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         if (wmd != null) {
-            tauB += cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
+            tauB += cmd.rho * PhysicalParameters.G / Math.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Math.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
         }
         
         totalLoad = 0.05 * cmd.rho * cmd.cv * cmd.cv / tauB 
@@ -129,9 +129,9 @@ public class TotalLoad2DEngelundHansen67 implements TotalLoad2DFormulation {
             totalLoad *= Math.max(0., (smd.d50 - dminTenth) / (dmin - dminTenth));
         }
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        totalLoad = Math.min(cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), totalLoad);
+        totalLoad = Math.min(cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), totalLoad);
         
-        double norm = Function.norm(cmd.tauBx, cmd.tauBy);
+        double norm = Math.hypot(cmd.tauBx, cmd.tauBy);
         totalLoadVector[0] = totalLoad * cmd.tauBx / norm;
         totalLoadVector[1] = totalLoad * cmd.tauBy / norm;
         

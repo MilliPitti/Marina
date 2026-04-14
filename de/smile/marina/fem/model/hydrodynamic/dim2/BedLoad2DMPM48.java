@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * Meyer-Peter und Mueller (1948)
@@ -68,15 +67,15 @@ public class BedLoad2DMPM48 implements BedLoad2DFormulation {
         double sfx = smd.lambda * cmd.tauBx / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         double sfy = smd.lambda * cmd.tauBy / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
 
         if (sf > CSF) {
             smd.bedload = 8. * Math.sqrt((PhysicalParameters.RHO_SEDIM - cmd.rho) / cmd.rho * PhysicalParameters.G * Math.pow(smd.d50, 3.) * Math.pow(sf - CSF, 3.));
            
-            smd.bedload *= Function.min(1., smd.d50/dmin); // Abminderung auf Grund zu kleiner Koerner
+            smd.bedload *= Math.min(1., smd.d50/dmin); // Abminderung auf Grund zu kleiner Koerner
             
             // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-            smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+            smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
 
             smd.bedloadVector[0] = smd.bedload * sfx / sf;
             smd.bedloadVector[1] = smd.bedload * sfy / sf;

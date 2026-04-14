@@ -119,7 +119,7 @@ public class WellenRndGenerator {
 			zeit= nextInt();
                         windx = Next();
                         windy = Next();
-                        uwind = Function.norm(windx, windy);
+                        uwind = Math.hypot(windx, windy);
 
                         wh=(0.008*uwind*uwind+0.11*uwind);
 			periode=1.8*Math.sqrt(uwind);

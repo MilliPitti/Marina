@@ -305,16 +305,16 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
 
             double elementSize = ele.maxEdgeLength;
             boolean indicator = false;
-            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > FTriangle.minV) {
-                elementSize = Function.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementSize);
+            if (Math.hypot(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > FTriangle.minV) {
+                elementSize = Math.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementSize);
                 indicator = true;
             }
-            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > FTriangle.minV) {
-                elementSize = Function.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementSize);
+            if (Math.hypot(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > FTriangle.minV) {
+                elementSize = Math.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementSize);
                 indicator = true;
             }
-            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > FTriangle.minV) {
-                elementSize = Function.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementSize);
+            if (Math.hypot(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > FTriangle.minV) {
+                elementSize = Math.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementSize);
                 indicator = true;
             }
             if (!indicator) {
@@ -378,7 +378,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         }
 
         // zum Anfahren des Modells im Flachwasser geringere Wellenhoehen vorgeben
-        wa *= Function.min(1., totaldepth / 5.);
+        wa *= Math.min(1., totaldepth / 5.);
         if (wa >= totaldepth) {
             wa = totaldepth * 0.5;
         }
@@ -765,16 +765,16 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         
             double elementsize = ele.maxEdgeLength;
             boolean indicator = false;
-            if (Function.norm(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > FTriangle.minV) {
-                elementsize = Function.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementsize);
+            if (Math.hypot(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy) > FTriangle.minV) {
+                elementsize = Math.min(ele.getVectorSize(dof_data[dofs[0].number].cgx, dof_data[dofs[0].number].cgy), elementsize);
                 indicator=true;
             }
-            if (Function.norm(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > FTriangle.minV) {
-                elementsize = Function.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementsize);
+            if (Math.hypot(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy) > FTriangle.minV) {
+                elementsize = Math.min(ele.getVectorSize(dof_data[dofs[1].number].cgx, dof_data[dofs[1].number].cgy), elementsize);
                 indicator=true;
             }
-            if (Function.norm(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > FTriangle.minV) {
-                elementsize = Function.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementsize);
+            if (Math.hypot(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy) > FTriangle.minV) {
+                elementsize = Math.min(ele.getVectorSize(dof_data[dofs[2].number].cgx, dof_data[dofs[2].number].cgy), elementsize);
                 indicator=true;
             }
             if(!indicator) elementsize = ele.minHight;
@@ -789,34 +789,34 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                         // change of wave direction by wind
                         - wmd.windchangekx * ((wmd.bkx == null)?1:0)
                         // Diffraktion
-                        + wmd.cg / (PhysicalParameters.G * Function.max(WATT, wmd.wa)) * dwadx * ((wmd.bkx == null)?1:0) // Peters einfache Version 
+                        + wmd.cg / (PhysicalParameters.G * Math.max(WATT, wmd.wa)) * dwadx * ((wmd.bkx == null)?1:0) // Peters einfache Version 
                         ;
                 terms_ky[j] = dsigmaRdy * wmd.wlambda
                         + wmd.cgx * (dkydx - dkxdy) * wmd.wlambda
                         // change of wave direction by wind
                         - wmd.windchangeky * ((wmd.bky == null)?1:0)
                         // Diffraktion
-                        + wmd.cg / (PhysicalParameters.G * Function.max(WATT, wmd.wa)) * dwady * ((wmd.bky == null)?1:0) // Peters einfache Version
+                        + wmd.cg / (PhysicalParameters.G * Math.max(WATT, wmd.wa)) * dwady * ((wmd.bky == null)?1:0) // Peters einfache Version
                         ;
                 
                 terms_sigma[j] = (wmd.cgx * dsigmaRdx + wmd.cgy * dsigmaRdy) * wmd.wlambda
                         // change of wave periode by wind
                         - wmd.windchangeperiode  
                         // Diffraktion funktioniert nicht
-//                        - wmd.cg / (2. * wmd.kres * Function.max(WATT, wmd.wa)) * (- wmd.dwadt / Function.max(WATT, wmd.wa) * (dwa2dx2 + dwa2dy2))/* * wmd.wlambda*/
-//                                                  + wmd.cg / (2. * wmd.kres * Function.max(WATT, wmd.wa))*( dwa3dx2dt + dwa3dy2dt - wmd.dwadt/Math.max(WATT,wmd.wa)*(dwa2dx2+dwa2dy2))
+//                        - wmd.cg / (2. * wmd.kres * Math.max(WATT, wmd.wa)) * (- wmd.dwadt / Math.max(WATT, wmd.wa) * (dwa2dx2 + dwa2dy2))/* * wmd.wlambda*/
+//                                                  + wmd.cg / (2. * wmd.kres * Math.max(WATT, wmd.wa))*( dwa3dx2dt + dwa3dy2dt - wmd.dwadt/Math.max(WATT,wmd.wa)*(dwa2dx2+dwa2dy2))
 //                        // Diffusion / Diffraction  - weiter unten
-//                        + 3. * (cg_mean / PhysicalParameters.G + Function.norm(dwadx, dwady)) * (koeffmat[j][1] * dsigmadx + koeffmat[j][2] * dsigmady) // second term
+//                        + 3. * (cg_mean / PhysicalParameters.G + Math.hypot(dwadx, dwady)) * (koeffmat[j][1] * dsigmadx + koeffmat[j][2] * dsigmady) // second term
                         ;
                 terms_wa[j] = (wmd.cgx * dwadx + wmd.cgy * dwady)
                         + wmd.wa / 2. * ((dcgxdx + dcgydy))
                         - (wmd.sxx * dudx + wmd.sxy * dudy + wmd.sxy * dvdx + wmd.syy * dvdy) * wmd.wlambda
                         - wmd.windchangeamplitude  // change of wave amplitude by wind
-//                        + 2./ (3. * Math.PI) / (PhysicalParameters.G * Function.max(WATT, wmd.wa)) * Math.max(PhysicalParameters.DYNVISCOSITY_WATER,0.3) * Function.pow3(wmd.bottomvelocity) // urspruengliche Formulierung
-                        + 4. / (3. * Math.PI) / (PhysicalParameters.RHO_WATER * PhysicalParameters.G * Function.max(WATT, wmd.wa)) * wmd.bfcoeff * wmd.bottomvelocity // coastalwiki & Bagnold
+//                        + 2./ (3. * Math.PI) / (PhysicalParameters.G * Math.max(WATT, wmd.wa)) * Math.max(PhysicalParameters.DYNVISCOSITY_WATER,0.3) * Function.pow3(wmd.bottomvelocity) // urspruengliche Formulierung
+                        + 4. / (3. * Math.PI) / (PhysicalParameters.RHO_WATER * PhysicalParameters.G * Math.max(WATT, wmd.wa)) * wmd.bfcoeff * wmd.bottomvelocity // coastalwiki & Bagnold
 //                        + Math.max(PhysicalParameters.DYNVISCOSITY_WATER,wmd.bfcoeff) * wmd.wa * wmd.wa // Wave bottom friction, in Anlehnung an Yoo, D.: Mean Bed Friction of Combined Wave/Current Folw, Coastal Engineering, Vol. 12, pp. 1-21, 1988
 //                        + 3. * cg_mean / PhysicalParameters.G * (koeffmat[j][1] * dwadx + koeffmat[j][2] * dwady) // Diffusion / Diffraction - weiter unten
-                        + wmd.epsilon_b / (PhysicalParameters.RHO_WATER * PhysicalParameters.G * Function.max(WATT, wmd.wa)) // wavebreaking 
+                        + wmd.epsilon_b / (PhysicalParameters.RHO_WATER * PhysicalParameters.G * Math.max(WATT, wmd.wa)) // wavebreaking 
                         ;
 
                 if ((wmd.bkx == null)) {
@@ -855,7 +855,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                 double result_ky_i = -tau_wave * (koeffmat[j][2] * waveSigma_mean + koeffmat[j][2] * (-cgx_mean * waveKx_mean) + koeffmat[j][1] * cgx_mean * waveKy_mean) * ele.area;
 
                 double result_sigma_i = -tau_wave * (koeffmat[j][1] * cgx_mean + koeffmat[j][2] * cgy_mean)  * waveSigma_mean * ele.area;
-                result_sigma_i -= (cg_mean / PhysicalParameters.G + Function.norm(dwadx, dwady)) * (koeffmat[j][1] * dsigmadx + koeffmat[j][2] * dsigmady) * ele.area;
+                result_sigma_i -= (cg_mean / PhysicalParameters.G + Math.hypot(dwadx, dwady)) * (koeffmat[j][1] * dsigmadx + koeffmat[j][2] * dsigmady) * ele.area;
                 
                 double result_wa_i = -tau_wave * (koeffmat[j][1] * cgx_mean + koeffmat[j][2] * cgy_mean) * waveAmplitude_mean * ele.area;
                 result_wa_i -= cg_mean / PhysicalParameters.G * (koeffmat[j][1] * dwadx + koeffmat[j][2] * dwady) * ele.area;
@@ -967,7 +967,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
             ks=current3D.ks;
         }
 
-        totaldepth = Function.max(totaldepth, 0.);
+        totaldepth = Math.max(totaldepth, 0.);
 
         // Knoten die im Patch mit einer gesetzten Randbedingung verbunden sind
         if (wavehyp.ibound > 0) {
@@ -984,7 +984,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         if (wavehyp.wa < 0.) wavehyp.wa=0.;
         if (wavehyp.wa >= totaldepth * MICHEKOEFF) wavehyp.wa = totaldepth * MICHEKOEFF; // Peter 14.01.21
 
-        wavehyp.wlambda = Function.min(1., wavehyp.wa / WATT);
+        wavehyp.wlambda = Math.min(1., wavehyp.wa / WATT);
         wavehyp.w1_lambda = 1. - wavehyp.wlambda;
 
         if (wavehyp.bsigma != null) {
@@ -1003,7 +1003,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
 // ToDo   Wellenlaenge aendern auf Grund der Stroemung
         wavehyp.kres = WaveFunction.WaveNumber(Math.max(WATT, totaldepth), wavehyp.sigma);
         // Wavenumber with Diffraction ! funktioniert so nicht !
-//        final double deltaStar = 1./ Math.max(wavehyp.wa, WATT) * Function.norm(wavehyp.dwa2dx2, wavehyp.dwa2dy2) * wavehyp.wlambda;
+//        final double deltaStar = 1./ Math.max(wavehyp.wa, WATT) * Math.hypot(wavehyp.dwa2dx2, wavehyp.dwa2dy2) * wavehyp.wlambda;
 //        wavehyp.kres = Math.sqrt(wavehyp.kres*wavehyp.kres+deltaStar);
 
         if (wavehyp.bsintheta != null) {
@@ -1012,14 +1012,14 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         } else if ((wavehyp.extrapolate_kx || wavehyp.extrapolate_ky)) {
             wavehyp.kx = (9. * wavehyp.kx + wavehyp.extkx) / 10.;
             wavehyp.ky = (9. * wavehyp.ky + wavehyp.extky) / 10.;
-            double ktmp = Function.norm(wavehyp.kx, wavehyp.ky);
+            double ktmp = Math.hypot(wavehyp.kx, wavehyp.ky);
             wavehyp.kx = wavehyp.kx / ktmp * wavehyp.kres;
             wavehyp.ky = wavehyp.ky / ktmp * wavehyp.kres;
         } 
         else {                    
             wavehyp.kx = wavehyp.wlambda * (99. * wavehyp.kx + wavehyp.extkx) / 100. + wavehyp.w1_lambda * (9. * wavehyp.kx + wavehyp.extkx) / 10.; // smooth and extrapoating to nodes without waveamplitude
             wavehyp.ky = wavehyp.wlambda * (99. * wavehyp.ky + wavehyp.extky) / 100. + wavehyp.w1_lambda * (9. * wavehyp.ky + wavehyp.extky) / 10.;
-            double ktmp = Function.norm(wavehyp.kx, wavehyp.ky);
+            double ktmp = Math.hypot(wavehyp.kx, wavehyp.ky);
             wavehyp.kx = wavehyp.kx / ktmp * wavehyp.kres;
             wavehyp.ky = wavehyp.ky / ktmp * wavehyp.kres;
         }
@@ -1036,12 +1036,12 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         // absolute wavegroupevelocity
         wavehyp.cgx = wavehyp.cgxR + u;
         wavehyp.cgy = wavehyp.cgyR + v;
-        wavehyp.cg = Function.norm(wavehyp.cgx, wavehyp.cgy);
+        wavehyp.cg = Math.hypot(wavehyp.cgx, wavehyp.cgy);
 
 
         // waveenergy dissipation rate (wave breaking)
         double stabelamplitude = Math.PI / (7. * wavehyp.kres) * Math.tanh(wavehyp.kres * totaldepth); // Grenzsteilheit
-//        stabelamplitude = Function.min(stabelamplitude, Math.PI / (7. * wavehyp.kres) * Math.tanh(7.* wavehyp.wa / Math.PI * wavehyp.kres)); 
+//        stabelamplitude = Math.min(stabelamplitude, Math.PI / (7. * wavehyp.kres) * Math.tanh(7.* wavehyp.wa / Math.PI * wavehyp.kres)); 
         wavehyp.epsilon_b = Math.max(0., 0.5 * PhysicalParameters.RHO_WATER * PhysicalParameters.G * BRK
                 * wavehyp.cg / Math.max(WATT, totaldepth)
                 * (Function.sqr(wavehyp.wa) - Function.sqr(stabelamplitude)));
@@ -1074,7 +1074,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         
         /* wind energy input */
         wavehyp.windchangeamplitude = 0.;
-        wavehyp.windchangeperiode = PhysicalParameters.KINVISCOSITY_WATER * wavehyp.epsilon_b / Function.max(totaldepth, 1.);  // Beruecksichtigung der Periodenveraenderung durch Wellenbrechen (sigma wird groeszer)
+        wavehyp.windchangeperiode = PhysicalParameters.KINVISCOSITY_WATER * wavehyp.epsilon_b / Math.max(totaldepth, 1.);  // Beruecksichtigung der Periodenveraenderung durch Wellenbrechen (sigma wird groeszer)
         wavehyp.windchangeperiode += 0.0001 * wavehyp.bottomvelocity; // Beruecksichtigung der Periodenveraenderung durch Bodenreibung (sigma wird groeszer)
         wavehyp.windchangekx = 0.;
         wavehyp.windchangeky = 0.;
@@ -1103,7 +1103,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                 double alphaWave = angleRad(wkx, wky);
                 double sinus = Math.sin(alphaWind - alphaWave);
                 
-                double lambda = CWAVE * (waWind-waUWind) / Function.max(WATT, wavehyp.wa)/* * wavehyp.cg*/; // Peter 20.08.2021 cg auskommentiert
+                double lambda = CWAVE * (waWind-waUWind) / Math.max(WATT, wavehyp.wa)/* * wavehyp.cg*/; // Peter 20.08.2021 cg auskommentiert
                 wavehyp.windchangekx += -wavehyp.ky * sinus * lambda;
                 wavehyp.windchangeky +=  wavehyp.kx * sinus * lambda;
                 wavehyp.windchangeperiode += Math.min(0., Math.max(sigma_min, 2. * Math.PI / (1.8 * Math.sqrt(wc))) - wavehyp.sigma) * lambda; // wc > 0. 
@@ -1317,11 +1317,11 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                 if (MarinaXML.release) {
                     setBoundaryCondition(dof, time);
                 }
-                double kres = Function.norm(wavehyp.kx, wavehyp.ky);
+                double kres = Math.hypot(wavehyp.kx, wavehyp.ky);
                 double wl = 2. * Math.PI / kres;
                 double Erg_wlx = (float) (wl * wavehyp.kx / kres);
                 double Erg_wly = (float) (wl * wavehyp.ky / kres);
-                double Erg_wh = (float) Function.max(0., 2. * wavehyp.wa);
+                double Erg_wh = (float) Math.max(0., 2. * wavehyp.wa);
                 double Erg_wp = 2. * Math.PI / ((float) wavehyp.sigma);
                 //                if(Erg_wh < WATT/10.){
                 //                    Erg_wh=0.;

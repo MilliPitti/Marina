@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * @author Peter Milbradt
@@ -49,7 +48,7 @@ public class BedLoad2DvanRijn89 implements BedLoad2DFormulation {
 
         double tbcr = smd.CSF * ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50); // critical bottom shear stress auf der Basis des Critischen Shieldsparameter
         
-        double tbce = Function.norm(cmd.tauBx, cmd.tauBy);
+        double tbce = Math.hypot(cmd.tauBx, cmd.tauBy);
 
         if (tbce > tbcr) {
             final double Factor = PhysicalParameters.G * smd.d50 * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER;
@@ -61,7 +60,7 @@ public class BedLoad2DvanRijn89 implements BedLoad2DFormulation {
             else
                 smd.bedload = smd.d50 * 0.1 * Math.sqrt(Factor) / Math.pow(smd.D, 0.3) * Math.pow(t, 1.5);
 
-            smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv*Function.max(0.,smd.zh - smd.z)*(1. - smd.porosity), smd.bedload);
+            smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv*Math.max(0.,smd.zh - smd.z)*(1. - smd.porosity), smd.bedload);
             
             // dirctional bed load
             smd.bedloadVector[0] = smd.bedload * cmd.tauBx / tbce;

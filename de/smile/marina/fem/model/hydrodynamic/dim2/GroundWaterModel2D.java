@@ -33,7 +33,6 @@ import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.ModelData;
 import de.smile.marina.fem.TimeDependentFEApproximation;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 import bijava.math.ifunction.*;
@@ -591,8 +590,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
                 v *= 1. - ibound / 3.;
             }
 
-            if ((Function.norm(hdx, hdy) > 0.00001) && (ibound == 0)) {
-                final double ts = 0.5 * ele.getVectorSize(hdx, hdy) / Function.norm(u, v);
+            if ((Math.hypot(hdx, hdy) > 0.00001) && (ibound == 0)) {
+                final double ts = 0.5 * ele.getVectorSize(hdx, hdy) / Math.hypot(u, v);
                 if (Double.isFinite(ts) && ts > 0.) {
                     tsMin = Math.min(tsMin, ts);
                 }
@@ -697,8 +696,8 @@ public class  GroundWaterModel2D extends TimeDependentFEApproximation implements
             if(ibound!=0){u*=1.-ibound/3.;v*=1.-ibound/3.;}
             
             double tau_cur = 0.;
-            if((Function.norm(hdx, hdy)>0.00001)&&(ibound==0)){
-                tau_cur = 0.5 * ele.getVectorSize( hdx, hdy ) / Function.norm(u, v);
+            if((Math.hypot(hdx, hdy)>0.00001)&&(ibound==0)){
+                tau_cur = 0.5 * ele.getVectorSize( hdx, hdy ) / Math.hypot(u, v);
                 timeStep = tau_cur;
             }
             

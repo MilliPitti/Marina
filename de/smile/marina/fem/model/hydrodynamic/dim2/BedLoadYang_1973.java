@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * Bei dieser Transportformel wird die Stroemungsleistung fuer die Bestimmung
@@ -125,7 +124,7 @@ public class BedLoadYang_1973  implements BedLoad2DFormulation {
         }
         smd.bedload *= Math.max(0., weight);
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
 
         double norm = Math.max(1e-10, smd.tauB);
         smd.bedloadVector[0] = smd.bedload * (cmd.tauBx / norm);

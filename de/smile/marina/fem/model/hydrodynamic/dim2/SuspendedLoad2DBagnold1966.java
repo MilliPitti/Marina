@@ -62,7 +62,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         final WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         double c_wbreaking = 0;
         if (wmd != null) {
-            tauB += cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.cbrt(nonTotalepth) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
+            tauB += cmd.rho * PhysicalParameters.G / Math.max(Function.sqr(5.), Math.cbrt(nonTotalepth) * Function.sqr(Math.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
             /* Einfluss des Wellenbrechens auf die Zunahme der Sedimentkonzentration */
             /* von mir in Anlehnung an die Turbulenzmodellierung nach Battjes */
             if (wmd.epsilon_b > 0.01)
@@ -120,7 +120,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
 
         final double tauB = smd.tauB;
 
-        final double lambda = Function.min(1., Function.max(0., (doubledmax - smd.d50)) / (dmax)); // decreasing auf Grund zu grosser Koerner
+        final double lambda = Math.min(1., Math.max(0., (doubledmax - smd.d50)) / (dmax)); // decreasing auf Grund zu grosser Koerner
         
         final double S = tauB / (cmd.rho * PhysicalParameters.G * cmd.totaldepth); // energy slope
         final double omega = cmd.rho * PhysicalParameters.G * cmd.totaldepth * S * cmd.cv; // total stream power

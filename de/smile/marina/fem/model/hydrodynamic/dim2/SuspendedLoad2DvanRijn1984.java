@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /** van Rijn 1984
  * @author Peter Milbradt
@@ -64,8 +63,8 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
         if (u_diff > 1.E-5) {
             final double Me = u_diff / Math.sqrt((PhysicalParameters.RHO_SEDIM - cmd.rho) / cmd.rho * PhysicalParameters.G * smd.d50);
             rvalue = alpha / totaldepth * smd.d50 * Math.pow(Me, nue) * Math.pow(smd.D, -0.6);
-            rvalue = Function.min(cmax, rvalue);
-            rvalue *= Function.min(1., cmd.totaldepth/0.1);  // increasing depending on water depth
+            rvalue = Math.min(cmax, rvalue);
+            rvalue *= Math.min(1., cmd.totaldepth/0.1);  // increasing depending on water depth
         }
         return rvalue;
     }
@@ -93,8 +92,8 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
         double t = (tbce - tbcr)/tbcr;
         if (t<.000001) return 0.;
         double rvalue = .015*alf1*smd.d50/rksc*Math.pow(t, 1.5)/Math.pow(dstar,.3);
-        rvalue = Function.min(cmax, rvalue);
-        rvalue *= Function.min(1., cmd.totaldepth/0.1);  // increasing depending on water depth
+        rvalue = Math.min(cmax, rvalue);
+        rvalue *= Math.min(1., cmd.totaldepth/0.1);  // increasing depending on water depth
         
         return rvalue;
     }
@@ -112,16 +111,16 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
         
         final double CSF = smd.CSF; // variable // Bodenneigungsanteil wird schon bei der Berechnung des kritischen Shieldsspannung in SedimentModel2DData beruecksichtigt // 18.05.2011
 
-//        final double eta = Function.max(smd.bound, Function.min(cmd.totaldepth, cmd.totaldepth
-//                / PhysicalParameters.G * (PhysicalParameters.RHO_WATER * cmd.grainShearStress * cmd.cv + Function.norm(cmd.tau_bx_extra,cmd.tau_by_extra)))); // dicke der suspensionsschicht ToDo formel ergaenzen _ Chezy-Koeffizient
+//        final double eta = Math.max(smd.bound, Math.min(cmd.totaldepth, cmd.totaldepth
+//                / PhysicalParameters.G * (PhysicalParameters.RHO_WATER * cmd.grainShearStress * cmd.cv + Math.hypot(cmd.tau_bx_extra, cmd.tau_by_extra)))); // dicke der suspensionsschicht ToDo formel ergaenzen _ Chezy-Koeffizient
 
 
         double sfx = cmd.tauBx / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         double sfy = cmd.tauBy / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
 
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
 //        sf *= smd.lambda; // increasing depending on not erodible bottom // Peter 01.06.2013
-        sf *= Function.min(1., cmd.totaldepth/0.1);  // increasing depending on water depth
+        sf *= Math.min(1., cmd.totaldepth/0.1);  // increasing depending on water depth
 
         double lambda;
         if (sf > CSF) {
@@ -130,9 +129,9 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
             else
                 lambda = Math.min(1., Math.max(0., (doubledmax-smd.d50))/(dmax)); // Abminderung auf Grund zu grosser Koerner
 
-            rvalue = e_s * smd.d50/Function.max(0.1, cmd.totaldepth) * Math.pow((sf-CSF)/CSF,1.5) / Math.pow(smd.D,0.3) * lambda;
-            rvalue = Function.min(cmax, rvalue);
-            rvalue *= Function.min(1., cmd.totaldepth/0.1); // Abminderung auf Grund zu kleiner Wassertiefen
+            rvalue = e_s * smd.d50/Math.max(0.1, cmd.totaldepth) * Math.pow((sf-CSF)/CSF,1.5) / Math.pow(smd.D,0.3) * lambda;
+            rvalue = Math.min(cmax, rvalue);
+            rvalue *= Math.min(1., cmd.totaldepth/0.1); // Abminderung auf Grund zu kleiner Wassertiefen
         }
         return rvalue;
     }
@@ -149,13 +148,13 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
         double sfx = ((sdata.bedDragCoeff * currentmodeldata.u) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
         double sfy = ((sdata.bedDragCoeff * currentmodeldata.v) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
 
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
         sf *= sdata.lambda; // decreasing depending on not erodible bottom
-        sf *= Function.min(1., currentmodeldata.totaldepth/0.1);  // increasing depending on water depth // Peter 23.08.2010
+        sf *= Math.min(1., currentmodeldata.totaldepth/0.1);  // increasing depending on water depth // Peter 23.08.2010
 
         if (sf > CSF) {
-            double z0 = Function.min(0.3*sdata.d50  * Math.pow((sf-CSF)/CSF,0.5) * Math.pow(sdata.D,0.7),currentmodeldata.totaldepth);
-            rvalue = 0.18 * 0.65 * (sf-CSF)/CSF / sdata.D *z0/Function.max(sdata.bound, currentmodeldata.totaldepth) * Function.min(1., currentmodeldata.totaldepth/0.1);
+            double z0 = Math.min(0.3*sdata.d50  * Math.pow((sf-CSF)/CSF,0.5) * Math.pow(sdata.D,0.7),currentmodeldata.totaldepth);
+            rvalue = 0.18 * 0.65 * (sf-CSF)/CSF / sdata.D *z0/Math.max(sdata.bound, currentmodeldata.totaldepth) * Math.min(1., currentmodeldata.totaldepth/0.1);
         }
         return rvalue;
     }

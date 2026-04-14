@@ -31,7 +31,6 @@ import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.fem.model.meteorology.MeteorologyData2D;
 import de.smile.marina.io.FileIO;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 
@@ -492,7 +491,7 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation
                 continue;
             }
 
-            final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            final double currentMean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
             if (currentMean > 1.E-5) {
                 final double ts = 0.5 * eleCurrentData.elementsize / currentMean;
                 if (Double.isFinite(ts) && ts > 0.) {
@@ -701,17 +700,17 @@ public class HeatTransportModel2D extends TimeDependentFEApproximation
         if (meteorologyData != null) {
             heattransportmodel2Ddata.sourceSink = astTemp
                     * (meteorologyData.temperature - heattransportmodel2Ddata.temperature)
-                    / Function.max(cmd.totaldepth, CurrentModel2D.WATT)
+                    / Math.max(cmd.totaldepth, CurrentModel2D.WATT)
                     - meteorologyData.insolation / (SpecificHeatCapacity
-                            * Function.max(cmd.totaldepth, CurrentModel2D.WATT) * PhysicalParameters.RHO_WATER);
+                            * Math.max(cmd.totaldepth, CurrentModel2D.WATT) * PhysicalParameters.RHO_WATER);
         } else {
             if (!Double.isNaN(airTemperature)) {
                 heattransportmodel2Ddata.sourceSink = astTemp * (airTemperature - heattransportmodel2Ddata.temperature)
-                        / Function.max(cmd.totaldepth, CurrentModel2D.WATT);
+                        / Math.max(cmd.totaldepth, CurrentModel2D.WATT);
             } else {
                 heattransportmodel2Ddata.sourceSink = astTemp
                         * (bottomTemperature - heattransportmodel2Ddata.temperature)
-                        / Function.max(cmd.totaldepth, CurrentModel2D.WATT) * cmd.w1_lambda; // Peter 15.05.2013
+                        / Math.max(cmd.totaldepth, CurrentModel2D.WATT) * cmd.w1_lambda; // Peter 15.05.2013
             }
         }
     }

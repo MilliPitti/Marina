@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /** wie in Delft3D implementiert
  * @author Peter Milbradt
@@ -68,7 +67,7 @@ public class BedLoad2DvanRijn84 implements BedLoad2DFormulation {
         else
             smd.bedload = 0.1*Math.sqrt(del)*Math.sqrt(PhysicalParameters.G)* Math.pow(smd.d50,1.5) / Math.pow(dstar, 0.3) * Math.pow(t, 1.5);
         
-        smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv*Function.max(0.,smd.zh - smd.z)*(1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv*Math.max(0.,smd.zh - smd.z)*(1. - smd.porosity), smd.bedload);
         
         // dirctional bed load
         smd.bedloadVector[0] = smd.bedload * cmd.u / cmd.cv;

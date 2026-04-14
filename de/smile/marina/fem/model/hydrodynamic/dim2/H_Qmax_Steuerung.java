@@ -29,7 +29,6 @@ import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FElement;
-import de.smile.math.Function;
 
 /**
  * beschraenkt den Durchfluss auf Qmax bei gegebenen Wasserstand, unabhaengig von der Durchflussrichtung
@@ -107,7 +106,7 @@ public class H_Qmax_Steuerung extends QSteuerung {
             if (n > 0) {
                 /** todo hier gibt es noch Optimierungspotential */
                 h_mean /= n;
-                h_mean = Function.max(h_mean, zmin + Function.max(WATT, Math.abs(h_qmax_Relation.getValue(h_mean)) / (Math.sqrt(PhysicalParameters.G * 20 * WATT) * s)));
+                h_mean = Math.max(h_mean, zmin + Math.max(WATT, Math.abs(h_qmax_Relation.getValue(h_mean)) / (Math.sqrt(PhysicalParameters.G * 20 * WATT) * s)));
                 /* END: bestimmen der mittleren Wasserspiegellage ueber den Querschnitt */
                 final double Qmax = Math.abs(h_qmax_Relation.getValue(h_mean));
                 if (Qmax > epsilon) {

@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * Camenen, B., Larson, M., 2005. A general formula for non-cohesive bed load sediment transport. Estuarine, Coastal, and Shelf Science
@@ -60,14 +59,14 @@ public class BedLoad2DCL2005 implements BedLoad2DFormulation {
             taux *= smd.lambda; // decreasing depending on not erodible bottom
             tauy *= smd.lambda; // decreasing depending on not erodible bottom
 
-            final double tau = Function.norm(taux, tauy);
+            final double tau = Math.hypot(taux, tauy);
 
             if (tau > tau_crit) {
                 smd.bedload = 12. / (PhysicalParameters.G * Math.sqrt(PhysicalParameters.RHO_WATER) * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)) * Math.sqrt(tau) * Math.exp(-4.5 * tau_crit / tau) * smd.lambda;
                 
-                smd.bedload *= Function.min(1., smd.d50/(2.*dmin)); // Abminderung auf Grund zu kleiner Koerner
+                smd.bedload *= Math.min(1., smd.d50/(2.*dmin)); // Abminderung auf Grund zu kleiner Koerner
 
-                smd.bedload = Math.min(1. / SedimentModel2D.morphFactor * cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload); // Peter 17.04.2012
+                smd.bedload = Math.min(1. / SedimentModel2D.morphFactor * cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload); // Peter 17.04.2012
                 
                 // dirctional bed load
 //                smd.bedloadVector[0] = smd.bedload * taux;
@@ -80,7 +79,7 @@ public class BedLoad2DCL2005 implements BedLoad2DFormulation {
 
                 smd.bedloadVector[0] = smd.bedload * taux;
                 smd.bedloadVector[1] = smd.bedload * tauy;
-                smd.bedload = Function.norm(smd.bedloadVector[0],smd.bedloadVector[1]);
+                smd.bedload = Math.hypot(smd.bedloadVector[0], smd.bedloadVector[1]);
             }
 //        }
         return smd.bedloadVector;

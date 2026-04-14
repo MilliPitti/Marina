@@ -434,7 +434,7 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
                     // depth refraction
                     Cg[j].getValueAt(fi, ai)[2]/k[j].getValueAt(fi, ai)[2] * (dkxdy.getValueAt(fi, ai)[2]-dkydx.getValueAt(fi, ai)[2])
                     // current refraction
-                    + (dudx - dudy)*Math.sin(rtheta)*Math.cos(rtheta) + dvdx*Math.pow(Math.sin(rtheta),2) - dudy*Math.pow(Math.cos(rtheta),2)
+                    + (dudx - dvdy)*Math.sin(rtheta)*Math.cos(rtheta) + dvdx*Math.pow(Math.sin(rtheta),2) - dudy*Math.pow(Math.cos(rtheta),2)
                     // Diffraction !!
                     // + 0.015 * Math.sqrt( dEdx.getValueAt(fi,ai)[2]*dEdx.getValueAt(fi,ai)[2] + dEdy.getValueAt(fi,ai)[2]*dEdy.getValueAt(fi,ai)[2]) *
                     //		N[j].secondPartialDerivationDirection(fi,ai)
@@ -528,7 +528,6 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
             
             for (int l = 0; l < 3; l++){
                 DOF dofl = ele.getDOF(l);
-                int lg = dofl.number;
                 SpectralWaveModelData spectralwavemodeldatal = SpectralWaveModelData.extract(dofl);
                 if (l == j)
                     vorfak = ele.area * 1. / 6.;

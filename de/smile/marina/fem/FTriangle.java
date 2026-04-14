@@ -24,7 +24,6 @@
 package de.smile.marina.fem;
 
 import de.smile.geom.Rectangle2d;
-import de.smile.math.Function;
 import javax.vecmath.Point3d;
 
 /**
@@ -60,6 +59,14 @@ public class FTriangle extends FElement {
     public double elemFormParameter=1;
 
     public double[][] distance = new double[3][3]; // Feld mit den Kantenlaengen
+
+    // Vorberechnete lokale Kantenvektoren fuer getVectorSize (relativ zu jedem Knoten)
+    // edgeLocal[i][0] = dofs[(i+1)%3].x - dofs[i].x,  edgeLocal[i][1] = dofs[(i+1)%3].y - dofs[i].y
+    // edgeLocal[i][2] = dofs[(i+2)%3].x - dofs[i].x,  edgeLocal[i][3] = dofs[(i+2)%3].y - dofs[i].y
+    // edgeLocal[i][4] = edgeLocal[i][3] - edgeLocal[i][1] = (e2y - e1y)
+    // edgeLocal[i][5] = edgeLocal[i][2] - edgeLocal[i][0] = (e2x - e1x)
+    // edgeLocal[i][6] = e1x*e2y - e2x*e1y (= 2*area, Vorzeichen abhaengig von Orientierung)
+    private final double[][] edgeLocal = new double[3][7];
 
     public FTriangle(DOF d1, DOF d2, DOF d3) {
 
@@ -119,6 +126,19 @@ public class FTriangle extends FElement {
         final double sumEdgeSq = distance[0][1] * distance[0][1] + distance[1][2] * distance[1][2]
                 + distance[2][0] * distance[2][0];
         elemFormParameter = area / (sumEdgeSq * 0.144338);
+
+        // Vorberechnung der lokalen Kantenvektoren fuer getVectorSize
+        for (int ii = 0; ii < 3; ii++) {
+            final int ii1 = (ii + 1) % 3;
+            final int ii2 = (ii + 2) % 3;
+            edgeLocal[ii][0] = dofs[ii1].x - dofs[ii].x; // e1x
+            edgeLocal[ii][1] = dofs[ii1].y - dofs[ii].y; // e1y
+            edgeLocal[ii][2] = dofs[ii2].x - dofs[ii].x; // e2x
+            edgeLocal[ii][3] = dofs[ii2].y - dofs[ii].y; // e2y
+            edgeLocal[ii][4] = edgeLocal[ii][3] - edgeLocal[ii][1]; // e2y - e1y
+            edgeLocal[ii][5] = edgeLocal[ii][2] - edgeLocal[ii][0]; // e2x - e1x
+            edgeLocal[ii][6] = edgeLocal[ii][0] * edgeLocal[ii][3] - edgeLocal[ii][2] * edgeLocal[ii][1]; // e1x*e2y - e2x*e1y
+        }
     }
 
     /**
@@ -128,32 +148,24 @@ public class FTriangle extends FElement {
      */
     public final double getVectorSize(double vx, double vy) {
         double dl = 0.;
-        int i1, i2, i = 0;
+        int i = 0;
 
-        final double normV = Function.norm(vx, vy);
+        final double normV = Math.hypot(vx, vy);
 
         if (normV >= minV) {
             do {
-                i1 = (i + 1) % 3;
-                i2 = (i + 2) % 3;
-
-                double p1x = dofs[i].x + vx;
-                double p1y = dofs[i].y + vy;
+                final double[] el = edgeLocal[i];
 
                 // denominator of s and t are negatives of each other (denom_t = -denom_s)
-                final double denomS = dofs[i].x * (dofs[i1].y - dofs[i2].y) +
-                        p1x * (dofs[i2].y - dofs[i1].y) + dofs[i1].x * (p1y - dofs[i].y) +
-                        dofs[i2].x * (dofs[i].y - p1y);
+                final double denomS = vx * el[4] - vy * el[5]; // vx*(e2y-e1y) - vy*(e2x-e1x)
 
                 if (Math.abs(denomS) < 1e-14 * Math.abs(area)) { // ray parallel to edge
                     i++;
                     continue;
                 }
 
-                double s = (dofs[i].x * (dofs[i1].y - dofs[i2].y) + dofs[i1].x * (dofs[i2].y - dofs[i].y) +
-                        dofs[i2].x * (dofs[i].y - dofs[i1].y)) / denomS;
-                double t = (dofs[i].x * (p1y - dofs[i1].y) + p1x * (dofs[i1].y - dofs[i].y) +
-                        dofs[i1].x * (dofs[i].y - p1y)) / (-denomS);
+                double s = el[6] / denomS; // (e1x*e2y - e2x*e1y) / denomS
+                double t = (vx * el[1] - vy * el[0]) / (-denomS); // (vx*e1y - vy*e1x) / (-denomS)
 
                 if (t < 1.00001 && t > -0.00001) // geschnitten
                     dl = Math.abs(s) * normV;
@@ -165,6 +177,7 @@ public class FTriangle extends FElement {
                 System.out.println("kann keine Elementausdehnung berechnen");
                 return minHight;
             }
+            
             if (normV < minV*10.) {
                 final double lambda = (normV - minV)/(minV*10. - minV);
                 return lambda*dl +(1-lambda)*minHight;

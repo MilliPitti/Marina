@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2.weirs;
 import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2D;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2DData;
-import de.smile.math.Function;
 
 /**
  * beschreibt ein ueberstroemtes Wehr wobei die Knoten in der Topographie hochgezogen werden
@@ -44,7 +43,7 @@ public class BroadCrestedTopoWeir extends BroadCrestedWeir {
         for ( int i = 0; i < knotennummern.length; i++ ){
             CurrentModel2DData cmd = CurrentModel2DData.extract(sysdat.getDOF(knotennummern[i]));
             cmd.bWeir = this;
-            min=Function.max(min,sysdat.getDOF(knotennummern[i]).z);
+            min=Math.max(min,sysdat.getDOF(knotennummern[i]).z);
         }
         setCrestLevel(crestLevel);
     }
@@ -54,7 +53,7 @@ public class BroadCrestedTopoWeir extends BroadCrestedWeir {
         if (!Double.isNaN(crestLevel)) {
             this.crestLevel = crestLevel;
             for (int i = 0; i < knotennummern.length; i++) {
-                CurrentModel2DData.extract(sysdat.getDOF(knotennummern[i])).z = sysdat.getDOF(knotennummern[i]).z = Function.min(min,crestLevel);
+                CurrentModel2DData.extract(sysdat.getDOF(knotennummern[i])).z = sysdat.getDOF(knotennummern[i]).z = Math.min(min,crestLevel);
             }
         }
     }
@@ -69,7 +68,7 @@ public class BroadCrestedTopoWeir extends BroadCrestedWeir {
         cmd.totaldepth = cmd.z + cmd.eta;
         
         /* Wattstrategie fuer Stroemung   */
-        cmd.wlambda = Function.min(1., cmd.totaldepth / CurrentModel2D.WATT);
+        cmd.wlambda = Math.min(1., cmd.totaldepth / CurrentModel2D.WATT);
         cmd.w1_lambda = 1. - cmd.wlambda;
         if (cmd.totaldepth < CurrentModel2D.WATT/2.) {
             cmd.u *= cmd.totaldepth/CurrentModel2D.WATT/2.;

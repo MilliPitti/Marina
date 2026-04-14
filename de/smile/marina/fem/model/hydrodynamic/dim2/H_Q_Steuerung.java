@@ -29,7 +29,6 @@ import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FElement;
-import de.smile.math.Function;
 
 /**
  *
@@ -101,16 +100,16 @@ public class H_Q_Steuerung  extends QSteuerung {
             }
             if(n>0){   /** todo hier gibt es noch Optimierungspotential */
                 h_mean /= n;
-                h_mean = Function.max(h_mean,zmin+Function.max(WATT,Math.abs(h_q_Relation.getValue(h_mean))/(Math.sqrt(PhysicalParameters.G * 20 *WATT)*s)));
+                h_mean = Math.max(h_mean,zmin+Math.max(WATT,Math.abs(h_q_Relation.getValue(h_mean))/(Math.sqrt(PhysicalParameters.G * 20 *WATT)*s)));
             }else{ // alle Knoten der RB haben Tiefe = 0, falls Q != 0 so muss der wasserspiegel angehoben werden!!
-                h_mean = zmin+Function.max(WATT,Math.abs(h_q_Relation.getValue(h_mean))/(Math.sqrt(PhysicalParameters.G * 10 *WATT)*s));
+                h_mean = zmin+Math.max(WATT,Math.abs(h_q_Relation.getValue(h_mean))/(Math.sqrt(PhysicalParameters.G * 10 *WATT)*s));
             }
 /* END: bestimmen der mittleren Wasserspiegellage ueber den Querschnitt */
             for (int i = 0; i < knotennummern.length; i++) {
                 if ((z.getValueAt(i)[1] + h_mean) > 0 && x[knotennummern[i]].bh == null) {
                     x[knotennummern[i]].eta = h_mean;
                 }
-                d.setValueAt(i, Function.max(0., z.getValueAt(i)[1] + x[knotennummern[i]].eta));
+                d.setValueAt(i, Math.max(0., z.getValueAt(i)[1] + x[knotennummern[i]].eta));
             }
             berechneV(h_q_Relation.getValue(h_mean));		// Geschwindigkeitsverteilung iterativ berechnet
             time=t;

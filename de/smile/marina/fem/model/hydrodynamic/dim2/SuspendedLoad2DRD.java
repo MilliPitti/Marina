@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 
 /** Rossinskie Debolsky
@@ -61,7 +60,7 @@ public class SuspendedLoad2DRD implements SuspendedLoad2DFormulation {
             cv += (1.-1./smd.bottomslope) * smd.wc * currentmodeldata.wlambda * smd.lambda;
             
             /* Rossinsky u. Debolsky */
-            konzmax = 8.9E-5 * cv*cv*cv / (PhysicalParameters.G*smd.wc*Function.max(.1,d)) * currentmodeldata.wlambda;
+            konzmax = 8.9E-5 * cv*cv*cv / (PhysicalParameters.G*smd.wc*Math.max(.1,d)) * currentmodeldata.wlambda;
 
             /* Einfluss des Wellenbrechens auf die Zunahme der Sedimentkonzentration */
             /* von mir in Anlehnung an die Turbulenzmodellierung nach Battjes */
@@ -69,7 +68,7 @@ public class SuspendedLoad2DRD implements SuspendedLoad2DFormulation {
                 konzmax += 8.9E-5 * BATTJESKOEFF * Math.pow(epsilon_b / PhysicalParameters.RHO_WATER, 0.33333) / (PhysicalParameters.G * smd.wc) * currentmodeldata.wlambda;
 
             konzmax *= smd.lambda;  // not erodible bottom // Peter 04.07.2025
-            konzmax *= Function.min(currentmodeldata.wlambda, d / smd.bound);  // increasing depending on water depth
+            konzmax *= Math.min(currentmodeldata.wlambda, d / smd.bound);  // increasing depending on water depth
 
         }
 

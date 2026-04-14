@@ -81,7 +81,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
             smd.bedload *= Math.max(0., (smd.d50 - dminTenth) / (dmin - dminTenth));
         }
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
         
         smd.bedloadVector[0] = smd.bedload * cmd.u;
         smd.bedloadVector[1] = smd.bedload * cmd.v;
@@ -114,7 +114,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         if (wmd != null) {
-            tauB += cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
+            tauB += cmd.rho * PhysicalParameters.G / Math.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.WATT) ? CurrentModel2D.WATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Math.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity * wmd.bottomvelocity;
         }
                 
         if(tauB<1e-10) return smd.bedloadVector;
@@ -146,9 +146,9 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
             return smd.bedloadVector;
         }
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
         
-        double norm = Function.norm(cmd.tauBx, cmd.tauBy);
+        double norm = Math.hypot(cmd.tauBx, cmd.tauBy);
         smd.bedloadVector[0] = smd.bedload * cmd.tauBx / norm;
         smd.bedloadVector[1] = smd.bedload * cmd.tauBy / norm;
         

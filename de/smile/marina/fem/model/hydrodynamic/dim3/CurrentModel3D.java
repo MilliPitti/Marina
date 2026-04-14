@@ -99,7 +99,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         setNumberOfThreads(currentdat.NumberOfThreads);
 
 
-        WATT = Function.max(0.01,currentdat.watt);  // verhindert das jemand als Wattgrenze 0 angibt
+        WATT = Math.max(0.01,currentdat.watt);  // verhindert das jemand als Wattgrenze 0 angibt
         halfWATT = WATT / 2.;
         infiltrationRate = currentdat.infiltrationRate;
         
@@ -720,7 +720,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                                 if ((dof_data[jg].eta < dof_data[jg_1].eta) || (dof_data[jg].eta < dof_data[jg_2].eta)) {
                                     dhdx += dof_data[jg].eta * koeffmat[j][1];
                                     dhdy += dof_data[jg].eta * koeffmat[j][2];
-                                    flood = Function.min(1.,Function.max(dof_data[jg_1].eta-dof_data[jg].eta,dof_data[jg_2].eta-dof_data[jg].eta)/WATT);
+                                    flood = Math.min(1.,Math.max(dof_data[jg_1].eta-dof_data[jg].eta,dof_data[jg_2].eta-dof_data[jg].eta)/WATT);
                                 } else {
                                     dhdx += (dof_data[jg].w1_lambda * 0.5 * (dof_data[jg_1].eta + dof_data[jg_2].eta) + dof_data[jg].wlambda * dof_data[jg].eta) * koeffmat[j][1];
                                     dhdy += (dof_data[jg].w1_lambda * 0.5 * (dof_data[jg_1].eta + dof_data[jg_2].eta) + dof_data[jg].wlambda * dof_data[jg].eta) * koeffmat[j][2];
@@ -742,7 +742,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                                 if (dof_data[jg].eta > dof_data[jg_1].eta) {
                                     dhdx += dof_data[jg_1].eta * koeffmat[(j + 1) % 3][1];
                                     dhdy += dof_data[jg_1].eta * koeffmat[(j + 1) % 3][2];
-                                    flood = Function.min(1.,(dof_data[jg].eta-dof_data[jg_1].eta)/WATT);
+                                    flood = Math.min(1.,(dof_data[jg].eta-dof_data[jg_1].eta)/WATT);
                                 } else {
                                     dhdx += (dof_data[jg_1].w1_lambda * dof_data[jg].eta + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][1];
                                     dhdy += (dof_data[jg_1].w1_lambda * dof_data[jg].eta + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][2];
@@ -751,7 +751,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                                 if (dof_data[jg].eta > dof_data[jg_2].eta) {
                                     dhdx += dof_data[jg_2].eta * koeffmat[(j + 2) % 3][1];
                                     dhdy += dof_data[jg_2].eta * koeffmat[(j + 2) % 3][2];
-                                    flood = Function.min(1.,Function.max(flood,(dof_data[jg].eta-dof_data[jg_2].eta)/WATT));
+                                    flood = Math.min(1.,Math.max(flood,(dof_data[jg].eta-dof_data[jg_2].eta)/WATT));
                                 } else {
                                     dhdx += (dof_data[jg_2].w1_lambda * dof_data[jg].eta + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][1];
                                     dhdy += (dof_data[jg_2].w1_lambda * dof_data[jg].eta + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][2];
@@ -776,7 +776,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                         if (dof_data[jg].eta >= dof_data[jg_1].eta) {
                             dhdx += (dof_data[jg].wlambda * dof_data[jg_1].eta + dof_data[jg].w1_lambda * (dof_data[jg_1].w1_lambda * dof_data[jg].eta + dof_data[jg_1].wlambda * dof_data[jg_1].eta)) * koeffmat[(j + 1) % 3][1];
                             dhdy += (dof_data[jg].wlambda * dof_data[jg_1].eta + dof_data[jg].w1_lambda * (dof_data[jg_1].w1_lambda * dof_data[jg].eta + dof_data[jg_1].wlambda * dof_data[jg_1].eta)) * koeffmat[(j + 1) % 3][2];
-                            flood = Function.min(1.,dof_data[jg].wlambda*(dof_data[jg].eta-dof_data[jg_1].eta)/WATT);
+                            flood = Math.min(1.,dof_data[jg].wlambda*(dof_data[jg].eta-dof_data[jg_1].eta)/WATT);
                         } else {
                             dhdx += (dof_data[jg_1].w1_lambda * dof_data[jg].eta + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][1];
                             dhdy += (dof_data[jg_1].w1_lambda * dof_data[jg].eta + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][2];
@@ -785,7 +785,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                         if (dof_data[jg].eta >= dof_data[jg_2].eta) {
                             dhdx += (dof_data[jg].wlambda * dof_data[jg_2].eta + dof_data[jg].w1_lambda * (dof_data[jg_2].w1_lambda * dof_data[jg].eta + dof_data[jg_2].wlambda * dof_data[jg_2].eta)) * koeffmat[(j + 2) % 3][1];
                             dhdy += (dof_data[jg].wlambda * dof_data[jg_2].eta + dof_data[jg].w1_lambda * (dof_data[jg_2].w1_lambda * dof_data[jg].eta + dof_data[jg_2].wlambda * dof_data[jg_2].eta)) * koeffmat[(j + 2) % 3][2];
-                            flood = Function.min(1.,Function.max(flood,dof_data[jg].wlambda*(dof_data[jg].eta-dof_data[jg_2].eta)/WATT));
+                            flood = Math.min(1.,Math.max(flood,dof_data[jg].wlambda*(dof_data[jg].eta-dof_data[jg_2].eta)/WATT));
                         } else {
                             dhdx += (dof_data[jg_2].w1_lambda * dof_data[jg].eta + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][1];
                             dhdy += (dof_data[jg_2].w1_lambda * dof_data[jg].eta + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][2];
@@ -873,7 +873,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                 if(dh>current.z) unterBoden++;
                 
                 schichtdicke_mean[s]+= current.f.getValueAt(_layerThickness, s)/3.;
-                aktuelletiefe[j] = Function.max(0,current.z-dh);
+                aktuelletiefe[j] = Math.max(0,current.z-dh);
                 aktuelletiefemean += aktuelletiefe[j]/3.;
                 
                 u_mean+=u[j]/3.;
@@ -887,8 +887,8 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
                 uI_mean += uI/3.;
                 vI_mean += vI/3.;
                 
-                if (Function.norm(uI,vI) > WATT / 10.) {
-                    elementsize2D = Function.min(ele.getVectorSize(uI, vI), elementsize2D);
+                if (Math.hypot(uI, vI) > WATT / 10.) {
+                    elementsize2D = Math.min(ele.getVectorSize(uI, vI), elementsize2D);
                     indicator2D=true;
                 }  
                 
@@ -905,20 +905,20 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             
             final double nonZeroMeanDepth = (aktuelletiefemean < WATT) ? WATT : aktuelletiefemean;
 
-            final double cv_mean = Function.norm(u_mean, v_mean);
+            final double cv_mean = Math.hypot(u_mean, v_mean);
             
             double elementsize = ele.maxEdgeLength;
             boolean indicator = false;
-            if(Function.norm(u[0], v[0]) > WATT/10.){
-                elementsize = Function.min(ele.getVectorSize(u[0],v[0]),elementsize);
+            if(Math.hypot(u[0], v[0]) > WATT/10.){
+                elementsize = Math.min(ele.getVectorSize(u[0],v[0]),elementsize);
                 indicator=true;
             }
-            if(Function.norm(u[1], v[1]) > WATT/10.){
-                elementsize = Function.min(ele.getVectorSize(u[1],v[1]),elementsize);
+            if(Math.hypot(u[1], v[1]) > WATT/10.){
+                elementsize = Math.min(ele.getVectorSize(u[1],v[1]),elementsize);
                 indicator=true;
             }
-            if(Function.norm(u[2], v[2]) > WATT/10.){
-                elementsize = Function.min(ele.getVectorSize(u[2],v[2]),elementsize);
+            if(Math.hypot(u[2], v[2]) > WATT/10.){
+                elementsize = Math.min(ele.getVectorSize(u[2],v[2]),elementsize);
                 indicator=true;
             }
             if(!indicator) elementsize = ele.minHight;
@@ -957,7 +957,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                                 + (u[j] * udx + v[j] * udy)
                                 + w[j] * cmd.f.getValueAt(_dudz,s)
                                 // Reibung
-                                + cmd.bfcoeff[s] * bottomslope * u[j] / Function.max(WATT, aktuelletiefe[j])
+                                + cmd.bfcoeff[s] * bottomslope * u[j] / Math.max(WATT, aktuelletiefe[j])
                                 // wind
                                 - cmd.tau_windx[s] * cmd.wlambda
                                 // Radiationstresses
@@ -965,7 +965,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                                 // turbulence term, weiter unten
 //                                + 3. * (koeffmat[j][1] * astx * udx + koeffmat[j][2] * asty * udy) * slambda
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
-                                + u[j]/Function.max(WATT, aktuelletiefe[j]) * contieq_mean * slambda
+                                + u[j]/Math.max(WATT, aktuelletiefe[j]) * contieq_mean * slambda
                                           ;
                 
                 terms_v[j] = PhysicalParameters.G * dhdy * wlambda
@@ -973,7 +973,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                                 + (u[j] * vdx + v[j] * vdy)
                                 + w[j] * cmd.f.getValueAt(_dvdz,s)
                                 // Reibung
-                                + cmd.bfcoeff[s] * bottomslope * v[j] / Function.max(WATT, aktuelletiefe[j])
+                                + cmd.bfcoeff[s] * bottomslope * v[j] / Math.max(WATT, aktuelletiefe[j])
                                 // wind
                                 - cmd.tau_windy[s] * cmd.wlambda
                                 // Radiationstresses
@@ -981,7 +981,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                                 // turbulence term, weiter unten
 //                                + 3. * (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * slambda
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
-                                + v[j]/Function.max(WATT, aktuelletiefe[j]) * contieq_mean * slambda
+                                + v[j]/Math.max(WATT, aktuelletiefe[j]) * contieq_mean * slambda
                                           ;
                 
                 impuls1_mean += 1./3. * ( cmd.f.getValueAt(_dudt,s) + terms_u[j] ) * slambda;
@@ -1012,7 +1012,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             double astz = PhysicalParameters.DYNVISCOSITY_WATER;
 //          bodennahe Turbulenz wenn ein Knoten Bodenknoten ist UNBEDINGT NOTWENDIG - sonst instabil an steilen Gradienten
             if(unterBoden>0)
-                astz += (bottomslope-1.) * Function.norm(u_mean, v_mean);
+                astz += (bottomslope-1.) * Math.hypot(u_mean, v_mean);
             // residualbased turbulenz
             astz += abs(contieq_mean);
 
@@ -1047,7 +1047,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             final double lmb = Math.min(1, 3.2 * energy_norm); // 3.2 dimensional empirical threshold
             final double scaleFactor = lmb + (1 - lmb) * 4; // 4 ist ein guter Tuning-Faktor
             final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
-            courant=Function.min(courant, tau_cur2D*timeStepScale);
+            courant=Math.min(courant, tau_cur2D*timeStepScale);
 
             // Mittlere vertikale Geschwindigkeit der aktuellen Schicht 's' berechnen
             final double w_mean = (w[0] + w[1] + w[2]) / 3.0;
@@ -1070,7 +1070,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             // KONZEPT 3: Element-Courant-Zeitschritt
             // ====================================================================
             // Der lokale physikalische Basis-Zeitschritt der Schicht ist tau_cur.
-            courant = Function.min(courant, tau_cur);
+            courant = Math.min(courant, tau_cur);
 
 
             for (int j = 0; j < 3; j++) {
@@ -1118,7 +1118,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                     if ((l != j) && (iwatt != 0)) {
                         if (terms_h < 0) { // Wasserstand am abgelegenen Knoten will steigen
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                                gl = cmd.wlambda * Function.max(0., 1. - (cmd.eta - dof_data[ele.getDOF(l).number].eta) / ele.distance[l][j]);
+                                gl = cmd.wlambda * Math.max(0., 1. - (cmd.eta - dof_data[ele.getDOF(l).number].eta) / ele.distance[l][j]);
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
 //                                gl = dof_data[ele.getDOF(l).number].wlambda;
                             }
@@ -1126,7 +1126,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                             if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
                                 gl=1.;
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                gl = wlambda * Function.max(0., 1. - (dof_data[ele.getDOF(l).number].eta - cmd.eta) / ele.distance[l][j]);
+                                gl = wlambda * Math.max(0., 1. - (dof_data[ele.getDOF(l).number].eta - cmd.eta) / ele.distance[l][j]);
                             }
                         }
                     }
@@ -1250,7 +1250,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                         for (int ii = 1; ii < 3; ii++) {
                             int jtmp = elem.getDOF((ll + ii) % 3).number;
                             CurrentModel3DData tmpcdata = dof_data[jtmp];
-                            minh=Function.min(minh,tmpcdata.w1_lambda*minh+tmpcdata.wlambda*tmpcdata.eta);  // Morphen
+                            minh=Math.min(minh,tmpcdata.w1_lambda*minh+tmpcdata.wlambda*tmpcdata.eta);  // Morphen
                         }
                         break;
                     }
@@ -1341,7 +1341,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
         }
         
         /* Wattstrategie fuer Stroemung   */
-        cmd.wlambda = Function.min(1., cmd.totaldepth / WATT);
+        cmd.wlambda = Math.min(1., cmd.totaldepth / WATT);
         cmd.w1_lambda = 1. - cmd.wlambda;
 
         double qx=0, qy=0.;
@@ -1415,7 +1415,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                     if (s == cmd.f.getSizeOfValues() - 1)
                         d = cmd.z - Math.max(cmd.f.getxAt(s), -cmd.eta);
                     else
-                        d = Function.max(0., Function.min(cmd.f.getxAt(s + 1), cmd.z) - Function.max(cmd.f.getxAt(s), -cmd.eta));
+                        d = Math.max(0., Math.min(cmd.f.getxAt(s + 1), cmd.z) - Math.max(cmd.f.getxAt(s), -cmd.eta));
                     
                     qx += d * cmd.f.getValueAt(_u, s);
                     qy += d * cmd.f.getValueAt(_v, s);
@@ -1449,7 +1449,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                     
                     /* bottom friction coefficient */
                     if (nikuradse){
-                        cmd.bfcoeff[s] = (PhysicalParameters.KINVISCOSITY_WATER+PhysicalParameters.G / Function.sqr(Function.max(5.,18.*Math.log10(12.*((aktuelletiefe < 0.1) ? 0.1 : aktuelletiefe)/Function.max(cmd.ks,CurrentModel2DData.Strickler2Nikuradse(cmd.kst))))) * Function.norm(uI,vI)) * Function.pow3(schichtdicke /((aktuelletiefe < WATT) ? WATT : aktuelletiefe)); //Colebrooks / Nikuradse
+                        cmd.bfcoeff[s] = (PhysicalParameters.KINVISCOSITY_WATER+PhysicalParameters.G / Function.sqr(Math.max(5.,18.*Math.log10(12.*((aktuelletiefe < 0.1) ? 0.1 : aktuelletiefe)/Math.max(cmd.ks,CurrentModel2DData.Strickler2Nikuradse(cmd.kst))))) * Math.hypot(uI, vI)) * Function.pow3(schichtdicke /((aktuelletiefe < WATT) ? WATT : aktuelletiefe)); //Colebrooks / Nikuradse
                     } else{
                         // Strickler
                         cmd.bfcoeff[s] = (PhysicalParameters.KINVISCOSITY_WATER+PhysicalParameters.G / cmd.kst / cmd.kst / Math.cbrt((aktuelletiefe < .1) ? .1 : aktuelletiefe) * Function.norm(uI,vI,cmd.f.getValueAt(_w, s))) * Function.pow4(schichtdicke /((aktuelletiefe < WATT) ? WATT : aktuelletiefe));
@@ -1482,7 +1482,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                 final double vI = qy/nonTotalDepth;
                 
                 final double tau_b = Math.max(PhysicalParameters.DYNVISCOSITY_WATER, PhysicalParameters.G / cmd.kst / cmd.kst / ((sschichten < .1) ? .1 : sschichten)) * Function.norm(u,v,w);
-                final double tau_bU = Math.max(PhysicalParameters.DYNVISCOSITY_WATER, PhysicalParameters.G / cmd.kst / cmd.kst / Math.cbrt((cmd.totaldepth < .1) ? .1 : cmd.totaldepth)) * Function.norm(uI,vI);
+                final double tau_bU = Math.max(PhysicalParameters.DYNVISCOSITY_WATER, PhysicalParameters.G / cmd.kst / cmd.kst / Math.cbrt((cmd.totaldepth < .1) ? .1 : cmd.totaldepth)) * Math.hypot(uI, vI);
                 cmd.tauBx = PhysicalParameters.RHO_WATER * (tau_b * u + tau_bU*uI)/2.;
                 cmd.tauBy = PhysicalParameters.RHO_WATER * (tau_b * v + tau_bU*vI)/2.;
                 cmd.tauBz = PhysicalParameters.RHO_WATER * tau_b * w;
@@ -2015,8 +2015,8 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
             double minX = net.getDOF(0).x;
             double minY = net.getDOF(0).y;
             for (int i = 1; i < net.anzk; i++) {
-                minX = Function.min(minX, net.getDOF(i).x);
-                minY = Function.min(minY, net.getDOF(i).y);
+                minX = Math.min(minX, net.getDOF(i).x);
+                minY = Math.min(minY, net.getDOF(i).y);
             }
 
             final int offSetX = ((int) (minX / 100000.)) * 100000;

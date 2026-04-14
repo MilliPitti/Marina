@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.meteorology;
 import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.*;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -190,7 +189,7 @@ public class ShepardInterpolatedMeteorologicalModel2D extends TimeDependentFEApp
                 windx += w[j] * wi[0];
                 windy += w[j] * wi[1];
             }
-            windspeed = Function.norm(windx, windy);
+            windspeed = Math.hypot(windx, windy);
             temperature = C1 * Math.cos(w1 * time - Math.PI) + x1;
             // data.temperature+=C2*Math.cos(w2*time-Math.PI)+x2;
 

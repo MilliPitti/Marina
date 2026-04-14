@@ -30,7 +30,6 @@ import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.io.FileIO;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 
@@ -476,7 +475,7 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
                 continue;
             }
 
-            final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            final double currentMean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
             if (currentMean > 1.E-5) {
                 final double ts = 0.5 * eleCurrentData.elementsize / currentMean;
                 if (Double.isFinite(ts) && ts > 0.) {
@@ -518,7 +517,7 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
                 final double u_mean = eleCurrentData.u_mean;
                 final double v_mean = eleCurrentData.v_mean;
 
-                final double current_mean = Function.norm(u_mean, v_mean);
+                final double current_mean = Math.hypot(u_mean, v_mean);
                 final double elementsize = eleCurrentData.elementsize;
 
                 // dispersion
@@ -537,7 +536,7 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
                     // // turbulence term - weiter unten
                     // - (astx * eleCurrentData.ddepthdx * dsaltconcdx + asty *
                     // eleCurrentData.ddepthdy * dsaltconcdy) /
-                    // Function.max(currentmodeldata.totaldepth,CurrentModel2D.WATT) *
+                    // Math.max(currentmodeldata.totaldepth,CurrentModel2D.WATT) *
                     // currentmodeldata.wlambda
                     // + 3. * (koeffmat[j][1] * astx * dsaltconcdx + koeffmat[j][2] * asty *
                     // dsaltconcdy) * currentmodeldata.wlambda
@@ -569,7 +568,7 @@ public class SaltModel2D extends TimeDependentFEApproximation implements FEModel
                             * cmd.wlambda * ele.area
                             // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c))
                             // Dieser Term korrigiert die Diffusion, wenn sich die Tiefe aendert.
-                            - 1. / 3. * (1. / Function.max(cmd.totaldepth, CurrentModel2D.WATT))
+                            - 1. / 3. * (1. / Math.max(cmd.totaldepth, CurrentModel2D.WATT))
                                     * (eleCurrentData.ddepthdx * astx * dsaltconcdx
                                             + eleCurrentData.ddepthdy * asty * dsaltconcdy)
                                     * cmd.wlambda * ele.area;

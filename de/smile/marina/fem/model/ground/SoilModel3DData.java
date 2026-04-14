@@ -28,7 +28,6 @@ import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.ModelData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.SedimentModel2DData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.SedimentProperties;
-import de.smile.math.Function;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -165,7 +164,7 @@ public class SoilModel3DData extends SedimentModel2DData {
                         d50 = (1. - lambda) * d50 + lambda * topLayer.d50;
                         dmax = (1. - lambda) * dmax + lambda * topLayer.dmax;
                         dmin = (1. - lambda) * dmin + lambda * topLayer.dmin;
-                        d50 = Function.max(1.1 * dmin, Function.min(0.9 * dmax, d50));
+                        d50 = Math.max(1.1 * dmin, Math.min(0.9 * dmax, d50));
 
                         initialSorting = (1. - lambda) * initialSorting + lambda * topLayer.initialSorting;
 

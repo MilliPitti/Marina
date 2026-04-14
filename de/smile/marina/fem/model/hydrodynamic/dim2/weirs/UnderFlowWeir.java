@@ -28,7 +28,6 @@ import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.FElement;
 import de.smile.marina.fem.model.hydrodynamic.dim2.*;
-import de.smile.math.Function;
 
 /**
  * beschreibt ein unterstroemtes Wehr nach Wehrformel
@@ -112,10 +111,10 @@ public class UnderFlowWeir extends Weir implements TimeDependentWeir{
         int i=0;
         while(dof.number!=knotennummern[i]) i++;
         
-        double factor = Function.min(1.,Function.max(0.,cmd.z-sluiceLevel)/Function.max(CurrentModel2D.WATT,cmd.totaldepth )); // Peter 10.09.08
+        double factor = Math.min(1.,Math.max(0.,cmd.z-sluiceLevel)/Math.max(CurrentModel2D.WATT,cmd.totaldepth )); // Peter 10.09.08
 
         double hw = h_max-h_min;
-        double rd = Function.max(0.,dof.z+Function.min(-sluiceLevel,h))/Function.max(CurrentModel2D.WATT,cmd.totaldepth);
+        double rd = Math.max(0.,dof.z+Math.min(-sluiceLevel,h))/Math.max(CurrentModel2D.WATT,cmd.totaldepth);
         double v = (c * Math.sqrt(2.* PhysicalParameters.G * hw))  * rd ; // Peter 04.09.08
         double[] su = new double[2];
         su[0] = faktor_l_eff * (1.-factor)* v * normale[0][i] + factor * cmd.u;  // Peter 04.10.08

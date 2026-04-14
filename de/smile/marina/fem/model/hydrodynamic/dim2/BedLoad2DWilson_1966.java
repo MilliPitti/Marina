@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * Wilson (1966)
@@ -55,7 +54,7 @@ public class BedLoad2DWilson_1966 implements BedLoad2DFormulation {
             final double maxSlope = smd.innerFrictionAngle; // Peter 07.03.2012
             final double slope = smd.bottomslope-1.;
             if (slope > maxSlope) {
-                final double factor = Function.min(1.,slope-maxSlope);
+                final double factor = Math.min(1.,slope-maxSlope);
                 dzdx = smd.bottomslope / slope * factor * smd.lambda; // decreasing depending on not erodible bottom
                 dzdy = smd.bottomslope / slope * factor * smd.lambda; // decreasing depending on not erodible bottom
             }
@@ -73,11 +72,11 @@ public class BedLoad2DWilson_1966 implements BedLoad2DFormulation {
         sfx *= smd.lambda; // decreasing depending on not erodible bottom
         sfy *= smd.lambda; // decreasing depending on not erodible bottom
 
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
 
         if (sf > CSF) {
             smd.bedload = 12. * Math.sqrt((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER * PhysicalParameters.G * Math.pow(smd.d50, 3.) * Math.pow(sf - CSF, 3.)) * smd.lambda;
-            smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Function.max(0.,smd.zh - smd.z)*(1. - smd.porosity), smd.bedload); // Peter 17.04.2012
+            smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Math.max(0.,smd.zh - smd.z)*(1. - smd.porosity), smd.bedload); // Peter 17.04.2012
 
             smd.bedloadVector[0] = smd.bedload * sfx / sf;
             smd.bedloadVector[1] = smd.bedload * sfy / sf;

@@ -51,7 +51,7 @@ public class BedLoad2DZanke implements BedLoad2DFormulation {
 
         if (cmd.cv > CurrentModel2D.WATT / 10.) {
 
-            double d = Function.max(CurrentModel2D.WATT, cmd.totaldepth);
+            double d = Math.max(CurrentModel2D.WATT, cmd.totaldepth);
 
             double CSF = smd.CSF; // Critical Shieldsfactor
 
@@ -70,14 +70,14 @@ public class BedLoad2DZanke implements BedLoad2DFormulation {
             double sfx = (ufx * ufx) / Factor * cmd.u / cmd.cv + cmd.tau_bx_extra / Cs; // Peter 04.12.08
             double sfy = (ufy * ufy) / Factor * cmd.v / cmd.cv + cmd.tau_by_extra / Cs; // Peter 04.12.08
 
-            sfx *= Function.min(1., Function.max(0., smd.zh - smd.z) / (smd.d50 * 5.)); // decreasing depending on not erodible bottom // Peter 18.08.2010
-            sfy *= Function.min(1., Function.max(0., smd.zh - smd.z) / (smd.d50 * 5.)); // decreasing depending on not erodible bottom // Peter 18.08.2010
+            sfx *= Math.min(1., Math.max(0., smd.zh - smd.z) / (smd.d50 * 5.)); // decreasing depending on not erodible bottom // Peter 18.08.2010
+            sfy *= Math.min(1., Math.max(0., smd.zh - smd.z) / (smd.d50 * 5.)); // decreasing depending on not erodible bottom // Peter 18.08.2010
 
-            double sf = Function.norm(sfx, sfy);
+            double sf = Math.hypot(sfx, sfy);
 
             if (sf > CSF) {
                 smd.bedload = 1. / smd.porosity * 6.34 * 1.E-4 * ((sf - CSF) / Function.sqr(smd.wc)) * Math.pow(smd.D, 4.) * cmd.cv * smd.lambda;
-                smd.bedload = Math.min(1. / SedimentModel2D.morphFactor * cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload); // Peter 17.04.2012
+                smd.bedload = Math.min(1. / SedimentModel2D.morphFactor * cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload); // Peter 17.04.2012
 
                 smd.bedloadVector[0] = smd.bedload * sfx / sf;
                 smd.bedloadVector[1] = smd.bedload * sfy / sf;

@@ -23,7 +23,6 @@
  */
 package bijava.marina.geom3d;
 
-import de.smile.math.Function;
 import javax.vecmath.*;
 
 /**
@@ -208,7 +207,7 @@ public class Triangle extends ConvexCell3d{
         double dl=0.;
         int i=0;
         
-        double normV = Function.norm(vx,vy);
+        double normV = Math.hypot(vx, vy);
         
         if (normV >= 0.001) {
             do{

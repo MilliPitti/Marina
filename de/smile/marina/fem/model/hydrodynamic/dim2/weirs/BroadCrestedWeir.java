@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2.weirs;
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.dim2.*;
-import de.smile.math.Function;
 
 /**
  * beschreibt ein ueberstroemtes Wehr
@@ -53,7 +52,7 @@ public class BroadCrestedWeir extends Weir implements TimeDependentWeir{
             CurrentModel2DData cmd = CurrentModel2DData.extract(sysdat.getDOF(knotennummern[i]));
             cmd.bWeir = this;
             cmd.bu=null; cmd.bv=null; cmd.extrapolate_h = false; // Peter 04.10.08
-            min=Function.max(min,sysdat.getDOF(knotennummern[i]).z);
+            min=Math.max(min,sysdat.getDOF(knotennummern[i]).z);
         }
 
         double l = 0.0;
@@ -72,7 +71,7 @@ public class BroadCrestedWeir extends Weir implements TimeDependentWeir{
     }
 
     public void setCrestLevel (double crestLevel){
-        this.crestLevel=Function.min(min,crestLevel);
+        this.crestLevel=Math.min(min,crestLevel);
     }
 
     public double getCrestLevel (){
@@ -109,7 +108,7 @@ public class BroadCrestedWeir extends Weir implements TimeDependentWeir{
             }
         }
 
-        cmd.eta = Function.max(cmd.eta,Function.max(crestLevel,(h_max+h_min)/2.));
+        cmd.eta = Math.max(cmd.eta,Math.max(crestLevel,(h_max+h_min)/2.));
         cmd.totaldepth = dof.z + cmd.eta;
 
         if(cmd.totaldepth<CurrentModel2D.WATT/3.) // Peter 27.08.08
@@ -123,9 +122,9 @@ public class BroadCrestedWeir extends Weir implements TimeDependentWeir{
         int i=0;
         while(dof.number!=knotennummern[i]) i++;
 
-        double d = Function.max(0.,Function.min(crestLevel,sysdat.getDOF(dof.number).z)+h_max);
+        double d = Math.max(0.,Math.min(crestLevel,sysdat.getDOF(dof.number).z)+h_max);
 
-        double factor = d/Function.max(CurrentModel2D.WATT,cmd.totaldepth); // Peter 14.08.09
+        double factor = d/Math.max(CurrentModel2D.WATT,cmd.totaldepth); // Peter 14.08.09
 
         double v = (2./3.*mue * c * Math.sqrt(2.* PhysicalParameters.G * d));// * factor;
         double[] su = new double[2];

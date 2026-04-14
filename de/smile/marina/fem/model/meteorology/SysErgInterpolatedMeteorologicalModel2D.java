@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.meteorology;
 
 import de.smile.marina.fem.*;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -135,7 +134,7 @@ public class SysErgInterpolatedMeteorologicalModel2D extends MeteorologicalModel
             md.temperature = (1 - lambda) * md.md0.temperature + lambda * md.md1.temperature;
             md.windx = (1 - lambda) * md.md0.windx + lambda * md.md1.windx;
             md.windy = (1 - lambda) * md.md0.windy + lambda * md.md1.windy;
-            md.windspeed = Function.norm(md.windx, md.windy);
+            md.windspeed = Math.hypot(md.windx, md.windy);
             md.pressure = (1 - lambda) * md.md0.pressure + lambda * md.md1.pressure;
             md.temperature = C1 * Math.cos(w1 * time - Math.PI) + x1; // Jahresschwankung
             md.temperature += C2 * Math.cos(w2 * time - Math.PI) + x2; // Tagesschwankung
@@ -209,7 +208,7 @@ public class SysErgInterpolatedMeteorologicalModel2D extends MeteorologicalModel
             time1 = fe0.time;
             this.windx = md0.windx;
             this.windy = md0.windy;
-            this.windspeed = Function.norm(this.windx, this.windy);
+            this.windspeed = Math.hypot(this.windx, this.windy);
             this.pressure = md0.pressure;
             this.insolation = md0.insolation;
             this.temperature = md0.temperature;
@@ -354,7 +353,7 @@ public class SysErgInterpolatedMeteorologicalModel2D extends MeteorologicalModel
                     if (V_gesetzt) {
                         data.windx = inStream.readFloat();
                         data.windy = inStream.readFloat();
-                        data.windspeed = Function.norm(data.windx, data.windy);
+                        data.windspeed = Math.hypot(data.windx, data.windy);
                     }
                     if (Q_gesetzt) {
                         inStream.skip(8);
@@ -413,7 +412,7 @@ public class SysErgInterpolatedMeteorologicalModel2D extends MeteorologicalModel
             MeteorologyData2D md2 = MeteorologyData2D.extract(elem.getDOF(2));
             md.windx = lambda[0] * md0.windx + lambda[1] * md1.windx + lambda[2] * md2.windx;
             md.windy = lambda[0] * md0.windy + lambda[1] * md1.windy + lambda[2] * md2.windy;
-            md.windspeed = Function.norm(md.windx, md.windy);
+            md.windspeed = Math.hypot(md.windx, md.windy);
             md.pressure = lambda[0] * md0.pressure + lambda[1] * md1.pressure + lambda[2] * md2.pressure;
             md.insolation = lambda[0] * md0.insolation + lambda[1] * md1.insolation + lambda[2] * md2.insolation;
             md.temperature = lambda[0] * md0.temperature + lambda[1] * md1.temperature + lambda[2] * md2.temperature;
@@ -435,7 +434,7 @@ public class SysErgInterpolatedMeteorologicalModel2D extends MeteorologicalModel
             MeteorologyData2D md2 = MeteorologyData2D.extract(elem.getDOF(2));
             md.windx = lambda[0] * md0.windx + lambda[1] * md1.windx + lambda[2] * md2.windx;
             md.windy = lambda[0] * md0.windy + lambda[1] * md1.windy + lambda[2] * md2.windy;
-            md.windspeed = Function.norm(md.windx, md.windy);
+            md.windspeed = Math.hypot(md.windx, md.windy);
             md.pressure = lambda[0] * md0.pressure + lambda[1] * md1.pressure + lambda[2] * md2.pressure;
             md.insolation = lambda[0] * md0.insolation + lambda[1] * md1.insolation + lambda[2] * md2.insolation;
             md.temperature = lambda[0] * md0.temperature + lambda[1] * md1.temperature + lambda[2] * md2.temperature;

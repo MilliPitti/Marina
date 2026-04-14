@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.ecological;
 
 import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2D;
-import de.smile.math.Function;
 import java.util.Iterator;
 
 /**
@@ -48,7 +47,7 @@ public class SpartinaAlternifloraModel2DData implements ModelData {
 
         double lambda = density/SpartinaAlternifloraModel2D.maxdensity      // Bewuchsdichte
                 * diameter/SpartinaAlternifloraModel2D.maxdiameter          // grasdurchmesser
-                * Function.min( height/Function.max(waterDepth, CurrentModel2D.WATT) ,1.) // Ueberflutungshoehe
+                * Math.min( height/Math.max(waterDepth, CurrentModel2D.WATT) ,1.) // Ueberflutungshoehe
                 ;
 
         return lambda*SpartinaAlternifloraModel2D.minKst + (1.-lambda)*SpartinaAlternifloraModel2D.maxKst;
@@ -61,7 +60,7 @@ public class SpartinaAlternifloraModel2DData implements ModelData {
 
         return density/SpartinaAlternifloraModel2D.maxdensity      // Bewuchsdichte
                 * diameter/SpartinaAlternifloraModel2D.maxdiameter          // grasdurchmesser
-                * Function.min( height/Function.max(waterDepth, CurrentModel2D.WATT) ,1.) // Ueberflutungshoehe
+                * Math.min( height/Math.max(waterDepth, CurrentModel2D.WATT) ,1.) // Ueberflutungshoehe
                 ;
     }
 

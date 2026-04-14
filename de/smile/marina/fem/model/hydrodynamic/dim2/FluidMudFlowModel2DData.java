@@ -62,7 +62,7 @@ public class FluidMudFlowModel2DData implements ModelData {
     public double dzdt=0.;         // if morphodynamik model
     public double thickness;   //z+m
 
-    public double wlambda = 1.,  w1_lambda = 0.; // lambda und (1-lambda) zur Beruecksichtigung des Trockenfallens: lambda=Function.min(1.,thickness/WATT);
+    public double wlambda = 1.,  w1_lambda = 0.; // lambda und (1-lambda) zur Beruecksichtigung des Trockenfallens: lambda=Math.min(1.,thickness/WATT);
 
     // Zwischenergebnisse der rechte Seite
     double ru=0., rv=0., rm=0.;

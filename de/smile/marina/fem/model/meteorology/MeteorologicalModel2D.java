@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.meteorology;
 import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.*;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -112,7 +111,7 @@ public class MeteorologicalModel2D extends TimeDependentFEApproximation implemen
             double[] w = windtimeseries.getValue(time);
             data.windx = w[0];
             data.windy = w[1];
-            data.windspeed = Function.norm(w[0],w[1]);
+            data.windspeed = Math.hypot(w[0], w[1]);
         }
 
         data.temperature=C1*Math.cos(w1*time-Math.PI)+x1; // Jahresschwankung

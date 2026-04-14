@@ -30,7 +30,6 @@ import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.io.FileIO;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 
@@ -490,7 +489,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                 continue;
             }
 
-            final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            final double currentMean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
             if (currentMean > 1.E-5) {
                 final double ts = 0.5 * eleCurrentData.elementsize / currentMean;
                 if (Double.isFinite(ts) && ts > 0.) {
@@ -540,7 +539,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                     dsaltconcdy += adModelData.C * koeffmat[j][2];
                 } // end for
 
-                double current_mean = Function.norm(u_mean, v_mean);
+                double current_mean = Math.hypot(u_mean, v_mean);
                 double elementsize = eleCurrentData.elementsize;
 
                 // dispersion
@@ -559,7 +558,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                             + (koeffmat[j][1] * astx * dsaltconcdx + koeffmat[j][2] * asty * dsaltconcdy) * cmd.wlambda
                             // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)):
                             // korrigiert die Diffusion, wenn sich die Tiefe aendert.
-                            - 1. / 3. * (1. / Function.max(cmd.totaldepth, CurrentModel2D.WATT))
+                            - 1. / 3. * (1. / Math.max(cmd.totaldepth, CurrentModel2D.WATT))
                                     * (eleCurrentData.ddepthdx * astx * dsaltconcdx
                                             + eleCurrentData.ddepthdy * asty * dsaltconcdy)
                                     * cmd.wlambda
@@ -578,7 +577,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                 if (current_mean > 1.E-5) {
                     tau_konc = 0.5 * elementsize / current_mean;
                     timeStep = tau_konc;
-                    // double tau = Function.norm(astx,asty);
+                    // double tau = Math.hypot(astx, asty);
                     // double a_opt = 1.;
                     // if(tau>0.00001) {
                     // double peclet = current_mean * elementsize / tau;
@@ -605,7 +604,7 @@ public class AdvectionDispersionModel2D extends TimeDependentFEApproximation
                     // * cmd.wlambda * ele.area
                     // // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)):
                     // korrigiert die Diffusion, wenn sich die Tiefe aendert.
-                    // - 1./3. * (1. / Function.max(cmd.totaldepth,CurrentModel2D.WATT)) *
+                    // - 1./3. * (1. / Math.max(cmd.totaldepth,CurrentModel2D.WATT)) *
                     // (eleCurrentData.ddepthdx * astx * dsaltconcdx + eleCurrentData.ddepthdy *
                     // asty * dsaltconcdy) * cmd.wlambda * ele.area;
 

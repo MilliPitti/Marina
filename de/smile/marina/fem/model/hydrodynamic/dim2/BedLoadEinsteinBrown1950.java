@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2;
 
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
-import de.smile.math.Function;
 
 /**
  * BedLoad-Transportformulation by Einstein-Brown (1950)
@@ -55,7 +54,7 @@ public class BedLoadEinsteinBrown1950 implements BedLoad2DFormulation {
         double sfx = smd.lambda * cmd.tauBx / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         double sfy = smd.lambda * cmd.tauBy / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
 
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
         sf = (sf > 0x1.0p-100) ? sf : 0x1.0p-100;
         double f1 = (sf < .2) ? 2.15 * Math.exp(-0.391 / sf) : 40. * sf * sf * sf;
 
@@ -65,7 +64,7 @@ public class BedLoadEinsteinBrown1950 implements BedLoad2DFormulation {
         smd.bedload *= smd.lambda; // decreasing depending on not erodible bottom
 
         // nicht mehr transportieren als ueber dem nicht erodierbarem Horizont vohanden ist
-        smd.bedload = Math.min(1. / SedimentModel2D.morphFactor * cmd.cv * Function.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
+        smd.bedload = Math.min(1. / SedimentModel2D.morphFactor * cmd.cv * Math.max(0., smd.zh - smd.z) * (1. - smd.porosity), smd.bedload);
 
         smd.bedloadVector[0] = smd.bedload * sfx / sf;
         smd.bedloadVector[1] = smd.bedload * sfy / sf;

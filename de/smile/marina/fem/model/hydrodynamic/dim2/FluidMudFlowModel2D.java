@@ -33,7 +33,7 @@ import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.io.FileIO;
 import de.smile.marina.io.TicadIO;
 import de.smile.math.Function;
-import static de.smile.math.Function.norm;
+
 import java.io.*;
 import java.util.*;
 
@@ -213,7 +213,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                 if (V_gesetzt) {
                     dof_data[i].u = inStream.readFloat();
                     dof_data[i].v = inStream.readFloat();
-                    dof_data[i].cv = Function.norm(dof_data[i].u, dof_data[i].v);
+                    dof_data[i].cv = Math.hypot(dof_data[i].u, dof_data[i].v);
                 }
 
                 if (Q_gesetzt) {
@@ -249,7 +249,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                 if (SHEAR_gesetzt) {
                     double tau_bx = inStream.readFloat() / PhysicalParameters.RHO_WATER;
                     double tau_by = inStream.readFloat() / PhysicalParameters.RHO_WATER;
-                    dof_data[i].tau_b = Function.norm(tau_bx, tau_by);
+                    dof_data[i].tau_b = Math.hypot(tau_bx, tau_by);
                     // inStream.skip(8);
                 }
 
@@ -562,7 +562,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                 thicknessMean += fmd.thickness / 3.;
             }
 
-            final double elementSize = (norm(uMean, vMean) > WATT / 10.) ? ele.getVectorSize(uMean, vMean) : ele.minHight;
+            final double elementSize = (Math.hypot(uMean, vMean) > WATT / 10.) ? ele.getVectorSize(uMean, vMean) : ele.minHight;
             final double c0 = Math.sqrt(PhysicalParameters.G * ((thicknessMean < WATT) ? WATT : thicknessMean));
             final double operatornorm1 = Math.abs(uMean) + c0;
             final double operatornorm2 = Math.abs(vMean) + c0;
@@ -575,7 +575,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
 
             final Current2DElementData eleCurrentData = Current2DElementData.extract(element);
             if (eleCurrentData != null) {
-                final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+                final double currentMean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
                 if (currentMean > 1.E-5) {
                     final double tauC = 0.5 * eleCurrentData.elementsize / currentMean;
                     if (Double.isFinite(tauC) && tauC > 0.) {
@@ -847,7 +847,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             }
 
             final double elementsize;
-            if (norm(u_mean, v_mean) > WATT / 10.) {
+            if (Math.hypot(u_mean, v_mean) > WATT / 10.) {
                 elementsize = ele.getVectorSize(u_mean, v_mean); // Peter 07.08.2024
             } else
                 elementsize = ele.minHight;
@@ -861,7 +861,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             astx += (astx * elementsize) * (astx * elementsize)
                     * Math.sqrt(2. * udx * udx + (udy + vdx) * (udy + vdx) + 2. * vdy * vdy);
             /* Elder - Ansatz mit Strickler Bodenschubspannung approximiert */
-            astx += DYNVISCOSITY * PhysicalParameters.sqrtG / 30. * Function.norm(u_mean, v_mean) * thickness_mean
+            astx += DYNVISCOSITY * PhysicalParameters.sqrtG / 30. * Math.hypot(u_mean, v_mean) * thickness_mean
                     * bottomslope;
 
             // Battjes-Ansatz turbulence by wavebreaking
@@ -984,7 +984,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                                                                                              // wave
                                                                                                              // velocity
                                                                                                              // // =
-                                                                                                             // Math.sqrt(G*Function.max(WATT,thickness_mean));
+                                                                                                             // Math.sqrt(G*Math.max(WATT,thickness_mean));
             double operatornorm1 = Math.abs(u_mean) + c0;
             double operatornorm2 = Math.abs(v_mean) + c0;
             double operatornorm = Math.sqrt(operatornorm1 * operatornorm1 + operatornorm2 * operatornorm2);
@@ -999,11 +999,11 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             // }
 
             double tau_C = 0.;
-            double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            double current_mean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
             if (current_mean > 1.E-5) {
                 tau_C = 0.5 * eleCurrentData.elementsize / current_mean;
                 timeStep = ((timeStep < tau_C) ? timeStep : tau_C);
-                // double tauc = Function.norm(eleCurrentData.astx, eleCurrentData.asty);
+                // double tauc = Math.hypot(eleCurrentData.astx, eleCurrentData.asty);
                 // if (tauc > 0.00001) { // to time-consuming
                 // double peclet = current_mean * elementsize / tauc;
                 // tau_C *= Function.coth(peclet) - 1.0 / peclet;
@@ -1101,7 +1101,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             fluidmuddata.m = Math.max(-fluidmuddata.z, fluidmuddata.bh.getValue(t));
             // fluidmuddata.dmdt = fluidmuddata.bh.getDifferential(t);
         }
-        fluidmuddata.thickness = Function.max(0., fluidmuddata.z + fluidmuddata.m);
+        fluidmuddata.thickness = Math.max(0., fluidmuddata.z + fluidmuddata.m);
 
         /* extrapolate no exact defined boundary conditions */
         if ((fluidmuddata.extrapolate_h || fluidmuddata.extrapolate_u || fluidmuddata.extrapolate_v)
@@ -1119,14 +1119,14 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                         dh /= 10.;
                                     synchronized (fluidmuddata) {
                                         fluidmuddata.m -= dh;
-                                        fluidmuddata.thickness = Function.max(0., fluidmuddata.z + fluidmuddata.m); // currentdata.totaldepth
+                                        fluidmuddata.thickness = Math.max(0., fluidmuddata.z + fluidmuddata.m); // currentdata.totaldepth
                                                                                                                     // -=
                                                                                                                     // dh;
                                     }
                                     synchronized (tmpcdata) {
                                         tmpcdata.m += dh * dof.lumpedMass
                                                 / elem.getDOF((ll + ii) % 3).lumpedMass;
-                                        tmpcdata.thickness = Function.max(0., tmpcdata.z + tmpcdata.m); // tmpcdata.totaldepth
+                                        tmpcdata.thickness = Math.max(0., tmpcdata.z + tmpcdata.m); // tmpcdata.totaldepth
                                                                                                         // += dh /
                                                                                                         // elem.getDOF((ll
                                                                                                         // + ii) %
@@ -1141,12 +1141,12 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                         du /= 10.;
                                     synchronized (fluidmuddata) {
                                         fluidmuddata.u -= du;
-                                        fluidmuddata.cv = Function.norm(fluidmuddata.u, fluidmuddata.v);
+                                        fluidmuddata.cv = Math.hypot(fluidmuddata.u, fluidmuddata.v);
                                     }
                                     synchronized (tmpcdata) {
                                         tmpcdata.u += du * dof.lumpedMass
                                                 / elem.getDOF((ll + ii) % 3).lumpedMass;
-                                        tmpcdata.cv = Function.norm(tmpcdata.u, tmpcdata.v);
+                                        tmpcdata.cv = Math.hypot(tmpcdata.u, tmpcdata.v);
                                     }
                                 }
                                 if (fluidmuddata.extrapolate_v) {
@@ -1155,12 +1155,12 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
                                         dv /= 10.;
                                     synchronized (fluidmuddata) {
                                         fluidmuddata.v -= dv;
-                                        fluidmuddata.cv = Function.norm(fluidmuddata.u, fluidmuddata.v);
+                                        fluidmuddata.cv = Math.hypot(fluidmuddata.u, fluidmuddata.v);
                                     }
                                     synchronized (tmpcdata) {
                                         tmpcdata.v += dv * dof.lumpedMass
                                                 / elem.getDOF((ll + ii) % 3).lumpedMass;
-                                        tmpcdata.cv = Function.norm(tmpcdata.u, tmpcdata.v);
+                                        tmpcdata.cv = Math.hypot(tmpcdata.u, tmpcdata.v);
                                     }
                                 }
                             }
@@ -1219,7 +1219,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
         }
 
         /* Wattstrategie */
-        fluidmuddata.wlambda = Function.min(1., fluidmuddata.thickness / WATT);
+        fluidmuddata.wlambda = Math.min(1., fluidmuddata.thickness / WATT);
         fluidmuddata.w1_lambda = 1. - fluidmuddata.wlambda;
 
         // testen ob ein knoten ein sickerknoten ist
@@ -1244,13 +1244,13 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
             fluidmuddata.u *= fluidmuddata.thickness / (CurrentModel2D.halfWATT / 2.);
             fluidmuddata.v *= fluidmuddata.thickness / (CurrentModel2D.halfWATT / 2.);
         }
-        fluidmuddata.cv = Function.norm(fluidmuddata.u, fluidmuddata.v);
+        fluidmuddata.cv = Math.hypot(fluidmuddata.u, fluidmuddata.v);
 
         double kst = fluidmuddata.kst;
         // BewuchsKst
         SpartinaAlternifloraModel2DData samd = SpartinaAlternifloraModel2DData.extract(dof);
         if (samd != null) {
-            kst = Function.min(kst, samd.getStrickler(fluidmuddata.thickness));
+            kst = Math.min(kst, samd.getStrickler(fluidmuddata.thickness));
         }
         // bottom friction coefficient
         // Strickler
@@ -1568,7 +1568,7 @@ public class FluidMudFlowModel2D extends TimeDependentFEApproximation
 
         if (null != cmd) {
 
-            double tauc = Function.norm(fmudd.tau_currentdx, fmudd.tau_currentdy);
+            double tauc = Math.hypot(fmudd.tau_currentdx, fmudd.tau_currentdy);
 
             final double taub = 0.2;
 

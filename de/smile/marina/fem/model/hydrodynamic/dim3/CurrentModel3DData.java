@@ -35,8 +35,7 @@ import de.smile.marina.fem.model.hydrodynamic.dim2.Current2DElementData;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2D;
 import de.smile.marina.fem.model.hydrodynamic.dim2.CurrentModel2DData;
 import static de.smile.marina.fem.model.hydrodynamic.dim2.SurfaceWaterModel.WATT;
-import de.smile.math.Function;
-import static de.smile.math.Function.norm;
+
 import static java.lang.Math.max;
 
 /**
@@ -146,10 +145,10 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
                     schichtdicke = 0.;
                 } else {
                     if (s < this.f.getSizeOfValues() - 1) {
-                        schichtdicke = Function.min(this.f.getxAt(s + 1) - dh, Function.max(0, this.z - dh));
+                        schichtdicke = Math.min(this.f.getxAt(s + 1) - dh, Math.max(0, this.z - dh));
                     } else {
                         // Unterste Schicht
-                        schichtdicke = Function.max(0, this.z - dh);
+                        schichtdicke = Math.max(0, this.z - dh);
                     }
                 }
                 if(sschichten + schichtdicke >= 1.) schichtdicke = 1.-sschichten;
@@ -174,7 +173,7 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
 
         cm2dd.u = this.getU();
         cm2dd.v = this.getV();
-        cm2dd.cv = Function.norm(cm2dd.u, cm2dd.v);
+        cm2dd.cv = Math.hypot(cm2dd.u, cm2dd.v);
         cm2dd.eta = this.eta;
         cm2dd.totaldepth = this.totaldepth;
         cm2dd.tauBx = this.tauBx;
@@ -185,7 +184,7 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
         cm2dd.tau_bx_extra =0.;
         cm2dd.tau_by_extra =0.;
 
-        cm2dd.wlambda = Function.min(1., cm2dd.totaldepth / CurrentModel2D.WATT);
+        cm2dd.wlambda = Math.min(1., cm2dd.totaldepth / CurrentModel2D.WATT);
         cm2dd.w1_lambda = 1. - cm2dd.wlambda;
         
         cm2dd.boundary = this.boundary;
@@ -231,7 +230,7 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
             }
         }
         final double elementsize;
-        if (norm(element_currentdata.u_mean, element_currentdata.v_mean) > WATT / 10.) {
+        if (Math.hypot(element_currentdata.u_mean, element_currentdata.v_mean) > WATT / 10.) {
             elementsize = ele.getVectorSize(element_currentdata.u_mean, element_currentdata.v_mean);
         } else {
             elementsize = ele.minHight;
@@ -270,7 +269,7 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
         } else {
             this.eta = h;
             this.totaldepth = this.z + this.eta;
-            this.wlambda = Function.min(1., this.totaldepth / CurrentModel3D.WATT);
+            this.wlambda = Math.min(1., this.totaldepth / CurrentModel3D.WATT);
             this.w1_lambda=1.-this.wlambda;
             for (int s = this.f.getSizeOfValues() - 1; s >= 0; s--) {
                 if (this.z <= this.f.getxAt(s)) { // echt unterhalb vom Boden
@@ -335,7 +334,7 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
             }  
         } else {
             this.totaldepth = this.z + this.eta;
-            this.wlambda = Function.min(1., this.totaldepth / CurrentModel3D.WATT);
+            this.wlambda = Math.min(1., this.totaldepth / CurrentModel3D.WATT);
             this.w1_lambda = 1. - this.wlambda;
             for (int s = this.f.getSizeOfValues() - 1; s >= 0; s--) {
                 if (this.z <= this.f.getxAt(s)) { // echt unterhalb vom Boden

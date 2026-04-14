@@ -28,7 +28,6 @@ import de.smile.marina.PhysicalParameters;
 import static de.smile.marina.PhysicalParameters.KINVISCOSITY_WATER;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.ModelData;
-import de.smile.math.Function;
 import java.util.*;
 
 /**
@@ -231,14 +230,14 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
 
     public final void setD50(double d50) {
 
-        this.d50 = Function.max(1.1 * this.dmin, Function.min(.9 * this.dmax, d50));
+        this.d50 = Math.max(1.1 * this.dmin, Math.min(.9 * this.dmax, d50));
         super.update();
 
         this.bound = d50 * 10.;
 
         this.CSF = this.cfs.getCFS(D);
 
-        lambda = Function.min(1., Function.max(0., zh - z) / bound); // increasing factor depending on not erodible
+        lambda = Math.min(1., Math.max(0., zh - z) / bound); // increasing factor depending on not erodible
                                                                      // bottom
         CSF *= 1. / (1. + 1. - lambda); // Verdopplung der kritischen Bodenschubspannung bei nichterodierbarem Boden
         tau_cr = CSF * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)
@@ -474,9 +473,9 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         if (d50 <= 0.2E-3 || T >= 25. || T <= 0.)
             return 0.;
         if (depth > 0.1) {
-            final double lambda = Function.min(1., (d50 - 0.2E-3) / 0.2E-3);
+            final double lambda = Math.min(1., (d50 - 0.2E-3) / 0.2E-3);
             return lambda
-                    * Function.max(0.,
+                    * Math.max(0.,
                             0.11 * depth * Math.pow(d50 / depth, 0.3) * (1. - Math.exp(-0.5 * T)) * (25. - T))
                     / bottomslope / bottomslope;
         }
@@ -490,7 +489,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         if (d50 <= 0.2E-3 || T >= 25. || T <= 0.)
             return 0.;
         if (totaldepth > 0.1) {
-            final double lambda = Function.min(1., (d50 - 0.2E-3) / 0.2E-3);
+            final double lambda = Math.min(1., (d50 - 0.2E-3) / 0.2E-3);
             return lambda
                     * (0.11 * totaldepth * Math.pow(d50 / totaldepth, 0.3) * (1. - Math.exp(-0.5 * T)) * (25. - T))
                     / bottomslope / bottomslope;
@@ -508,7 +507,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         if (d50 <= 0.2E-3 || T >= 25. || T <= 0.)
             return 0.;
         if (depth > 0.1) {
-            final double lambda = Function.min(1., (d50 - 0.2E-3) / 0.2E-3);
+            final double lambda = Math.min(1., (d50 - 0.2E-3) / 0.2E-3);
             return lambda * 7.3 * depth / bottomslope / bottomslope;
         }
         return 0.;
@@ -521,7 +520,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         if (d50 <= 0.2E-3 || T >= 25. || T <= 0.)
             return 0.;
         if (depth > 0.1) {
-            final double lambda = Function.min(1., (d50 - 0.2E-3) / 0.2E-3);
+            final double lambda = Math.min(1., (d50 - 0.2E-3) / 0.2E-3);
             return lambda * 7.3 * depth / bottomslope / bottomslope;
         }
         return 0.;
@@ -538,8 +537,8 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         final double tauc = SedimentProperties.CriticalShieldsFunction.Shields.getCFS(D)
                 * ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * d50);
         if (taub > tauc) {
-            final double lambda = Function.min(1., (d50 - dmin) / (dmaxfinesand - dmin));
-            return lambda * totaldepth / 6. * Function.max(0., 1. - tauc / taub) / bottomslope / bottomslope;
+            final double lambda = Math.min(1., (d50 - dmin) / (dmaxfinesand - dmin));
+            return lambda * totaldepth / 6. * Math.max(0., 1. - tauc / taub) / bottomslope / bottomslope;
         } else
             return 0.;
     }
@@ -552,8 +551,8 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         final double tbcr = CSF
                 * ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * d50);
         if (taub > tbcr) {
-            final double lambda = Function.min(1., (d50 - dmin) / (dmaxfinesand - dmin));
-            return lambda * totaldepth / 6. * Function.max(0., 1. - tbcr / taub) / bottomslope / bottomslope;
+            final double lambda = Math.min(1., (d50 - dmin) / (dmaxfinesand - dmin));
+            return lambda * totaldepth / 6. * Math.max(0., 1. - tbcr / taub) / bottomslope / bottomslope;
         }
         return 0.;
     }
@@ -561,15 +560,15 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     public static double getYalin80DuneHeight(double d50, double taub, double totaldepth, double bottomslope) {
         if (d50 < 0.2E-3)
             return 0.;
-        final double lambda = Function.min(1., Function.max(0, d50 - 0.2E-3) / 0.2E-3);
+        final double lambda = Math.min(1., Math.max(0, d50 - 0.2E-3) / 0.2E-3);
         final double D = d50 * Math.pow(PhysicalParameters.G
                 * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER
                 / (PhysicalParameters.KINVISCOSITY_WATER * PhysicalParameters.KINVISCOSITY_WATER), 1. / 3.);
         final double tauc = SedimentProperties.CriticalShieldsFunction.Shields.getCFS(D)
                 * ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * d50);
         if (taub > tauc)
-            return lambda * totaldepth / 0.023 * Function.max(0., taub / tauc - 1)
-                    * Math.exp(1. - Function.max(0., taub / tauc - 1) / 12.84) / bottomslope / bottomslope;
+            return lambda * totaldepth / 0.023 * Math.max(0., taub / tauc - 1)
+                    * Math.exp(1. - Math.max(0., taub / tauc - 1) / 12.84) / bottomslope / bottomslope;
         else
             return 0.;
     }
@@ -580,9 +579,9 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         double tbcr = CSF
                 * ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * d50);
         if (taub > tbcr) {
-            final double lambda = Function.min(1., Function.max(0, d50 - 0.2E-3) / 0.2E-3);
-            return lambda * totaldepth / 0.023 * Function.max(0., taub / tbcr - 1)
-                    * Math.exp(1. - Function.max(0., taub / tbcr - 1) / 12.84) / bottomslope / bottomslope;
+            final double lambda = Math.min(1., Math.max(0, d50 - 0.2E-3) / 0.2E-3);
+            return lambda * totaldepth / 0.023 * Math.max(0., taub / tbcr - 1)
+                    * Math.exp(1. - Math.max(0., taub / tbcr - 1) / 12.84) / bottomslope / bottomslope;
         } else
             return 0.;
     }
@@ -669,7 +668,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     public static double getParticleReynoldsNumber(double d50, CurrentModel2DData cmd) {
 
         // Friction velocity
-        // final double d = Function.max(CurrentModel2D.WATT, cmd.totaldepth);
+        // final double d = Math.max(CurrentModel2D.WATT, cmd.totaldepth);
         // double Cs = 18.*Math.log(12.*d/d50);
         // final double uStar = cmd.cv * PhysicalParameters.sqrtG / Cs;
         // final double uStar = Math.sqrt(cmd.grainShearStress/cmd.rho);

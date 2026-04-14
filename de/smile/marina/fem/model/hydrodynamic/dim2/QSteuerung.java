@@ -27,7 +27,6 @@ import bijava.math.ifunction.*;
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
-import de.smile.math.Function;
 import javax.vecmath.*;
 
 /**
@@ -131,11 +130,11 @@ public class QSteuerung implements ScalarFunction1d {
             if (n > 0) { /** todo hier gibt es noch Optimierungspotential */
                 h_mean /= n;
                 // h_mean =
-                // Function.max(h_mean,zmin+Function.max(WATT,Math.abs(qzeitreihe.getValue(t))/(Math.sqrt(PhysicalParameters.G
+                // Math.max(h_mean,zmin+Math.max(WATT,Math.abs(qzeitreihe.getValue(t))/(Math.sqrt(PhysicalParameters.G
                 // * 20 *WATT)*s))); // 20.05.2025 auskommentiert
             } else { // alle Knoten der RB haben Tiefe = 0, falls Q != 0 so muss der wasserspiegel
                      // angehoben werden!!
-                h_mean = zmin + Function.max(WATT,
+                h_mean = zmin + Math.max(WATT,
                         Math.abs(qzeitreihe.getValue(t)) / (Math.sqrt(PhysicalParameters.G * 10 * WATT) * s));
             }
             /* END: bestimmen der mittleren Wasserspiegellage ueber den Querschnitt */
@@ -143,7 +142,7 @@ public class QSteuerung implements ScalarFunction1d {
                 if ((z.getValueAt(i)[1] + h_mean) > 0 && x[knotennummern[i]].bh == null) {
                     x[knotennummern[i]].eta = h_mean;
                 }
-                d.setValueAt(i, Function.max(0., z.getValueAt(i)[1] + x[knotennummern[i]].eta));
+                d.setValueAt(i, Math.max(0., z.getValueAt(i)[1] + x[knotennummern[i]].eta));
             }
             berechneV(qzeitreihe.getValue(t)); // Geschwindigkeitsverteilung iterativ berechnet
             time = t;

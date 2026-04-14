@@ -30,7 +30,6 @@ import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
 import de.smile.marina.io.FileIO;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 
@@ -475,7 +474,7 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
                 continue;
             }
 
-            final double currentMean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            final double currentMean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
             if (currentMean > 1.E-5) {
                 final double ts = 0.5 * eleCurrentData.elementsize / currentMean;
                 if (Double.isFinite(ts) && ts > 0.) {
@@ -520,14 +519,14 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
                     doxygenconcdy += oxygenmodeldata.oxygenConc * koeffmat[j][2];
                 } // end for
 
-                final double current_mean = Function.norm(u_mean, v_mean);
+                final double current_mean = Math.hypot(u_mean, v_mean);
                 final double elementsize = eleCurrentData.elementsize;
 
                 // dispersion
                 double astx = eleCurrentData.astx + dispersionCoefficient;
                 double asty = eleCurrentData.asty + dispersionCoefficient;
 
-                final double nonZeroDeepestTotalDepth = Function.max(eleCurrentData.deepestTotalDepth, 1);
+                final double nonZeroDeepestTotalDepth = Math.max(eleCurrentData.deepestTotalDepth, 1);
 
                 double Koeq1_mean = 0.;
                 // Elementfehler berechnen
@@ -572,9 +571,9 @@ public class OxygenTransportModel2D extends TimeDependentFEApproximation
                     for (int l = 0; l < 3; l++) {
                         final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
                         final double gl = (l == j) ? 1.
-                                : Function.min(CurrentModel2DData.extract(ele.getDOF(l)).wlambda,
+                                : Math.min(CurrentModel2DData.extract(ele.getDOF(l)).wlambda,
                                         CurrentModel2DData.extract(ele.getDOF(l)).totaldepth
-                                                / Function.max(CurrentModel2D.WATT, cmd.totaldepth));
+                                                / Math.max(CurrentModel2D.WATT, cmd.totaldepth));
                         result_SKonc_i -= vorfak * terms_Oxygen[l] * gl;
                     }
                     synchronized (oxygenmodeldata) {

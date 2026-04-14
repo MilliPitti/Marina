@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2.weirs;
 import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FEDecomposition;
 import de.smile.marina.fem.model.hydrodynamic.dim2.*;
-import de.smile.math.Function;
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.FElement;
 
@@ -80,7 +79,7 @@ public class UnderFlowTopoWeir extends UnderFlowWeir {
         cmd.totaldepth = cmd.z + cmd.eta;
         
 //        /* Wattstrategie fuer Stroemung   */
-        cmd.wlambda = Function.min(1., cmd.totaldepth / CurrentModel2D.WATT);
+        cmd.wlambda = Math.min(1., cmd.totaldepth / CurrentModel2D.WATT);
         cmd.w1_lambda = 1. - cmd.wlambda;
         if (cmd.totaldepth < CurrentModel2D.WATT / 2.) {
             cmd.u *= cmd.totaldepth / CurrentModel2D.WATT / 2.;
@@ -88,11 +87,11 @@ public class UnderFlowTopoWeir extends UnderFlowWeir {
         } else {
             double mue=0.58;  // Zielke Stroe-Skript
             double c=0.89;
-            double hw = Function.max(0.,h_mean + sluiceLevel);
-            double rd = Function.max(0.,dof.z+h)/Function.max(CurrentModel2D.WATT,dof.z+h_mean);
+            double hw = Math.max(0.,h_mean + sluiceLevel);
+            double rd = Math.max(0.,dof.z+h)/Math.max(CurrentModel2D.WATT,dof.z+h_mean);
             double v = (2./3.*mue * c * Math.sqrt(2.* PhysicalParameters.G +hw))  * rd;
-            if(Function.norm(cmd.u,cmd.v)>v){
-                double fac = v/Function.norm(cmd.u,cmd.v);
+            if(Math.hypot(cmd.u, cmd.v)>v){
+                double fac = v/Math.hypot(cmd.u, cmd.v);
                 cmd.u *= fac;
                 cmd.v *= fac;
             }

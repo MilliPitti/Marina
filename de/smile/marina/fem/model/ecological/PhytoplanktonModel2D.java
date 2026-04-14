@@ -333,7 +333,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
             final FTriangle ele = (FTriangle) element;
             final double[][] koeffmat = ele.getkoeffmat();
 
-            final double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            final double current_mean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
             if (current_mean <= 1.E-5) {
                 continue;
             }
@@ -442,7 +442,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
                     dPhytoConcdy += phytomodeldata.phytoconc * koeffmat[j][2];
                 } // end for
                 
-                double current_mean = Function.norm(u_mean, v_mean);
+                double current_mean = Math.hypot(u_mean, v_mean);
                 double elementsize = eleCurrentData.elementsize;  // Peter 08.08.08
                 
                 //eddy viscosity
@@ -478,7 +478,7 @@ public class PhytoplanktonModel2D extends TimeDependentFEApproximation implement
 
                     timeStep=tau_konc*1./(1.+Math.abs(Koeq1_mean));
 
-                    double tau = Function.norm(astx,asty);
+                    double tau = Math.hypot(astx, asty);
 
                     double a_opt = 1.;
                     if(tau>0.00001) {

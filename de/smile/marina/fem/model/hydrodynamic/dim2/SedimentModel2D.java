@@ -34,7 +34,6 @@ import de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3DData;
 import de.smile.marina.io.FileIO;
 import de.smile.marina.io.SmileIO;
 import de.smile.marina.io.TicadIO;
-import de.smile.math.Function;
 import de.smile.xml.marina.TSSSFileType;
 import java.io.*;
 import static java.lang.Math.max;
@@ -174,7 +173,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         }
         if (!Double.isNaN(sedimentdat.noErodibleHorizon) && !maxerosionSet) {
             for (DOF dof : fenet.getDOFs()) {
-                SedimentModel2DData.extract(dof).zh = Function.max(dof.z, sedimentdat.noErodibleHorizon);
+                SedimentModel2DData.extract(dof).zh = Math.max(dof.z, sedimentdat.noErodibleHorizon);
             }
             maxerosionSet = true;
         }
@@ -698,7 +697,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 }
 
                 if (DUNEHight_gesetzt)
-                    dof_data[i].duneHeight = Function.max(0., inStream.readFloat());
+                    dof_data[i].duneHeight = Math.max(0., inStream.readFloat());
 
                 if (DUNELength_gesetzt) {
                     dof_data[i].duneLengthX = inStream.readFloat();
@@ -977,24 +976,24 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double lambda_x = morph_x;
             final double lambda_y = morph_y;
 
-            final double lambda_mean = Function.norm(lambda_x, lambda_y);
-            if (lambda_mean > 1.E-7) {
+            final double lambda_mean = Math.hypot(lambda_x, lambda_y);
+            if (lambda_mean > FTriangle.minV) {
                 final double tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
                 if (Double.isFinite(tau_z) && tau_z > 0.) {
                     tsMin = Math.min(tsMin, tau_z);
                 }
             }
 
-            final double current_mean = Function.norm(eleCurrentData.u_mean, eleCurrentData.v_mean);
-            if (current_mean > WATT / 10. / 3.) {
+            final double current_mean = Math.hypot(eleCurrentData.u_mean, eleCurrentData.v_mean);
+            if (current_mean > FTriangle.minV) {
                 final double tauC = 0.5 * eleCurrentData.elementsize / current_mean;
                 if (Double.isFinite(tauC) && tauC > 0.) {
                     tsMin = Math.min(tsMin, tauC);
                 }
             }
 
-            final double morph_mean = Function.norm(morph_x, morph_y);
-            if (morph_mean > 1.E-7) {
+            final double morph_mean = Math.hypot(morph_x, morph_y);
+            if (morph_mean > FTriangle.minV) {
                 final double tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
                 if (Double.isFinite(tau_d50) && tau_d50 > 0.) {
                     tsMin = Math.min(tsMin, tau_d50);
@@ -1127,7 +1126,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             // double lambda_x = morph_x;
             // double lambda_y = morph_y;
 
-            final double current_mean = Function.norm(u_mean, v_mean);
+            final double current_mean = Math.hypot(u_mean, v_mean);
             double localResC = 0., localResZTransport = 0., localResD50 = 0.;
 
             double nu_sed = 0.;
@@ -1157,7 +1156,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 ;
                 localResD50 += 1. / 3. * (smd.dd50dt + terms_d50[j]);
             }
-            final double lambda_mean = Function.norm(lambda_x, lambda_y);
+            final double lambda_mean = Math.hypot(lambda_x, lambda_y);
             final double tau_z;
             if (lambda_mean > FTriangle.minV) {
                 tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
@@ -1187,7 +1186,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             } else
                 tauC = ele.minHight/FTriangle.minV;// 0.;
 
-            final double morph_mean = Function.norm(morph_x, morph_y);
+            final double morph_mean = Math.hypot(morph_x, morph_y);
             final double tau_d50;
             if (morph_mean > FTriangle.minV) {
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
@@ -1219,7 +1218,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                         * ele.area
                         // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)):
                         // korrigiert die Diffusion, wenn sich die Tiefe aendert.
-                        - 1. / 3. * (1. / Function.max(cmd.totaldepth, CurrentModel2D.WATT))
+                        - 1. / 3. * (1. / Math.max(cmd.totaldepth, CurrentModel2D.WATT))
                                 * (eleCurrentData.ddepthdx * astx * dskoncdx
                                         + eleCurrentData.ddepthdy * asty * dskoncdy)
                                 * cmd.wlambda * ele.area;
@@ -1246,7 +1245,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                         if (terms_z[l] > 0) { // abgelegener Knoten sedimentiert
                             if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
                                 gl = cmd.wlambda * dof_data[ele.getDOF(l).number].lambdaQs
-                                 * Function.max(0., 1. - (dof_data[ele.getDOF(l).number].z - smd.z) / ele.distance[l][j])
+                                 * Math.max(0., 1. - (dof_data[ele.getDOF(l).number].z - smd.z) / ele.distance[l][j])
                                 ;
                             } else { // abgelegener Knoten liegt oberhalb
                                 gl = 1.;
@@ -1255,7 +1254,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                             if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
                                 gl = 1.;
                             } else { // abgelegenen Knoten liegt oberhalb
-                                gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Function.max(0.,
+                                gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Math.max(0.,
                                         1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]);
                             }
                         }
@@ -1307,14 +1306,14 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         smd.u = cmd.u;
         smd.v = cmd.v;
         smd.cv = cmd.cv;
-        final double tauB = Function.norm(cmd.tauBx, cmd.tauBy);
+        final double tauB = Math.hypot(cmd.tauBx, cmd.tauBy);
         smd.uStar = (tauB <= 1e-10) ? 0.0 : Math.sqrt(tauB / cmd.rho);
         smd.tauB = tauB;
         if (!basedOnCurrentModel3D) {
-            final double normTauB = Function.norm(cmd.tauBx, cmd.tauBy);
+            final double normTauB = Math.hypot(cmd.tauBx, cmd.tauBy);
             if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer Stroemung
-                final double lambda = Function.min(1,
-                        Function.norm(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
+                final double lambda = Math.min(1,
+                        Math.hypot(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
                 smd.u = (1. - lambda) * smd.u + lambda * cmd.tauBx / normTauB * cmd.cv;
                 smd.v = (1. - lambda) * smd.v + lambda * cmd.tauBy / normTauB * cmd.cv;
             }
@@ -1346,10 +1345,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 && cmd.totaldepth > CurrentModel2D.WATT) { // einfache Variante des Baggern // ToDo Die Einschraenkung
                                                            // auf nass Knoten ist DOOF
             final double dredge = (smd.maintainedDepth - smd.z);
-            final double lambda = Function.max(0., 1. - dredge / Function.max(smd.bound, smd.duneHeight));
+            final double lambda = Math.max(0., 1. - dredge / Math.max(smd.bound, smd.duneHeight));
             smd.duneLengthX *= lambda;
             smd.duneLengthY *= lambda;
-            smd.duneHeight = Function.max(0., smd.duneHeight - dredge);
+            smd.duneHeight = Math.max(0., smd.duneHeight - dredge);
             smd.d50 -= Math.min(1., dredge) * (smd.d50 - smd.d50init); // beim Baggern wird die Korngroesze auf die
                                                                        // initiale zurueck verschoben
             smd.z = smd.maintainedDepth;
@@ -1361,11 +1360,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.duneLengthX = 0.;
             smd.duneLengthY = 0.;
         }
-        smd.duneLength = Function.norm(smd.duneLengthX, smd.duneLengthY);
+        smd.duneLength = Math.hypot(smd.duneLengthX, smd.duneLengthY);
 
         if (smd.zh <= smd.z)
             smd.z = smd.zh;
-        smd.lambda = Function.min(1, Function.max(0., smd.zh - smd.z) / smd.bound);
+        smd.lambda = Math.min(1, Math.max(0., smd.zh - smd.z) / smd.bound);
 
         smd.bedloadVector = bl.getLoadVector(dof);
 
@@ -1391,7 +1390,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         smd.u_bank = 1. / (1. - smd.porosity) * smd.qTotal_x / Math.max(cmd.totaldepth, 0.1) * cmd.wlambda;
         smd.v_bank = 1. / (1. - smd.porosity) * smd.qTotal_y / Math.max(cmd.totaldepth, 0.1) * cmd.wlambda;
 
-        smd.lambdaQs = Function.min(1., (smd.bedload + Function.norm(smd.qsx, smd.qsy)) / (1.E-5 * smd.bound));
+        smd.lambdaQs = Math.min(1., (smd.bedload + Math.hypot(smd.qsx, smd.qsy)) / (1.E-5 * smd.bound));
 
         // tau = rho * uStar**2
         // uStar = u_mean * 1/7 * (d50/d)**(1/7)
@@ -1665,10 +1664,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     double dunehight = SedimentModel2DData.getvanRijnDuneHeight(smd.d50,
                             PhysicalParameters.RHO_WATER * smd.bedDragCoeff * currentmodeldata.cv,
                             currentmodeldata.totaldepth, smd.bottomslope);
-                    double dhSource = smd.duneHeight / Function.max(0.01, Function.max(dunehight, smd.duneHeight));
+                    double dhSource = smd.duneHeight / Math.max(0.01, Math.max(dunehight, smd.duneHeight));
                     smd.duneLength = SedimentModel2DData.getFlemmingDuneLength(dunehight) * dhSource;
-                    smd.duneLengthX = smd.duneLength * currentmodeldata.u / (Function.max(currentmodeldata.cv, 0.001));
-                    smd.duneLengthY = smd.duneLength * currentmodeldata.v / (Function.max(currentmodeldata.cv, 0.001));
+                    smd.duneLengthX = smd.duneLength * currentmodeldata.u / (Math.max(currentmodeldata.cv, 0.001));
+                    smd.duneLengthY = smd.duneLength * currentmodeldata.v / (Math.max(currentmodeldata.cv, 0.001));
 
                     p_count++;
                 }
@@ -1766,10 +1765,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     double dunehight = SedimentModel2DData.getvanRijnDuneHeight(smd.d50,
                             PhysicalParameters.RHO_WATER * smd.bedDragCoeff * currentmodeldata.cv,
                             currentmodeldata.totaldepth, smd.bottomslope);
-                    double dhSource = smd.duneHeight / Function.max(0.01, Function.max(dunehight, smd.duneHeight));
+                    double dhSource = smd.duneHeight / Math.max(0.01, Math.max(dunehight, smd.duneHeight));
                     final double dunelength = SedimentModel2DData.getFlemmingDuneLength(dunehight) * dhSource;
-                    smd.duneLengthX = dunelength * currentmodeldata.u / (Function.max(currentmodeldata.cv, 0.001));
-                    smd.duneLengthY = dunelength * currentmodeldata.v / (Function.max(currentmodeldata.cv, 0.001));
+                    smd.duneLengthX = dunelength * currentmodeldata.u / (Math.max(currentmodeldata.cv, 0.001));
+                    smd.duneLengthY = dunelength * currentmodeldata.v / (Math.max(currentmodeldata.cv, 0.001));
 
                     // Status-Flag lesen
                     if (writePointStatus)
@@ -1942,7 +1941,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                                 break;
                             case NOERODIBLEHORIZON: {
                                 DOF dof = fenet.getDOF(nr);
-                                dof_data[nr].zh = Function.max(value, dof.z);
+                                dof_data[nr].zh = Math.max(value, dof.z);
                             }
                                 break;
 
@@ -2100,7 +2099,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                                 if (hasHeights)
                                     value *= -1.; // wenn Hoehen dann auf Tiefen umrechnen
                                 DOF dof = fenet.getDOF(nr);
-                                dof_data[nr].zh = Function.max(value, dof.z);
+                                dof_data[nr].zh = Math.max(value, dof.z);
                             }
                                 break;
 
@@ -2215,7 +2214,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 }
 
                 if (DUNEHight_gesetzt)
-                    dof_data[i].duneHeight = Function.max(0., inStream.readFloat());
+                    dof_data[i].duneHeight = Math.max(0., inStream.readFloat());
 
                 if (DUNELength_gesetzt) {
                     dof_data[i].duneLengthX = inStream.readFloat();
@@ -2515,7 +2514,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             } else {
                 waveBreaking = 0.;
             }
-            final double taub = Function.norm(tauBx, tauBy);
+            final double taub = Math.hypot(tauBx, tauBy);
 
             // Bodenformen // Yalin, vanRijn, Yalin80
             double predictedDuneHeight = min(smd.getYalinDuneHeight(taub, cmd.totaldepth), max(0., smd.zh - smd.z)); // kann
@@ -2550,21 +2549,21 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     smd.duneLengthX *= -1;
                     smd.duneLengthY *= -1;
                 }
-                final double dlSourceX = (predictedDuneLength * tauBx / Function.max(taub, 0.001) - smd.duneLengthX);
-                final double dlSourceY = (predictedDuneLength * tauBy / Function.max(taub, 0.001) - smd.duneLengthY);
+                final double dlSourceX = (predictedDuneLength * tauBx / Math.max(taub, 0.001) - smd.duneLengthX);
+                final double dlSourceY = (predictedDuneLength * tauBy / Math.max(taub, 0.001) - smd.duneLengthY);
                 smd.duneLengthX += dlSourceX * dhSource * dt * morphFactor;
                 smd.duneLengthY += dlSourceY * dhSource * dt * morphFactor;
             } else {
                 dhSource *= (1. + Math.abs(rZ)); // bei starker Bodenevolution schnellere Abnahme der Duehnenhoehe
                 smd.duneHeight += dhSource * dt * morphFactor;
                 smd.duneHeight = Math.max(smd.duneHeight, 0.);
-                final double actualDuneLength = Function.norm(smd.duneLengthX, smd.duneLengthY);
+                final double actualDuneLength = Math.hypot(smd.duneLengthX, smd.duneLengthY);
                 final double newLength = actualDuneLength - (dhSource - taub * PhysicalParameters.KINVISCOSITY_WATER)
                         * (predictedDuneLength - actualDuneLength) * dt * morphFactor; // Betrag von dhSource - deshalb
                                                                                        // -dhSource bei negativem
                                                                                        // dhSource
-                smd.duneLengthX = smd.duneLengthX / Function.max(actualDuneLength, 0.01) * newLength;
-                smd.duneLengthY = smd.duneLengthY / Function.max(actualDuneLength, 0.01) * newLength;
+                smd.duneLengthX = smd.duneLengthX / Math.max(actualDuneLength, 0.01) * newLength;
+                smd.duneLengthY = smd.duneLengthY / Math.max(actualDuneLength, 0.01) * newLength;
             }
             smd.duneHeight = min(smd.duneHeight, max(0., smd.zh - smd.z)); // kann nicht hoeher sein, als das ueber dem
                                                                            // erodierbaren Horizont verfuegbare Meterial

@@ -31,7 +31,6 @@ import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.ModelData;
 import static de.smile.marina.fem.model.hydrodynamic.dim2.SurfaceWaterModel.halfWATT;
 import de.smile.marina.fem.model.hydrodynamic.dim2.weirs.TimeDependentWeir;
-import de.smile.math.Function;
 import static de.smile.math.Function.sqr;
 import static java.lang.Math.abs;
 import static java.lang.Math.log10;
@@ -264,7 +263,7 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
         } else {
             this.eta = h;
             this.totaldepth = this.z + this.eta;
-            this.wlambda = Function.min(1., this.totaldepth / CurrentModel2D.WATT);
+            this.wlambda = Math.min(1., this.totaldepth / CurrentModel2D.WATT);
             this.w1_lambda = 1. - this.wlambda;
             // Froude - kostet viel Zeit, ist aber bei Dammbruchsimulationen notwendig 
             if (this.totaldepth > halfWATT / 10.) {
@@ -292,7 +291,7 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
         } else {
             this.eta = h;
             this.totaldepth = this.z + this.eta;
-            this.wlambda = Function.min(1., this.totaldepth / CurrentModel2D.WATT);
+            this.wlambda = Math.min(1., this.totaldepth / CurrentModel2D.WATT);
             this.w1_lambda = 1. - this.wlambda;
             // Froude - kostet viel Zeit, ist aber bei Dammbruchsimulationen notwendig 
             if (this.totaldepth > halfWATT / 10.) {

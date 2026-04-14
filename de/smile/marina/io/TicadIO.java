@@ -31,7 +31,6 @@ import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.FTriangleMesh;
 import de.smile.marina.fem.TicadModel;
 import de.smile.marina.fem.TimeDependentFEApproximation;
-import de.smile.math.Function;
 import java.io.*;
 import java.util.*;
 import javax.vecmath.*;
@@ -366,8 +365,8 @@ public class TicadIO {
             double minX = net.getDOF(0).x;
             double minY = net.getDOF(0).y;
             for (int i = 1; i < net.anzk; i++) {
-                minX = Function.min(minX, net.getDOF(i).x);
-                minY = Function.min(minY, net.getDOF(i).y);
+                minX = Math.min(minX, net.getDOF(i).x);
+                minY = Math.min(minY, net.getDOF(i).y);
             }
 
             final int offSetX = ((int) (minX / 100000.)) * 100000;

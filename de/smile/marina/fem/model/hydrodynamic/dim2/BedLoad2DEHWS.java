@@ -57,7 +57,7 @@ public class BedLoad2DEHWS implements BedLoad2DFormulation {
         
         if ((smd.d50 - dmin/2.)<=0.) return smd.bedloadVector;
         
-        final double lambdaEH = Function.max(0., (4.E-3 - smd.d50)/4.E-3);
+        final double lambdaEH = Math.max(0., (4.E-3 - smd.d50)/4.E-3);
         final double lambdaWS = 1.-lambdaEH;
         
         CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
@@ -68,12 +68,12 @@ public class BedLoad2DEHWS implements BedLoad2DFormulation {
         double sfx = cmd.tauBx / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         double sfy = cmd.tauBy / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         
-        double sf = Function.norm(sfx, sfy);
+        double sf = Math.hypot(sfx, sfy);
         
         WaveHYPModel2DData wmd = WaveHYPModel2DData.extract(dof);
         double sfwave = 0.;
         if (wmd != null) {
-            sfwave = (cmd.rho * PhysicalParameters.G / Function.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Function.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
+            sfwave = (cmd.rho * PhysicalParameters.G / Math.max(Function.sqr(5.), Math.pow((cmd.totaldepth < CurrentModel2D.halfWATT) ? CurrentModel2D.halfWATT : cmd.totaldepth, 1. / 3.) * Function.sqr(Math.min(cmd.kst, CurrentModel2DData.Nikuradse2Strickler(2.5 * smd.d50)))) * wmd.bottomvelocity) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
         }
 
         if ((sf + sfwave) > CSF) {
@@ -83,14 +83,14 @@ public class BedLoad2DEHWS implements BedLoad2DFormulation {
         smd.bedload += lambdaEH * 0.1 * (sf + sfwave) * Math.sqrt((sf + sfwave)) * PhysicalParameters.RHO_SEDIM * cmd.cv * cmd.wlambda * cmd.cv * cmd.wlambda * Math.sqrt((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) / PhysicalParameters.RHO_WATER * PhysicalParameters.G * Math.pow(smd.d50, 3.)) / (2. * PhysicalParameters.G /* Math.max(0.1, cmd.totaldepth)*/ * S); // Peter 18.08.2016
 
         smd.bedload *= smd.lambda; // decreasing depending on not erodible bottom
-        smd.bedload *= Function.min(1., Function.max(Function.max(0,smd.d50) / (4.*dmin),Function.max(0,smd.d50 - dmin/2.) / (2. * dmin))); // Abminderung auf Grund zu kleiner Koerner
+        smd.bedload *= Math.min(1., Math.max(Math.max(0,smd.d50) / (4.*dmin),Math.max(0,smd.d50 - dmin/2.) / (2. * dmin))); // Abminderung auf Grund zu kleiner Koerner
         
-        smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Function.max(0.,smd.zh - smd.z)*(1. - smd.porosity)/Math.max(sf, CSF), smd.bedload);
+        smd.bedload = Math.min(1./SedimentModel2D.morphFactor * cmd.cv * Math.max(0.,smd.zh - smd.z)*(1. - smd.porosity)/Math.max(sf, CSF), smd.bedload);
 
         // dirctional bed load
         smd.bedloadVector[0] = smd.bedload * sfx ;
         smd.bedloadVector[1] = smd.bedload * sfy;
-        smd.bedload = Function.norm(smd.bedloadVector[0], smd.bedloadVector[1]);
+        smd.bedload = Math.hypot(smd.bedloadVector[0], smd.bedloadVector[1]);
 
         return smd.bedloadVector;
     }

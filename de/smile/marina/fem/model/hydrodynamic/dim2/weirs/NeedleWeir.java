@@ -26,7 +26,6 @@ package de.smile.marina.fem.model.hydrodynamic.dim2.weirs;
 import de.smile.marina.PhysicalParameters;
 import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.hydrodynamic.dim2.*;
-import de.smile.math.Function;
 
 /**
  * beschreibt ein Nadel-Wehr
@@ -49,7 +48,7 @@ public class NeedleWeir extends Weir implements TimeDependentWeir{
     }
     
     public final void setOpening(double opening){
-        this.opening=Function.max(0.,Function.min(1.,opening));
+        this.opening=Math.max(0.,Math.min(1.,opening));
     }
     
     public final double getOpening(){
@@ -77,7 +76,7 @@ public class NeedleWeir extends Weir implements TimeDependentWeir{
         int i=0;
         while(dof.number!=knotennummern[i]) i++;
         
-        double d = Function.max(0.,sysdat.getDOF(dof.number).z+h);
+        double d = Math.max(0.,sysdat.getDOF(dof.number).z+h);
         double v = opening*( 2./30. * c * mue *  Math.sqrt(PhysicalParameters.G * d));
         
         CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
@@ -119,13 +118,13 @@ public class NeedleWeir extends Weir implements TimeDependentWeir{
         dhdx/=t.length;
         dhdy/=t.length;
         
-        double gh = Function.norm(dhdx,dhdy); // sationaere loesung
-        double gu = Function.norm(dudx,dudy);
-        double gv = Function.norm(dvdx,dvdy);
-        double grad = Function.norm(gu,gv);
+        double gh = Math.hypot(dhdx, dhdy); // sationaere loesung
+        double gu = Math.hypot(dudx, dudy);
+        double gv = Math.hypot(dvdx, dvdy);
+        double grad = Math.hypot(gu, gv);
         
-        double d = Function.max(0.,sysdat.getDOF(dof.number).z+h);
-        double v = opening * (Math.sqrt(PhysicalParameters.G * d) * gh / Function.max(0.0001, grad));
+        double d = Math.max(0.,sysdat.getDOF(dof.number).z+h);
+        double v = opening * (Math.sqrt(PhysicalParameters.G * d) * gh / Math.max(0.0001, grad));
 //        System.out.println(v);
         CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         double[] su = new double[2];
@@ -169,7 +168,7 @@ public class NeedleWeir extends Weir implements TimeDependentWeir{
             vmean/=anz;
         }
         
-        double v = opening * opening * Function.norm(umean,vmean);
+        double v = opening * opening * Math.hypot(umean, vmean);
         double[] su = new double[2];
         su[0] = v * normale[0][i];
         su[1] = v * normale[1][i];
@@ -212,7 +211,7 @@ public class NeedleWeir extends Weir implements TimeDependentWeir{
             vmean/=anz;
         }
         
-        double v = opening * opening * Function.norm(umean,vmean);
+        double v = opening * opening * Math.hypot(umean, vmean);
 //        System.out.println(v);
         CurrentModel2DData cmd = CurrentModel2DData.extract(dof);
         double unow = cmd.u;

@@ -27,7 +27,7 @@ import de.smile.geom.Rectangle2d;
 import javax.vecmath.Point3d;
 
 /**
- * @version 4.10.7
+ * @version 4.10.8
  * @author Peter Milbradt
  */
 

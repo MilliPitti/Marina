@@ -1311,7 +1311,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         smd.tauB = tauB;
         if (!basedOnCurrentModel3D) {
             final double normTauB = Math.hypot(cmd.tauBx, cmd.tauBy);
-            if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer Stroemung
+            if (normTauB > 1.E-4) { // Verschwenken der resultierenden Geschwindigkeiten auf Grund der sekundaer Stroemung
                 final double lambda = Math.min(1,
                         Math.hypot(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
                 smd.u = (1. - lambda) * smd.u + lambda * cmd.tauBx / normTauB * cmd.cv;

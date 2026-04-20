@@ -2424,13 +2424,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.isHighest = smd._isHighest;
             smd._isHighest = true;
 
-            if (smd.isDeepest && smd.rZCorrect > 0.) // ist der Knoten der tiefste Knoten im Patch und ist der
-                                                     // Sedimenttransport fast 0 wird verhindert, dass der Knoten durch
-                                                     // Fehlerkorrektur weiter erodiert
+            if (smd.isDeepest && smd.rZCorrect > 0.) // ist der Knoten der tiefste Knoten im Patch und ist der Sedimenttransport fast 0 wird verhindert, dass der Knoten durch Fehlerkorrektur weiter erodiert
                 smd.rZCorrect *= smd.lambdaQs;
-            if (smd.isHighest && smd.rZCorrect < 0.) // ist der Knoten der hoechste Knoten im Patch und ist der
-                                                     // Sedimenttransport fast 0 wird verhindert, dass der Knoten durch
-                                                     // Fehlerkorrektur weiter waechst
+            if (smd.isHighest && smd.rZCorrect < 0.) // ist der Knoten der hoechste Knoten im Patch und ist der Sedimenttransport fast 0 wird verhindert, dass der Knoten durch Fehlerkorrektur weiter waechst
                 smd.rZCorrect *= smd.lambdaQs;
 
             // keine Fehlerkorrektur bei Boden will aufwachsen

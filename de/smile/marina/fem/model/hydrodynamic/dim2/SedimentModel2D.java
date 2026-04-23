@@ -2516,26 +2516,39 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double taub = Math.hypot(tauBx, tauBy);
 
             // Bodenformen // Yalin, vanRijn, Yalin80
-            double predictedDuneHeight = min(smd.getYalinDuneHeight(taub, cmd.totaldepth), max(0., smd.zh - smd.z)); // kann
-                                                                                                                     // nicht
-                                                                                                                     // hoeher
-                                                                                                                     // sein,
-                                                                                                                     // als
-                                                                                                                     // das
-                                                                                                                     // ueber
-                                                                                                                     // dem
-                                                                                                                     // erodierbaren
-                                                                                                                     // Horizont
-                                                                                                                     // verfuegbare
-                                                                                                                     // Material
+            double predictedDuneHeight = min(smd.getYalinDuneHeight(taub, cmd.totaldepth), max(0., smd.zh - smd.z)); // kann nicht hoeher sein, als das ueber dem erodierbaren Horizont verfuegbare Material
             if (rZ > 0)
                 predictedDuneHeight *= 1. / (1. + rZ); // bei starker Erosion verschwinden Bodenformen
             predictedDuneHeight *= 1. / (1. + waveBreaking); // bei wavebreaking verschwinden Bodenformen
-            double dhSource = ((predictedDuneHeight - smd.duneHeight) > 0)
-                    ? 1. / PhysicalParameters.G
-                            * Math.min(smd.bedload / (1 + smd.bottomslope), (predictedDuneHeight - smd.duneHeight))
-                            / smd.bottomslope
-                    : (taub + waveBreaking) / 86400 * smd.bottomslope * (predictedDuneHeight - smd.duneHeight);
+
+            // Aktivitaetsindikator fuer Duenenabbau (dimensionslos):
+            //   u*    : Schubgeschwindigkeit aus Bodenschubspannung         [m/s]
+            //   u*_w  : turbulente Geschwindigkeit aus Wellendissipation    [m/s]  = (eps/rho)^(1/3)
+            // normiert auf die Sinkgeschwindigkeit w_c.
+            // Bei stillem Wasser ohne Wellenbrechen = 0 -> Duenen bleiben stehen.
+            final double u_wave = (waveBreaking > 0.)
+                    ? Math.cbrt(waveBreaking / PhysicalParameters.RHO_WATER) : 0.;
+            final double activity = (smd.uStar + u_wave) / smd.wc;
+            final double T_relax  = 86400.; // Anpassungszeit [s]
+
+            double dhSource;
+            if ((predictedDuneHeight - smd.duneHeight) > 0) {
+                // Wachstum: Bedload liefert Material, Gap ist die Reserve.
+                // Wassertiefe als natuerliche Laengenskala der Bodenform-Instabilitaet
+                // (Kennedy 1963, Engelund 1970) - keine Duenenlaenge noetig.
+                final double bedloadRate = smd.bedload
+                        / Math.max(cmd.totaldepth, CurrentModel2D.WATT);                     // [m/s]
+                final double gapRate     = (predictedDuneHeight - smd.duneHeight) / T_relax; // [m/s]
+                // Washout-Daempfung: im Hochenergieregime (activity >> 1) werden Duenen
+                // ausgewaschen -> Wachstum gebremst.
+                final double washout = 1. / (1. + activity);
+                // Der schwaechere Antrieb limitiert; Boeschung daempft weiter
+                dhSource = washout * Math.min(bedloadRate, gapRate) / (1. + smd.bottomslope);
+            } else {
+                // Zerfall: activity-basierte Relaxation auf Tagesskala
+                dhSource = activity * smd.bottomslope
+                         * (predictedDuneHeight - smd.duneHeight) / T_relax;
+            }
             // Flemming, Yalin, vanRijn
             final double predictedDuneLength = SedimentModel2DData.getYalinDuneLength(smd.duneHeight);
 

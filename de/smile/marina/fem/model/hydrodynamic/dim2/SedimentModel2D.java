@@ -2484,10 +2484,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double susp = smd.uStar / smd.wc;
             final double sat  = susp / (1. + susp);   // 0..1, saturiert
             if (rZ < 0.) { // sedimentation
-                d50Source *= (1. - smd.dmin / smd.d50) / (1 - rZ * smd.tauB);
+                d50Source *= (1. - smd.dmin / smd.d50) * 1./(1 + sat);
             } else { // erosion
                 d50Source *= (1. - smd.d50 / smd.dmax) / smd.bottomslope
-                        * (1 + rZ * smd.tauB / (1 + smd.tauB));
+                        // * (1 + rZ * smd.tauB / (1 + smd.tauB))
+                        ;
             }
             rd50 += d50Source; // Aenderung der Korndurchmesser beruecksichtigen
             smd.setD50(smd.d50 + dt * rd50 * morphFactor);

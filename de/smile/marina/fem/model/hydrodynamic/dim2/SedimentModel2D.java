@@ -375,6 +375,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 data._bottomslope += eleSedimentData.bottomslope * element.area;
             }
             data.bottomslope = data._bottomslope / (dof.lumpedMass * 3.);
+            data._bottomslope = 0.;
         }
     }
 
@@ -2472,23 +2473,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.dzdt = rZ;
 
             // Quell- und Senkterm zur Anpassung des d50
-            // Re_p -> 0 bei schwacher Stroemung: kein numerisches Problem
-            final double Re_p = smd.uStar * smd.d50 / PhysicalParameters.KINVISCOSITY_WATER;
-            // Kalibrier-Koeffizient
-            final double alphaSource = 1.E-4;
+            final double alphaSource = 1.E-4; // Kalibrier-Koeffizient
             double d50Source = alphaSource * smd.D * (1. - smd.porosity) * rZ * smd.initialSorting / smd.bottomslope;
-            
-            // Dimensionsloses Suspensionsverhaeltnis (inverse Rouse-Zahl):
-            // u*/w_c klein  -> Sinken dominiert -> Feines faellt mit aus
-            // u*/w_c gross  -> Turbulenz haelt Feines in Schwebe -> bevorzugter Austrag
-            final double susp = smd.uStar / smd.wc;
-            final double sat  = susp / (1. + susp);   // 0..1, saturiert
             if (rZ < 0.) { // sedimentation
-                d50Source *= (1. - smd.dmin / smd.d50) * 1./(1 + sat);
+                // Dimensionsloses Suspensionsverhaeltnis (inverse Rouse-Zahl): u*/w_c gross  -> Turbulenz haelt Feines in Schwebe
+                d50Source *= (1. - smd.dmin / smd.d50) * 1./(1 + smd.uStar / smd.wc);
             } else { // erosion
-                d50Source *= (1. - smd.d50 / smd.dmax) / smd.bottomslope
-                        // * (1 + rZ * smd.tauB / (1 + smd.tauB))
-                        ;
+                d50Source *= (1. - smd.d50 / smd.dmax) / smd.bottomslope;
             }
             rd50 += d50Source; // Aenderung der Korndurchmesser beruecksichtigen
             smd.setD50(smd.d50 + dt * rd50 * morphFactor);

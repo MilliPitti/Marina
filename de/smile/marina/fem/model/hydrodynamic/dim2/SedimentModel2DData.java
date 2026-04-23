@@ -45,11 +45,11 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
 
     public double tauB; // bed shear stress [N/m^2], set where u,v,cv are assigned
 
-    public double sC; // depth integrated sediment concentration in [m^2/m^3]
-    double dsCdt; // rate of change of the depth integrated sediment concentration in [m^2/m^3/s]
-    public double sedimentSource; // source and sink of suspendet sediment
+    public double sC; // depth-averaged suspended sediment concentration [m^3/m^3]
+    double dsCdt; // rate of change of the depth-averaged suspended sediment concentration [m^3/m^3/s]
+    public double sedimentSource; // source and sink of suspended sediment [1/s]
 
-    public double qsx = 0., qsy = 0.; // suspendierter Sedimenttransport qs=sC*totaldepth*cv
+    public double qsx = 0., qsy = 0.; // suspended sediment transport per unit width [m^2/s], qs = sC * u * totaldepth
 
     double qTotal_x, qTotal_y; // Komponenten des totalen Sedimenttransportes
     double u_bank, v_bank;
@@ -687,12 +687,12 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         SedimentModel2DData rvalue = (SedimentModel2DData) super.clone(); // To change body of generated methods, choose
                                                                           // Tools | Templates.
 
-        rvalue.sC = sC; // in m^2/m^3
+        rvalue.sC = sC; // depth-averaged suspended sediment concentration [m^3/m^3]
         rvalue.sedimentSource = sedimentSource;
         rvalue.dsCdt = dsCdt;
 
         rvalue.qsx = qsx;
-        rvalue.qsy = qsy; // suspendet sedimenttransport qs=sC*totaldepth*cv
+        rvalue.qsy = qsy; // suspended sediment transport per unit width [m^2/s], qs = sC * u * totaldepth
         rvalue.u = u;
         rvalue.v = v; // tiefenintegrierte Geschwindigkeiten, werden durch sekundaerstroemung
                       // angepasst

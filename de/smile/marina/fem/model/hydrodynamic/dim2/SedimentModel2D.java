@@ -29,6 +29,7 @@ import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.ground.SoilModel3DData;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
+import de.smile.marina.fem.model.hydrodynamic.dim2.SedimentModel2D.InitialValues;
 import de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3D;
 import de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3DData;
 import de.smile.marina.io.FileIO;
@@ -1150,7 +1151,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // Projektion in die Ebene
                 nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3.;
 
-                terms_d50[j] = (smd.bedloadVector[0] + smd.qsx) * d50dx + (smd.bedloadVector[1] + smd.qsy) * d50dy
+                terms_d50[j] = smd.u_bank * d50dx + smd.v_bank * d50dy;
                 // - smd.d50Source // wird im Zeitschritt dazu genommen (wirkt hier gegen die
                 // Fehlerkorrektur)
                 ;
@@ -2471,7 +2472,17 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             smd.dzdt = rZ;
 
             // Quell- und Senkterm zur Anpassung des d50
-            double d50Source = smd.d50 * (1. - smd.porosity) * rZ * smd.initialSorting / smd.bottomslope;
+            // Re_p -> 0 bei schwacher Stroemung: kein numerisches Problem
+            final double Re_p = smd.uStar * smd.d50 / PhysicalParameters.KINVISCOSITY_WATER;
+            // Kalibrier-Koeffizient
+            final double alphaSource = 1.E-4;
+            double d50Source = alphaSource * smd.D * (1. - smd.porosity) * rZ * smd.initialSorting / smd.bottomslope;
+            
+            // Dimensionsloses Suspensionsverhaeltnis (inverse Rouse-Zahl):
+            // u*/w_c klein  -> Sinken dominiert -> Feines faellt mit aus
+            // u*/w_c gross  -> Turbulenz haelt Feines in Schwebe -> bevorzugter Austrag
+            final double susp = smd.uStar / smd.wc;
+            final double sat  = susp / (1. + susp);   // 0..1, saturiert
             if (rZ < 0.) { // sedimentation
                 d50Source *= (1. - smd.dmin / smd.d50) / (1 - rZ * smd.tauB);
             } else { // erosion

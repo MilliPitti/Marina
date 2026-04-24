@@ -2531,6 +2531,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double activity = (smd.uStar + u_wave) / smd.wc;
             final double T_relax  = 86400.; // Anpassungszeit [s]
 
+            // Bodenevolutions-Daempfung: |rZ| auf Tagesskala normiert (1/T_relax ~ 1 m/Tag).
+            // Grosse |rZ| -> Wachstum gedrosselt, Zerfall beschleunigt.
+            final double rZ_scale = Math.abs(rZ) * T_relax;
+
             double dhSource;
             if ((predictedDuneHeight - smd.duneHeight) > 0) {
                 // Wachstum: Bedload liefert Material, Gap ist die Reserve.
@@ -2544,16 +2548,17 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final double washout = 1. / (1. + activity);
                 // Der schwaechere Antrieb limitiert; Boeschung daempft weiter
                 dhSource = washout * Math.min(bedloadRate, gapRate) / (1. + smd.bottomslope);
+                dhSource *= 1. / (1. + rZ_scale); // bei starker Bodenevolution kleineres Anwachsen der Duehnenhoehe
             } else {
                 // Zerfall: activity-basierte Relaxation auf Tagesskala
                 dhSource = activity * smd.bottomslope
                          * (predictedDuneHeight - smd.duneHeight) / T_relax;
+                dhSource *= (1. + rZ_scale); // bei starker Bodenevolution schnellere Abnahme der Duehnenhoehe
             }
             // Flemming, Yalin, vanRijn
             final double predictedDuneLength = SedimentModel2DData.getYalinDuneLength(smd.duneHeight);
 
             if (dhSource > 0) {
-                dhSource *= 1. / (1. + Math.abs(rZ)); // bei starker Bodenevolution kleineres Anwachsen der Duehnenhoehe
                 smd.duneHeight += dhSource * dt * morphFactor;
                 smd.duneHeight = Math.min(smd.duneHeight, predictedDuneHeight);
                 // umdrehen der Richtung, wenn notwendig
@@ -2566,7 +2571,6 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 smd.duneLengthX += dlSourceX * dhSource * dt * morphFactor;
                 smd.duneLengthY += dlSourceY * dhSource * dt * morphFactor;
             } else {
-                dhSource *= (1. + Math.abs(rZ)); // bei starker Bodenevolution schnellere Abnahme der Duehnenhoehe
                 smd.duneHeight += dhSource * dt * morphFactor;
                 smd.duneHeight = Math.max(smd.duneHeight, 0.);
                 final double actualDuneLength = Math.hypot(smd.duneLengthX, smd.duneLengthY);

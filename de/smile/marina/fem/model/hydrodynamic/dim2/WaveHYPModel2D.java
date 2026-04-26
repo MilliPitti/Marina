@@ -62,7 +62,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
     WaveHYPElementData[] element_data = null;
     ArrayList<DOF> bcs = new ArrayList<>();
     private final WaveHYPDat wavehypdat;
-    double ddwadx[], ddwady[], ddwa2dx2[], ddwa2dy2[];
     // ist wohl entwas zu gross
     static final double BATTJESKOEFF = 0.3; 	// 0.1 - 0.3 Austauschkoeffizient infolge WaveBreaking
     static final double BRK = 0.15; // WaveBreakingKoefficient
@@ -102,11 +101,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         readBoundCond(wavehypdat.randn_name);
 
         final int numberofdofs = fenet.getNumberofDOFs();
-
-        ddwadx = new double[numberofdofs];
-        ddwady = new double[numberofdofs];
-        ddwa2dx2 = new double[numberofdofs];
-        ddwa2dy2 = new double[numberofdofs];
 
         try {
             System.out.println("\tOpen result file: "+ wavehypdat.xferg_name);
@@ -322,6 +316,9 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
             }
 
             final double operatorNorm = Math.sqrt(cgxMean * cgxMean + cgyMean * cgyMean);
+            if (!(operatorNorm > FTriangle.minV)) {
+                continue;
+            }
             final double ts = 0.5 * elementSize / operatorNorm;
 
             if (Double.isFinite(ts) && ts > 0.) {
@@ -412,6 +409,48 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         }
         waveData.sigma = sigma;
         return sigma;
+    }
+
+    private static double clampSigma(double sigma) {
+        return Math.max(.1, Math.min(15., sigma));
+    }
+
+    /**
+     * Solves the current-coupled dispersion relation
+     * sigmaAbs = sigmaRel + k(sigmaRel, h) * U_parallel
+     * with k = WaveNumber(h, sigmaRel), using the current wave direction.
+     */
+    private double[] solveCurrentCoupledDispersion(double totaldepth, double sigmaRel, double u, double v, double dirx, double diry) {
+        final double depth = Math.max(WATT, totaldepth);
+        final double dirNorm = Math.hypot(dirx, diry);
+        final double ndx;
+        final double ndy;
+        if (dirNorm > FTriangle.minV) {
+            ndx = dirx / dirNorm;
+            ndy = diry / dirNorm;
+        } else {
+            ndx = 1.;
+            ndy = 0.;
+        }
+
+        final double sigmaAbs = clampSigma(sigmaRel) + (u * ndx + v * ndy) * Math.max(0., WaveFunction.WaveNumber(depth, clampSigma(sigmaRel)));
+        double sigmaIntrinsic = clampSigma(sigmaRel);
+
+        for (int i = 0; i < 8; i++) {
+            final double kres = WaveFunction.WaveNumber(depth, sigmaIntrinsic);
+            final double nextSigma = clampSigma(sigmaAbs - kres * (u * ndx + v * ndy));
+            if (Math.abs(nextSigma - sigmaIntrinsic) < 1.e-6) {
+                sigmaIntrinsic = nextSigma;
+                break;
+            }
+            sigmaIntrinsic = nextSigma;
+        }
+
+        double kres = WaveFunction.WaveNumber(depth, sigmaIntrinsic);
+        if (!(kres > 0.) || Double.isNaN(kres) || Double.isInfinite(kres)) {
+            kres = 2. * Math.PI / Math.max(WATT, 1.);
+        }
+        return new double[]{sigmaIntrinsic, kres};
     }
 
     // ----------------------------------------------------------------------
@@ -754,14 +793,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                         break;
                 }
             }
-
-            for (int j = 0; j < 3; j++) {
-                int i = ele.getDOF(j).number;
-                ddwadx[i] += dwadx;
-                ddwady[i] += dwady;
-                ddwa2dx2[i] += dwa2dx2;
-                ddwa2dy2[i] += dwa2dy2;
-            }
         
             double elementsize = ele.maxEdgeLength;
             boolean indicator = false;
@@ -841,7 +872,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
             final double operatornorm1 = cgx_mean*cgx_mean;
             final double operatornorm2 = cgy_mean*cgy_mean;
             final double operatornorm = Math.sqrt(operatornorm1 + operatornorm2);
-            final double tau_wave = 0.5 * elementsize / operatornorm;
+            final double tau_wave = (operatornorm > FTriangle.minV) ? 0.5 * elementsize / operatornorm : 0.;
 
             timeStep = tau_wave;
 
@@ -982,7 +1013,8 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         } else if(wavehyp.extrapolate_wa) wavehyp.wa = (9. * wavehyp.wa + wavehyp.extwa)/10.;
         
         if (wavehyp.wa < 0.) wavehyp.wa=0.;
-        if (wavehyp.wa >= totaldepth * MICHEKOEFF) wavehyp.wa = totaldepth * MICHEKOEFF; // Peter 14.01.21
+        // Miche criterion applies to wave height H, while wa stores the amplitude H/2.
+        if (wavehyp.wa >= totaldepth * MICHEKOEFF / 2.) wavehyp.wa = totaldepth * MICHEKOEFF / 2.;
 
         wavehyp.wlambda = Math.min(1., wavehyp.wa / WATT);
         wavehyp.w1_lambda = 1. - wavehyp.wlambda;
@@ -996,12 +1028,22 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         else 
             wavehyp.sigma = wavehyp.wlambda * (999. * wavehyp.sigma + wavehyp.extsigma) / 1000. + wavehyp.w1_lambda * (9. * wavehyp.sigma + wavehyp.extsigma) / 10.; // smooth and extrapoating to nodes without waveamplitude
         
-        wavehyp.sigmaA = wavehyp.sigma;
-        if(current != null)
-            wavehyp.sigmaA += wavehyp.kx*current.u+wavehyp.ky*current.v; // absolut angular frequency
+        wavehyp.sigma = clampSigma(wavehyp.sigma);
 
-// ToDo   Wellenlaenge aendern auf Grund der Stroemung
-        wavehyp.kres = WaveFunction.WaveNumber(Math.max(WATT, totaldepth), wavehyp.sigma);
+        double dirx = wavehyp.kx;
+        double diry = wavehyp.ky;
+        if (wavehyp.bsintheta != null) {
+            dirx = wavehyp.bcostheta.getValue(t);
+            diry = wavehyp.bsintheta.getValue(t);
+        } else if (Math.hypot(dirx, diry) <= FTriangle.minV) {
+            dirx = wavehyp.extkx;
+            diry = wavehyp.extky;
+        }
+
+        final double[] dispersion = solveCurrentCoupledDispersion(totaldepth, wavehyp.sigma, u, v, dirx, diry);
+        wavehyp.sigma = dispersion[0];
+        wavehyp.kres = dispersion[1];
+        wavehyp.sigmaA = wavehyp.sigma + wavehyp.kres * (u * dirx + v * diry) / Math.max(Math.hypot(dirx, diry), 1.);
         // Wavenumber with Diffraction ! funktioniert so nicht !
 //        final double deltaStar = 1./ Math.max(wavehyp.wa, WATT) * Math.hypot(wavehyp.dwa2dx2, wavehyp.dwa2dy2) * wavehyp.wlambda;
 //        wavehyp.kres = Math.sqrt(wavehyp.kres*wavehyp.kres+deltaStar);
@@ -1013,15 +1055,31 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
             wavehyp.kx = (9. * wavehyp.kx + wavehyp.extkx) / 10.;
             wavehyp.ky = (9. * wavehyp.ky + wavehyp.extky) / 10.;
             double ktmp = Math.hypot(wavehyp.kx, wavehyp.ky);
-            wavehyp.kx = wavehyp.kx / ktmp * wavehyp.kres;
-            wavehyp.ky = wavehyp.ky / ktmp * wavehyp.kres;
+            if (ktmp > FTriangle.minV) {
+                wavehyp.kx = wavehyp.kx / ktmp * wavehyp.kres;
+                wavehyp.ky = wavehyp.ky / ktmp * wavehyp.kres;
+            } else if (wavehyp.kres > 0.) {
+                wavehyp.kx = wavehyp.kres;
+                wavehyp.ky = 0.;
+            } else {
+                wavehyp.kx = 0.;
+                wavehyp.ky = 0.;
+            }
         } 
         else {                    
             wavehyp.kx = wavehyp.wlambda * (99. * wavehyp.kx + wavehyp.extkx) / 100. + wavehyp.w1_lambda * (9. * wavehyp.kx + wavehyp.extkx) / 10.; // smooth and extrapoating to nodes without waveamplitude
             wavehyp.ky = wavehyp.wlambda * (99. * wavehyp.ky + wavehyp.extky) / 100. + wavehyp.w1_lambda * (9. * wavehyp.ky + wavehyp.extky) / 10.;
             double ktmp = Math.hypot(wavehyp.kx, wavehyp.ky);
-            wavehyp.kx = wavehyp.kx / ktmp * wavehyp.kres;
-            wavehyp.ky = wavehyp.ky / ktmp * wavehyp.kres;
+            if (ktmp > FTriangle.minV) {
+                wavehyp.kx = wavehyp.kx / ktmp * wavehyp.kres;
+                wavehyp.ky = wavehyp.ky / ktmp * wavehyp.kres;
+            } else if (wavehyp.kres > 0.) {
+                wavehyp.kx = wavehyp.kres;
+                wavehyp.ky = 0.;
+            } else {
+                wavehyp.kx = 0.;
+                wavehyp.ky = 0.;
+            }
         }
 
         // update waveparameter
@@ -1126,8 +1184,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
 
 // ToDo
 // Achtung extrapolation an geschlossenen Raendern muss noch geprueft werden       
-        if (wavehyp.sigma < .1) wavehyp.sigma = .1;
-        if (wavehyp.sigma > 15.) wavehyp.sigma = 15.;
 
         wavehyp.anz_activ_el = 0;
         
@@ -1301,11 +1357,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
     // ----------------------------------------------------------------------
     // write_erg_xf
     // ----------------------------------------------------------------------
-    // end write_erg_xf
-
-    // ----------------------------------------------------------------------
-    // write_erg_xf
-    // ----------------------------------------------------------------------
     @Override
     public void write_erg_xf() {
         try {
@@ -1364,11 +1415,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
     public void timeStep(double dt) {
 
         resultIsNaN = false;
-
-        java.util.Arrays.fill(ddwadx, 0.0);
-        java.util.Arrays.fill(ddwady, 0.0);
-        java.util.Arrays.fill(ddwa2dx2, 0.0);
-        java.util.Arrays.fill(ddwa2dy2, 0.0);
         
         setBoundaryConditions();
 

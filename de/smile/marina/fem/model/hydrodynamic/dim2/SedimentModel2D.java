@@ -1143,18 +1143,16 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // in timeStep - stoert die Fehlerkorrektur
                 // - smd.sedimentSource
                 ;
-                localResC += 1. / 3. * (smd.dsCdt + terms_C[j]) * cmd.wlambda; // mean local elementresiduum
+                localResC += 1. / 3. * (smd.dsCdt + terms_C[j]); // mean local elementresiduum
 
                 terms_z[j] = -1. / (1. - smd.porosity) * (dQgd < 0 ? dQgd * cmd.wlambda : dQgd);
-                if (!cmd.boundary)
-                    localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
+                localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
                 // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive
                 // Projektion in die Ebene
                 nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3.;
 
                 terms_d50[j] = smd.u_bank * d50dx + smd.v_bank * d50dy;
-                // - smd.d50Source // wird im Zeitschritt dazu genommen (wirkt hier gegen die
-                // Fehlerkorrektur)
+                // - smd.d50Source // wird im Zeitschritt dazu genommen (wirkt hier gegen die Fehlerkorrektur)
                 ;
                 localResD50 += 1. / 3. * (smd.dd50dt + terms_d50[j]);
             }
@@ -1216,7 +1214,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 double result_SKonc_i = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC
                         * ele.area;
                 // Diffusionsterm (entspricht ∇⋅(D∇c))
-                result_SKonc_i -= (koeffmat[j][1] * astx * dskoncdx + koeffmat[j][2] * asty * dskoncdy) * cmd.wlambda
+                result_SKonc_i -= (koeffmat[j][1] * astx * dskoncdx + koeffmat[j][2] * asty * dskoncdy)
                         * ele.area
                         // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)):
                         // korrigiert die Diffusion, wenn sich die Tiefe aendert.
@@ -1236,7 +1234,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                         * localResZTransport; // multiplication with area is done later
 
                 // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
-                double result_Z_i = -(koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
+                double result_Z_i = (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
                 for (int l = 0; l < 3; l++) {
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
 

@@ -889,7 +889,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // eddy viscosity
             // -----------------------------------------
             // konstant
-            double astx = PhysicalParameters.DYNVISCOSITY_WATER;
+            double astx = PhysicalParameters.KINVISCOSITY_WATER;
             // Smagorinsky-Ansatz (Konstante zwischen 0.1-0.2)
             final double Cs = 0.1 / 2.; // Smagorinsky Konstante
             astx += (Cs * elementsize) * (Cs * elementsize)
@@ -2077,7 +2077,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     xf_os.writeFloat(0.f);
                 } else {
                     double taux = (current.bottomFrictionCoefficient * current.u + current.tau_bx_extra) * current.rho; // ToDo Schubspannung aus der Orbitalgeschwindigkeit
-                    double tauy = (current.bottomFrictionCoefficient * current.v + current.tau_bx_extra) * current.rho;
+                    double tauy = (current.bottomFrictionCoefficient * current.v + current.tau_by_extra) * current.rho;
                     xf_os.writeFloat((float) taux);
                     xf_os.writeFloat((float) tauy);
                 }

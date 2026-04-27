@@ -118,7 +118,7 @@ public class SuspendedLoad2DYang_1973 implements SuspendedLoad2DFormulation {
         }
         c_vol *= weight;
 
-        return Math.min(cmax, c_vol);
+        return Math.min(cmax, c_vol)*cmd.wlambda;
         
     }
 

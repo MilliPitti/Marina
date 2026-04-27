@@ -31,7 +31,7 @@ import de.smile.marina.fem.DOF;
  */
 public interface SuspendedLoad2DFormulation {
     /** maximal volume concentration [m**3/m**3] */
-    static final double cmax = 0.65;
+    static final double cmax = 0.05;
     
 //    /**
 //     * @param u

@@ -97,7 +97,7 @@ public class SuspendedLoad2DBagnold1966 implements SuspendedLoad2DFormulation {
         
         double c_vol = e_s * (1. - e_b) * cmd.cv / smd.wc * tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho)* PhysicalParameters.G * nonTotalepth); // [m**3/m**3]
         c_vol += c_wbreaking;
-        return Math.min(cmax, c_vol * cmd.wlambda);
+        return Math.min(cmax, c_vol) * cmd.wlambda;
     }
     
     /** nach CERC TR 1995, S. 4

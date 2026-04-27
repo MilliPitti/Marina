@@ -29,7 +29,6 @@ import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.*;
 import de.smile.marina.fem.model.ground.SoilModel3DData;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;
-import de.smile.marina.fem.model.hydrodynamic.dim2.SedimentModel2D.InitialValues;
 import de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3D;
 import de.smile.marina.fem.model.hydrodynamic.dim3.CurrentModel3DData;
 import de.smile.marina.io.FileIO;
@@ -50,7 +49,7 @@ import java.util.logging.Logger;
  * load, suspened transport and bottom evolution
  * 
  * @author Peter Milbradt
- * @version 4.10.8
+ * @version 4.10.9
  */
 public class SedimentModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
 
@@ -1168,7 +1167,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final double timeStepScale_z = (1.0 - lmb_z) * scaleFactor_z + lmb_z;
                 timeStep = Math.min(timeStep, tau_z*timeStepScale_z);
             } else
-                tau_z = ele.minHight/FTriangle.minV;// 0.;
+                tau_z = ele.minHight/FTriangle.minV;
 
             final double tauC;
             if (current_mean > FTriangle.minV) {
@@ -1184,7 +1183,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final double timeStepScale_C = (1.0 - lmb_C) * scaleFactor_C + lmb_C;
                 timeStep = Math.min(timeStep, tauC*timeStepScale_C);
             } else
-                tauC = ele.minHight/FTriangle.minV;// 0.;
+                tauC = ele.minHight/FTriangle.minV;
 
             final double morph_mean = Math.hypot(morph_x, morph_y);
             final double tau_d50;
@@ -1203,7 +1202,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // 5. Globalen Zeitschritt mit dem skalierten d50-Limit abgleichen
                 timeStep = Math.min(timeStep, tau_d50 * timeStepScale_d50);
             } else
-                tau_d50 = ele.minHight/FTriangle.minV;// 0.;
+                tau_d50 = ele.minHight/FTriangle.minV;
 
             for (int j = 0; j < 3; j++) {
                 final int i = ele.getDOF(j).number;
@@ -1211,11 +1210,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 final CurrentModel2DData cmd = dof_currentdata[i];
                 
                 // Fehlerkorrektur C
-                double result_SKonc_i = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC
-                        * ele.area;
+                double result_SKonc_i = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC * ele.area;
                 // Diffusionsterm (entspricht ∇⋅(D∇c))
-                result_SKonc_i -= (koeffmat[j][1] * astx * dskoncdx + koeffmat[j][2] * asty * dskoncdy)
-                        * ele.area
+                result_SKonc_i -= (koeffmat[j][1] * astx * dskoncdx + koeffmat[j][2] * asty * dskoncdy) * ele.area
                         // KORREKTURTERM fuer variable Wassertiefe (entspricht 1/d * (D∇d)⋅(∇c)):
                         // korrigiert die Diffusion, wenn sich die Tiefe aendert.
                         - 1. / 3. * (1. / Math.max(cmd.totaldepth, CurrentModel2D.WATT))
@@ -1224,10 +1221,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                                 * cmd.wlambda * ele.area;
 
                 // Fehlerkorrektur d50
-                double result_d50_i = -tau_d50 * (koeffmat[j][1] * morph_x + koeffmat[j][2] * morph_y) * localResD50
-                        * ele.area;
+                double result_d50_i = -tau_d50 * (koeffmat[j][1] * morph_x + koeffmat[j][2] * morph_y) * localResD50 * ele.area;
                 // smoothing-term
-                result_d50_i += (koeffmat[j][1] * d50dx + koeffmat[j][2] * d50dy) * nu_sed * cmd.wlambda * ele.area; // spontaner und gravitationeller Transport
+                result_d50_i -= (koeffmat[j][1] * d50dx + koeffmat[j][2] * d50dy) * nu_sed * ele.area; // spontaner und gravitationeller Transport
 
                 // Fehlerkorrektur Z
                 double resCorrect = -tau_z * (koeffmat[j][1] * lambda_x + koeffmat[j][2] * lambda_y)
@@ -2490,8 +2486,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             if (smd.sC < 0.)
                 smd.sC = 0.;
             /* prevention of saturated concentration m**3/m**3 */
-            if (smd.sC > .5)
-                smd.sC = 0.5;
+            if (smd.sC > SuspendedLoad2DFormulation.cmax * cmd.wlambda)
+                smd.sC = SuspendedLoad2DFormulation.cmax * cmd.wlambda;
 
             double tauBx = cmd.tauBx;
             double tauBy = cmd.tauBy;

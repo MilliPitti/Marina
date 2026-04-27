@@ -67,12 +67,11 @@ public class SuspendedLoad2DRD implements SuspendedLoad2DFormulation {
             if (epsilon_b > 0.01)
                 konzmax += 8.9E-5 * BATTJESKOEFF * Math.pow(epsilon_b / PhysicalParameters.RHO_WATER, 0.33333) / (PhysicalParameters.G * smd.wc) * currentmodeldata.wlambda;
 
-            konzmax *= smd.lambda;  // not erodible bottom // Peter 04.07.2025
-            konzmax *= Math.min(currentmodeldata.wlambda, d / smd.bound);  // increasing depending on water depth
+            konzmax *= smd.lambda;  // not erodible bottom
 
         }
 
-        return Math.min(cmax, konzmax);
+        return Math.min(cmax, konzmax)*currentmodeldata.wlambda;
     }
     
     @Override

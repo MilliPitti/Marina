@@ -74,7 +74,6 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
                 * Math.pow(tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho) * PhysicalParameters.G * smd.d50),2.5)
                 * PhysicalParameters.RHO_SEDIM * PhysicalParameters.G 
                 * Math.sqrt((PhysicalParameters.RHO_SEDIM/cmd.rho-1.) * PhysicalParameters.G * Math.pow(smd.d50, 3.));
-        smd.bedload *= smd.lambda;
         smd.bedload /= PhysicalParameters.RHO_SEDIM * PhysicalParameters.G;
         
         if (smd.d50 < dmin) {// Abminderung auf Grund zu kleiner Koerner
@@ -120,7 +119,7 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
         if(tauB<1e-10) return smd.bedloadVector;
 
         // Energie-basierter Bedload-Anteil
-        final double beta = 1.0; // physikalisch motiviert, nicht "frei"
+        final double beta = 1.0; // physikalisch motiviert
         double fBed = Math.exp(-beta * smd.wc / smd.uStar);
 
         // Engelund-Hansen-Vorfaktor mit Korrektur
@@ -130,7 +129,6 @@ public class BedLoad2DEngelundHansen67 implements BedLoad2DFormulation {
                 * Math.pow(tauB / ((PhysicalParameters.RHO_SEDIM - cmd.rho) * PhysicalParameters.G * smd.d50),2.5)
                 * PhysicalParameters.RHO_SEDIM * PhysicalParameters.G 
                 * Math.sqrt((PhysicalParameters.RHO_SEDIM/cmd.rho-1.) * PhysicalParameters.G * Math.pow(smd.d50, 3.));
-        smd.bedload *= smd.lambda;
         smd.bedload /= PhysicalParameters.RHO_SEDIM * PhysicalParameters.G;
           
         // Extrahieren des Bedload-Anteils durch Engelund-Fredsøe-Partitionierung (1976)

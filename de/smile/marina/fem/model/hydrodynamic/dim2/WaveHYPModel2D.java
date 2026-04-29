@@ -558,12 +558,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         double dsigmaRdy = 0.;
         double dwadx = 0.;
         double dwady = 0.;
-        double dwa2dx2 = 0.;
-        double dwa2dy2 = 0.;
-//        double dwa3dx3 = 0.;
-//        double dwa3dy3 = 0.;
-//        double dwa3dx2dy = 0.;
-//        double dwa3dy2dx = 0.;
 
         double dcgxdx = 0.;
         double dcgydy = 0.;

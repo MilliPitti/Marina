@@ -1047,7 +1047,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             double dQxdx = 0.; // Ableitung des totalen Sedimenttransportes
             double dQydy = 0.;
 
-            double eleSed = 1.; // Indikator ob in diesem Element ein Knoten teiltrocken ist
+            double eleSed = 1.; // Indikator ob in diesem Element ein Knoten teiltrocken bzw. geschlossener Rand ist
             double morph_x = 0.;
             double morph_y = 0.;
 
@@ -1079,8 +1079,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 dQxdx += smd.qTotal_x * koeffmat[j][1];
                 dQydy += smd.qTotal_y * koeffmat[j][2];
 
-                // Indikator fuer teiltrockene Elemente bestimmen
-                eleSed *= cmd.wlambda;
+                // Indikator fuer teiltrockene und geschlossene Randelemente bestimmen
+                eleSed *= cmd.wlambda * (cmd.closedBoundary ? 0.0 : 1.0);
 
             } // end for
 
@@ -1148,7 +1148,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
                 // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive
                 // Projektion in die Ebene
-                nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3.;
+                nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3. * eleSed;
 
                 terms_d50[j] = smd.u_bank * d50dx + smd.v_bank * d50dy;
                 // - smd.d50Source // wird im Zeitschritt dazu genommen (wirkt hier gegen die Fehlerkorrektur)
@@ -1230,7 +1230,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                         * localResZTransport; // multiplication with area is done later
 
                 // gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
-                double result_Z_i = (koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
+                double result_Z_i = -(koeffmat[j][1] * dzdx + koeffmat[j][2] * dzdy) * nu_sed * ele.area;
                 for (int l = 0; l < 3; l++) {
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
 
@@ -1251,7 +1251,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                                 gl = 1.;
                             } else { // abgelegenen Knoten liegt oberhalb
                                 gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Math.max(0.,
-                                        1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]);
+                                        1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]) * dof_currentdata[l].wlambda * (dof_currentdata[l].closedBoundary ? 0.0 : 1.0);
                             }
                         }
                     }
@@ -1436,10 +1436,10 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         // ToDo alle randknoten suchen - Christoph fragen
         if (dofnumber < ((FTriangleMesh) fenet).anzr) {
             if (data.bz == null) {
-                data.extrapolate_z = true;
+                data.extrapolate_z = true; // wird nicht genutzt
             }
             if (data.bconc == null) {
-                data.extrapolate_conc = true;
+                data.extrapolate_conc = true; // wird nicht genutzt
             }
         }
 
@@ -2478,7 +2478,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             rd50 += d50Source; // Aenderung der Korndurchmesser beruecksichtigen
             smd.setD50(smd.d50 + dt * rd50 * morphFactor);
 
-            smd.z += dt * rZ * morphFactor;
+            // if(!cmd.closedBoundary) 
+                smd.z += dt * rZ * morphFactor;
             cmd.setBottomLevel(smd.z);
 
             smd.sC += dt * (rC + smd.sedimentSource);

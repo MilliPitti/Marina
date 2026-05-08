@@ -223,6 +223,15 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             }
         }
 
+        /* Erosionstiefen an geschlossenen Randknoten auf 0 setzen */
+        for (DOF dof : fenet.getDOFs()) {
+            CurrentModel2DData cmd = dof_currentdata[dof.number];
+            if (cmd != null && cmd.closedBoundary) {
+                dof_data[dof.number].zh = dof.z;
+            }
+        }
+
+
         // read MaintainedDepth
         if (sedimentdat.maintainedDepthFileName != null) {
             if (sedimentdat.maintainedDepthFileType == SmileIO.MeshFileType.SystemDat)
@@ -1178,7 +1187,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // Wert 2.0 bedeutet: Wenn sich 50% der Konzentration in 1 Sekunde ändern, riegelt lmb_C ab.
                 // Wert 1.0 bedeutet: Wenn sich 100% der Konzentration in 1 Sekunde ändern, riegelt lmb_C ab.
                 final double threshold_time = 2.0; 
-                final double lmb_C = Math.min(1.0, threshold_time * relative_change_rate); 
+                final double lmb_C = Math.min(1.0, threshold_time * Math.abs(relative_change_rate)); 
                 final double scaleFactor_C = lmb_C + (1.0 - lmb_C) * 3.0;
                 final double timeStepScale_C = (1.0 - lmb_C) * scaleFactor_C + lmb_C;
                 timeStep = Math.min(timeStep, tauC*timeStepScale_C);
@@ -1191,11 +1200,11 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
 
                 // 2. Relativer Fehler für das Zeitschritt-Scaling
-                final double relative_change_rate_d50 = Math.abs(localResD50) / d50_mean; // [1/s]
+                final double relative_change_rate_d50 = localResD50 / d50_mean; // [1/s]
                 // 3. Threshold: Ab wie viel % Änderung pro Sekunde soll gedrosselt werden?
                 // z.B. 5.0 -> drosselt voll ab, wenn sich der d50 um 20% in 1 Sekunde ändern will
                 final double threshold_time_d50 = 5.0; 
-                final double lmb_d50 = Math.min(1.0, threshold_time_d50 * relative_change_rate_d50);
+                final double lmb_d50 = Math.min(1.0, threshold_time_d50 * Math.abs(relative_change_rate_d50));
                 // 4. Sanftes Scaling berechnen
                 final double scaleFactor_d50 = lmb_d50 + (1.0 - lmb_d50) * 3.0; // Dein Faktor 3
                 final double timeStepScale_d50 = (1.0 - lmb_d50) * scaleFactor_d50 + lmb_d50;
@@ -1251,7 +1260,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                                 gl = 1.;
                             } else { // abgelegenen Knoten liegt oberhalb
                                 gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Math.max(0.,
-                                        1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]) * dof_currentdata[l].wlambda * (dof_currentdata[l].closedBoundary ? 0.0 : 1.0);
+                                        1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]) * dof_currentdata[ele.getDOF(l).number].wlambda;
                             }
                         }
                     }
@@ -1430,16 +1439,6 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 data.bd50 = bcond.function;
                 bd50.remove(bcond);
                 break;
-            }
-        }
-
-        // ToDo alle randknoten suchen - Christoph fragen
-        if (dofnumber < ((FTriangleMesh) fenet).anzr) {
-            if (data.bz == null) {
-                data.extrapolate_z = true; // wird nicht genutzt
-            }
-            if (data.bconc == null) {
-                data.extrapolate_conc = true; // wird nicht genutzt
             }
         }
 
@@ -2437,14 +2436,12 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             double rZ = beta0 * smd.rZTransport + beta1 * smd.dzTransportdt;
             double rZCorrect = beta0 * smd.rZCorrect + beta1 * smd.dzCdt;
             rZ += rZCorrect;
-            smd.rZCorrect = 0;
+            smd.dzCdt = rZCorrect;
+            smd.rZCorrect = 0.;
 
             smd.dzTransportdt = smd.rZTransport;
             smd.dsCdt = smd.rC;
             smd.dd50dt = smd.rd50;
-
-            smd.dzCdt = smd.rZCorrect;
-            smd.rZCorrect = 0.;
 
             if ((cmd.totaldepth < smd.bound) && (rC > 0.))
                 rC = 0.;

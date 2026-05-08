@@ -100,8 +100,6 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         // Einlesen der Randbedingungen muss noch geaendert werden; Zugehoerige Datei ist randn.dat
         readBoundCond(wavehypdat.randn_name);
 
-        final int numberofdofs = fenet.getNumberofDOFs();
-
         try {
             System.out.println("\tOpen result file: "+ wavehypdat.xferg_name);
             xf_os = new DataOutputStream(new FileOutputStream(wavehypdat.xferg_name));
@@ -499,7 +497,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
         }
         CurrentModel3DData current3D = CurrentModel3DData.extract(dof);
         if (current3D != null) {
-            totaldepth = Math.max(0., depth + current3D.eta);
+            totaldepth = Math.max(WATT, depth + current3D.eta);
         }
 
         wnumber = WaveFunction.WaveNumber(totaldepth, waveData.sigma);
@@ -873,7 +871,7 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
             // Fehlerkorrektur durchfuehren
             for (int j = 0; j < 3; j++) {
                 WaveHYPModel2DData wmd = dof_data[ele.getDOF(j).number];
-                wmd.anz_activ_el++;
+                synchronized (wmd) {wmd.anz_activ_el++;}
                 
                 double result_kx_i = -tau_wave * (koeffmat[j][1] * waveSigma_mean + koeffmat[j][1] * (-cgy_mean * waveKy_mean) + koeffmat[j][2] * cgy_mean * waveKx_mean) * ele.area;
                 
@@ -1363,9 +1361,15 @@ public class WaveHYPModel2D extends TimeDependentFEApproximation implements FEMo
                     setBoundaryCondition(dof, time);
                 }
                 double kres = Math.hypot(wavehyp.kx, wavehyp.ky);
-                double wl = 2. * Math.PI / kres;
-                double Erg_wlx = (float) (wl * wavehyp.kx / kres);
-                double Erg_wly = (float) (wl * wavehyp.ky / kres);
+                double Erg_wlx, Erg_wly;
+                if (kres < 1E-10) { 
+                    Erg_wlx = 0.; 
+                    Erg_wly = 0.; 
+                } else {
+                    double wl = 2. * Math.PI / kres;
+                    Erg_wlx = (float) (wl * wavehyp.kx / kres);
+                    Erg_wly = (float) (wl * wavehyp.ky / kres);
+                }
                 double Erg_wh = (float) Math.max(0., 2. * wavehyp.wa);
                 double Erg_wp = 2. * Math.PI / ((float) wavehyp.sigma);
                 //                if(Erg_wh < WATT/10.){

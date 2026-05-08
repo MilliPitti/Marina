@@ -1192,7 +1192,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         if (sedimentmodeldata == null) {
             final BathymetryData2D bathymetrymodeldata = BathymetryData2D.extract(dof);
             if (bathymetrymodeldata != null) {
-                currentdata.z = bathymetrymodeldata.z;
+                currentdata.setBottomLevel(bathymetrymodeldata.z);
             }
             // else {
             // currentdata.z = dof.z; // reicht beim initialiseren
@@ -1375,7 +1375,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         double fmudLambda = 0.;
         final FluidMudFlowModel2DData fmuddata = FluidMudFlowModel2DData.extract(dof);
         if (fmuddata != null) {
-            currentdata.z = Math.min(-fmuddata.m, currentdata.z);
+            currentdata.setBottomLevel(Math.min(-fmuddata.m, currentdata.z));
             fmudLambda = Math.min(1., fmuddata.thickness / (10. * WATT));
             d50 = (1. - fmudLambda) * d50 + fmudLambda * 0.0001E-3; // morphing between d50 and clay [m]
         }

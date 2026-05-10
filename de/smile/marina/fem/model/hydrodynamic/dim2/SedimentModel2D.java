@@ -1088,8 +1088,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 dQxdx += smd.qTotal_x * koeffmat[j][1];
                 dQydy += smd.qTotal_y * koeffmat[j][2];
 
-                // Indikator fuer teiltrockene und geschlossene Randelemente bestimmen
-                eleSed *= cmd.wlambda * (cmd.closedBoundary ? 0.0 : 1.0);
+                // Indikator fuer teiltrockene, -nichterodierbare Elemente bestimmen
+                // eleSed *= cmd.wlambda * smd.lambda;
 
             } // end for
 
@@ -1157,7 +1157,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
                 // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive
                 // Projektion in die Ebene
-                nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3. * eleSed;
+                nu_sed += Math.sqrt(smd.wc / 4.0 /* smd.d50 */ * slope_norm * smd.bedload)  / 3. * eleSed;
 
                 terms_d50[j] = smd.u_bank * d50dx + smd.v_bank * d50dy;
                 // - smd.d50Source // wird im Zeitschritt dazu genommen (wirkt hier gegen die Fehlerkorrektur)
@@ -1232,7 +1232,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 // Fehlerkorrektur d50
                 double result_d50_i = -tau_d50 * (koeffmat[j][1] * morph_x + koeffmat[j][2] * morph_y) * localResD50 * ele.area;
                 // smoothing-term
-                result_d50_i -= (koeffmat[j][1] * d50dx + koeffmat[j][2] * d50dy) * nu_sed * ele.area; // spontaner und gravitationeller Transport
+                result_d50_i -= (koeffmat[j][1] * d50dx + koeffmat[j][2] * d50dy) * nu_sed * smd.d50 * ele.area; // spontaner und gravitationeller Transport
 
                 // Fehlerkorrektur Z
                 double resCorrect = -tau_z * (koeffmat[j][1] * lambda_x + koeffmat[j][2] * lambda_y)

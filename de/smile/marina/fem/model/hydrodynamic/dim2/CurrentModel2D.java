@@ -1082,7 +1082,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // energynorm based time step scaling
             final double energy_norm = Math.sqrt(PhysicalParameters.G * cureq1_mean * cureq1_mean + depth_mean * (cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean));
             final double lmb = Math.min(1, 3.2 * energy_norm); // 3.2 dimensional empirical threshold
-            final double scaleFactor = lmb + (1 - lmb) * 4; // 4 ist ein guter Tuning-Faktor
+            final double scaleFactor = lmb + (1 - lmb) * 2; // maximal Verdopplung des Zeitschrittes
             final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
             timeStep = tau_cur * timeStepScale;
 

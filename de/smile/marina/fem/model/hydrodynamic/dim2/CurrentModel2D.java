@@ -992,7 +992,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 // Impulsgleichung x
                 terms_u[j] =
                         // Druckterm
-                        PhysicalParameters.G * detadx 
+                        PhysicalParameters.G * detadx
                                 // density term
                                 - 0.5 * PhysicalParameters.G * rhodx * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
@@ -1008,7 +1008,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
                                 - cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
-                 if (!cmd.boundary) cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
+                cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
                 // Impulsgleichung y
                 terms_v[j] =
@@ -1029,7 +1029,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // CouplingTerm from the derivation of the Formulation q -> v
                                 - cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
-                if (!cmd.boundary) cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
+                cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
 
                 // ToDo ins Sedimentmodell
                 if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements
@@ -1078,13 +1078,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             elementsize = (1.0 - alpha) * elementsize + alpha * ele.minHight;
 
             double tau_cur = 0.5 * elementsize / operatornorm;
-            
-            // energynorm based time step scaling
-            final double energy_norm = Math.sqrt(PhysicalParameters.G * cureq1_mean * cureq1_mean + depth_mean * (cureq2_mean * cureq2_mean + cureq3_mean * cureq3_mean));
-            final double lmb = Math.min(1, 3.2 * energy_norm); // 3.2 dimensional empirical threshold
-            final double scaleFactor = lmb + (1 - lmb) * 2; // maximal Verdopplung des Zeitschrittes
-            final double timeStepScale = (1.0 - lmb) * scaleFactor + lmb;
-            timeStep = tau_cur * timeStepScale;
+
+            timeStep = tau_cur;
 
             for (int j = 0; j < 3; j++) {
 

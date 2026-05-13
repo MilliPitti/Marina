@@ -1168,29 +1168,14 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double tau_z;
             if (lambda_mean > FTriangle.minV) {
                 tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
-                // thresholdZ = 1000.0 bedeutet: 
-                // Wenn sich der Boden schneller als 1 mm/s ändern will, greift die Drosselung ein.
-                final double thresholdZ = 1000.0; 
-                final double lmb_z = Math.min(1.0, thresholdZ * Math.abs(localResZTransport));
-                final double scaleFactor_z = lmb_z + (1.0 - lmb_z) * 3.0;
-                final double timeStepScale_z = (1.0 - lmb_z) * scaleFactor_z + lmb_z;
-                timeStep = Math.min(timeStep, tau_z*timeStepScale_z);
+                timeStep = Math.min(timeStep, tau_z);
             } else
                 tau_z = ele.minHight/FTriangle.minV;
 
             final double tauC;
             if (current_mean > FTriangle.minV) {
                 tauC = 0.5 * eleCurrentData.elementsize / current_mean;
-                // Relative change rate [1/s] (How many percent of the current value change per second?)
-                final double relative_change_rate = localResC / Math.max(c_mean, 1e-6);
-                // threshold_time ist nun eine Zeitkonstante [s]. 
-                // Wert 2.0 bedeutet: Wenn sich 50% der Konzentration in 1 Sekunde ändern, riegelt lmb_C ab.
-                // Wert 1.0 bedeutet: Wenn sich 100% der Konzentration in 1 Sekunde ändern, riegelt lmb_C ab.
-                final double threshold_time = 2.0; 
-                final double lmb_C = Math.min(1.0, threshold_time * Math.abs(relative_change_rate)); 
-                final double scaleFactor_C = lmb_C + (1.0 - lmb_C) * 3.0;
-                final double timeStepScale_C = (1.0 - lmb_C) * scaleFactor_C + lmb_C;
-                timeStep = Math.min(timeStep, tauC*timeStepScale_C);
+                timeStep = Math.min(timeStep, tauC);
             } else
                 tauC = ele.minHight/FTriangle.minV;
 
@@ -1198,18 +1183,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double tau_d50;
             if (morph_mean > FTriangle.minV) {
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
-
-                // 2. Relativer Fehler für das Zeitschritt-Scaling
-                final double relative_change_rate_d50 = localResD50 / d50_mean; // [1/s]
-                // 3. Threshold: Ab wie viel % Änderung pro Sekunde soll gedrosselt werden?
-                // z.B. 5.0 -> drosselt voll ab, wenn sich der d50 um 20% in 1 Sekunde ändern will
-                final double threshold_time_d50 = 5.0; 
-                final double lmb_d50 = Math.min(1.0, threshold_time_d50 * Math.abs(relative_change_rate_d50));
-                // 4. Sanftes Scaling berechnen
-                final double scaleFactor_d50 = lmb_d50 + (1.0 - lmb_d50) * 3.0; // Dein Faktor 3
-                final double timeStepScale_d50 = (1.0 - lmb_d50) * scaleFactor_d50 + lmb_d50;
-                // 5. Globalen Zeitschritt mit dem skalierten d50-Limit abgleichen
-                timeStep = Math.min(timeStep, tau_d50 * timeStepScale_d50);
+                timeStep = Math.min(timeStep, tau_d50);
             } else
                 tau_d50 = ele.minHight/FTriangle.minV;
 

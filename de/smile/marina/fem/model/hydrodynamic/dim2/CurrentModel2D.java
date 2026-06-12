@@ -1104,6 +1104,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                                 + koeffmat[j][2] * depth_mean * cureq3_mean * wlambda
                                                 + koeffmat[j][2] * v_mean * cureq1_mean
                                             ) * ele.area;
+                if(result_H_i > 0) result_H_i *= Math.sqrt(wlambda);
 
                 double puddleLambda = cmd.puddleLambda;
 

@@ -1170,14 +1170,14 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
                 timeStep = Math.min(timeStep, tau_z);
             } else
-                tau_z = ele.minHight/FTriangle.minV;
+                tau_z = 0;//ele.minHight/FTriangle.minV * lambda_mean/FTriangle.minV;
 
             final double tauC;
             if (current_mean > FTriangle.minV) {
                 tauC = 0.5 * eleCurrentData.elementsize / current_mean;
                 timeStep = Math.min(timeStep, tauC);
             } else
-                tauC = ele.minHight/FTriangle.minV;
+                tauC = 0; //ele.minHight/FTriangle.minV * lambda_mean/FTriangle.minV;
 
             final double morph_mean = Math.hypot(morph_x, morph_y);
             final double tau_d50;
@@ -1185,7 +1185,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
                 timeStep = Math.min(timeStep, tau_d50);
             } else
-                tau_d50 = ele.minHight/FTriangle.minV;
+                tau_d50 = 0; //ele.minHight/FTriangle.minV * morph_mean/FTriangle.minV;
 
             for (int j = 0; j < 3; j++) {
                 final int i = ele.getDOF(j).number;

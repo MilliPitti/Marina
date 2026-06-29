@@ -34,35 +34,6 @@ Klasse fuer ein Rechteck mit double-Werten.
 
 public class Rectangle2d
 {
-   /**
-     * The bitmask that indicates that a point lies to the left of
-     * this <code>Rectangle2D</code>.
-     * @since 1.2
-     */
-    public static final int OUT_LEFT = 1;
-
-    /**
-     * The bitmask that indicates that a point lies above
-     * this <code>Rectangle2D</code>.
-     * @since 1.2
-     */
-    public static final int OUT_TOP = 2;
-
-    /**
-     * The bitmask that indicates that a point lies to the right of
-     * this <code>Rectangle2D</code>.
-     * @since 1.2
-     */
-    public static final int OUT_RIGHT = 4;
-
-    /**
-     * The bitmask that indicates that a point lies below
-     * this <code>Rectangle2D</code>.
-     * @since 1.2
-     */
-    public static final int OUT_BOTTOM = 8;
-
-
 	public double x;
 	public double y;
 	public double width;
@@ -132,26 +103,6 @@ public class Rectangle2d
 	public de.smile.geom.Rectangle2d getBounds()
 	{
 		return new de.smile.geom.Rectangle2d (x,y,width,height);
-	}
-
-	// aus Rectangle2D
-	public int outcode(double x, double y) {
-		int out = 0;
-		if (this.width <= 0) {
-			out |= OUT_LEFT | OUT_RIGHT;
-		} else if (x < this.x) {
-			out |= OUT_LEFT;
-		} else if (x > this.x + this.width) {
-			out |= OUT_RIGHT;
-		}
-		if (this.height <= 0) {
-			out |= OUT_TOP | OUT_BOTTOM;
-		} else if (y < this.y) {
-			out |= OUT_TOP;
-		} else if (y > this.y + this.height) {
-			out |= OUT_BOTTOM;
-		}
-		return out;
 	}
 
 	public final double getArea()
@@ -488,4 +439,3 @@ public class Rectangle2d
         
         
 }
-

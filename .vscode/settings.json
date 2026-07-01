@@ -1,5 +1,6 @@
 {
 	"editor.formatOnSave": false,
+	"gitlens.git.coauthors.enabled": false,
     "java.project.sourcePaths": [
         ".",
         "generated-src"

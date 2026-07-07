@@ -86,10 +86,7 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     ScalarFunction1d bconc; // boundary condition for sediment concenration
     ScalarFunction1d bz; // boundary condition for bottom
     ScalarFunction1d bd50; // boundary condition for d50
-    boolean extrapolate_z = false; // indicator for extrapolating - for boundary nodes without boundary conditions
-    boolean extrapolate_conc = false; // indicator for extrapolating - for boundary nodes without boundary conditions
-    // boolean extrapolate_d50 = false; // indicator for extrapolating - for
-    // boundary nodes without boundary conditions
+    
     double CSF = 0.24 / D;
     double tau_cr = CSF * (PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER)
             * PhysicalParameters.G * d50;
@@ -726,10 +723,6 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         rvalue.bconc = bconc; // boundary condition for sediment concenration
         rvalue.bz = bz; // boundary condition for bottom
         rvalue.bd50 = bd50; // boundary condition for d50
-        rvalue.extrapolate_z = extrapolate_z; // indicator for extrapolating - for boundary nodes without boundary
-                                              // condistions
-        rvalue.extrapolate_conc = extrapolate_conc; // indicator for extrapolating - for boundary nodes without boundary
-                                                    // condistions
 
         rvalue.D = D; // dimensionsloser Teilchendurchmesser
         rvalue.CSF = CSF;

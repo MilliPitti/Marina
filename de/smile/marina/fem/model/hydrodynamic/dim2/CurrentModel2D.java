@@ -1063,7 +1063,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // Operatornorm for each direction component and then again as euclidean vector norm
             final double operatornorm_x = c0 + Math.abs(u_mean);
             final double operatornorm_y = c0 + Math.abs(v_mean);
-            final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
+            final double operatornorm = Math.hypot(operatornorm_x, operatornorm_y);
             final double cont_dimless = cont_res / operatornorm;
             final double mom_dimless  = mom_res * depth_mean / (operatornorm * operatornorm);
 
@@ -1104,7 +1104,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                                 + koeffmat[j][2] * depth_mean * cureq3_mean * wlambda
                                                 + koeffmat[j][2] * v_mean * cureq1_mean
                                             ) * ele.area;
-                // if(result_H_i > 0) result_H_i *= Math.sqrt(wlambda);
 
                 double puddleLambda = cmd.puddleLambda;
 

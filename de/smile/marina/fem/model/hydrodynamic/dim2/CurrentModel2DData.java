@@ -57,8 +57,6 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
     public double temp = 4.;      // [Grad C]
     
     double bottomFrictionCoefficient; // Reibungsbeiwert oder Reibungskoeffizient der die Stroemung bremst
-    double _tau_bx_extra, _tau_by_extra;  // temporary for elementdependent extra parts of bottom shear stress (secondary flow)
-    public double tau_bx_extra, tau_by_extra;  // for elementdependent extra parts of bottom shear stress (secondary flow)
 
     public double tau_windx, tau_windy;     // wind stress koeffizient
 

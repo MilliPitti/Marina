@@ -47,6 +47,8 @@ public class Current2DElementData implements ModelData{
     
     public double ddepthdx; public double ddepthdy;
 
+    public double cureq1_mean; // Elementmittel des Residuums der Kontinuitaetsgleichung (fuer Folgemodelle, z.B. Sekundaerstroemung im SedimentModel2D)
+
     public boolean isDry = false; // indicator for dry elements
     public int iwatt; // number of dry falling nodes
     public double wlambda; // elementprodukt wlambda - beschreibt den Grad des trockenfallens eines Elements

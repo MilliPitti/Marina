@@ -112,7 +112,7 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
         final double CSF = smd.CSF; // variable // Bodenneigungsanteil wird schon bei der Berechnung des kritischen Shieldsspannung in SedimentModel2DData beruecksichtigt // 18.05.2011
 
 //        final double eta = Math.max(smd.bound, Math.min(cmd.totaldepth, cmd.totaldepth
-//                / PhysicalParameters.G * (PhysicalParameters.RHO_WATER * cmd.grainShearStress * cmd.cv + Math.hypot(cmd.tau_bx_extra, cmd.tau_by_extra)))); // dicke der suspensionsschicht ToDo formel ergaenzen _ Chezy-Koeffizient
+//                / PhysicalParameters.G * (PhysicalParameters.RHO_WATER * cmd.grainShearStress * cmd.cv + Math.hypot(smd.tau_bx_extra, smd.tau_by_extra)))); // dicke der suspensionsschicht ToDo formel ergaenzen _ Chezy-Koeffizient
 
 
         double sfx = cmd.tauBx / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * smd.d50);
@@ -145,8 +145,8 @@ public class SuspendedLoad2DvanRijn1984 implements SuspendedLoad2DFormulation {
 
         double CSF = sdata.CSF; // variable
 
-        double sfx = ((sdata.bedDragCoeff * currentmodeldata.u) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
-        double sfy = ((sdata.bedDragCoeff * currentmodeldata.v) * PhysicalParameters.RHO_WATER + currentmodeldata.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
+        double sfx = ((sdata.bedDragCoeff * currentmodeldata.u) * PhysicalParameters.RHO_WATER + sdata.tau_bx_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
+        double sfy = ((sdata.bedDragCoeff * currentmodeldata.v) * PhysicalParameters.RHO_WATER + sdata.tau_by_extra) / ((PhysicalParameters.RHO_SEDIM - PhysicalParameters.RHO_WATER) * PhysicalParameters.G * sdata.d50);
 
         double sf = Math.hypot(sfx, sfy);
         sf *= sdata.lambda; // decreasing depending on not erodible bottom

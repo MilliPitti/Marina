@@ -85,6 +85,9 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
     public static double WATT = 0.05; // Wattgrenze des SedimentModell, eigentlich abhaengig von den
                                       // Gueltigkeitsgrenzen der Transportformel
 
+    static private final double ALPHA = .75; // coefficient for secondary flow [0.75 rough bottom, 1. smooth],
+                                             // die Beruecksichtigung der Bodenrauheit erfolgt ueber beta in der Formel
+
     boolean withSoilModel3DData = false;
     int modulo = 1;
     int wrtInt = 0;
@@ -1016,6 +1019,14 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
         SedimentElementData eleSedimentData = element_data[element.number];
         final FTriangle ele = (FTriangle) element;
 
+        // ===== Einmaliges Vorladen der drei Knoten-Datenobjekte =====
+        final DOF[] dofs = element.getDOFs();
+        final SedimentModel2DData[] smds = { dof_data[dofs[0].number], dof_data[dofs[1].number],
+                dof_data[dofs[2].number] };
+        final CurrentModel2DData[] cmds = { dof_currentdata[dofs[0].number], dof_currentdata[dofs[1].number],
+                dof_currentdata[dofs[2].number] };
+        // ============================================================
+
         if (!eleCurrentData.isDry) {
 
             final double[][] koeffmat = ele.getkoeffmat();
@@ -1051,8 +1062,8 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             // compute element derivations
             // -------------------------------------------------------------------
             for (int j = 0; j < 3; j++) {
-                final SedimentModel2DData smd = dof_data[ele.getDOF(j).number];
-                final CurrentModel2DData cmd = dof_currentdata[ele.getDOF(j).number];
+                final SedimentModel2DData smd = smds[j];
+                final CurrentModel2DData cmd = cmds[j];
 
                 porosity_mean += smd.porosity / 3.;
 
@@ -1118,19 +1129,18 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             lambda_x = (lambda_x * eleSed + (1 - eleSed) * morph_x);
             lambda_y = (lambda_y * eleSed + (1 - eleSed) * morph_y);
 
-            // double lambda_x = morph_x;
-            // double lambda_y = morph_y;
+            // lambda_x = morph_x;
+            // lambda_y = morph_y;
 
-            final double current_mean = Math.hypot(u_mean, v_mean);
+            final double current_mean = Math.sqrt(u_mean*u_mean + v_mean*v_mean);
             double localResC = 0., localResZTransport = 0., localResD50 = 0.;
 
             double nu_sed = 0.;
 
             // Elementfehler berechnen
             for (int j = 0; j < 3; j++) {
-                final int i = ele.getDOF(j).number;
-                final SedimentModel2DData smd = dof_data[i];
-                final CurrentModel2DData cmd = dof_currentdata[i];
+                final SedimentModel2DData smd = smds[j];
+                final CurrentModel2DData cmd = cmds[j];
 
                 terms_C[j] = (cmd.u * dskoncdx + cmd.v * dskoncdy)
                 // in timeStep - stoert die Fehlerkorrektur
@@ -1139,8 +1149,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 localResC += 1. / 3. * (smd.dsCdt + terms_C[j]) * cmd.wlambda; // mean local elementresiduum
 
                 terms_z[j] = -1. / (1. - smd.porosity) * (dQgd < 0 ? dQgd * cmd.wlambda : dQgd);
-                if (!cmd.boundary)
-                    localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
+                localResZTransport += 1. / 3. * (smd.dzTransportdt + terms_z[j]); // mean local elementresiduum
                 // fuer gravitioneller Transport, herunter rollern mit max. wc/4 inklusive Projektion in die Ebene
                 nu_sed += Math.sqrt(smd.wc / 4.0 * smd.d50 * slope_norm * smd.bedload) * smd.lambda / 3.;
 
@@ -1149,7 +1158,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                 ;
                 localResD50 += 1. / 3. * (smd.dd50dt + terms_d50[j]);
             }
-            final double lambda_mean = Math.hypot(lambda_x, lambda_y);
+            final double lambda_mean = Math.sqrt(lambda_x*lambda_x + lambda_y*lambda_y);
             final double tau_z;
             if (lambda_mean > FTriangle.minV) {
                 tau_z = 0.5 * ele.getVectorSize(lambda_x, lambda_y) / lambda_mean;
@@ -1164,7 +1173,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             } else
                 tauC = 0.;
 
-            final double morph_mean = Math.hypot(morph_x, morph_y);
+            final double morph_mean = Math.sqrt(morph_x*morph_x + morph_y*morph_y);
             final double tau_d50;
             if (morph_mean > FTriangle.minV) {
                 tau_d50 = 0.5 * ele.getVectorSize(morph_x, morph_y) / morph_mean;
@@ -1172,10 +1181,57 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             } else
                 tau_d50 = 0.;
 
+            // ----------------------------------------------------------------
+            // zusaetzliche Bodenschubspannung aus der Sekundaerstroemung
+            // (nur in vollstaendig nassen Elementen und nur im 2D-Fall; basiert das
+            // Sedimentmodell auf dem CurrentModel3D, ist das Verschwenken der
+            // bodennahen Stroemung dort bereits simuliert -> tau_b*_extra bleibt 0)
+            // ----------------------------------------------------------------
+            double local_tau_bx_extra = 0.;
+            double local_tau_by_extra = 0.;
+
+            if (!basedOnCurrentModel3D && eleCurrentData.iwatt == 0) {
+                final double detadx = eleCurrentData.dhdx;
+                final double detady = eleCurrentData.dhdy;
+                final double cureq1_mean = eleCurrentData.cureq1_mean;
+
+                for (int j = 0; j < 3; j++) {
+                    final SedimentModel2DData smd = smds[j];
+                    final CurrentModel2DData cmd = cmds[j];
+
+                    if (cmd.totaldepth > 0.1) {
+                        double reduceFactor = (Math.abs(cureq1_mean * cmd.totaldepth) + 1.) * bottomslope;
+                        reduceFactor *= reduceFactor * reduceFactor;
+                        // reduceFactor *= reduceFactor; // hoch 6
+                        // final double chezy = cmd.kst * Math.pow(cmd.totaldepth, 1./6.);
+                        final double chezy = Math.sqrt(PhysicalParameters.G * smd.cv / smd.bedDragCoeff); // siehe Berechnung des grainShearStress
+                        final double alphaStar = 1; // 1 nach MIKE 21C mit gravitationellem Transport; 0.5 ohne grav. Transport;
+                        final double beta = alphaStar * 2. / PhysicalParameters.KARMANCONSTANT
+                                / PhysicalParameters.KARMANCONSTANT * Math.max(0.,
+                                        1. - PhysicalParameters.sqrtG / PhysicalParameters.KARMANCONSTANT / chezy);
+                        // final double beta = 7.*0.75;
+                        final double cv = (cmd.cv >= 0.1) ? cmd.cv : 0.1;// max(cmd.cv, 0.1);
+                        final double r = smd.bedDragCoeff / cv;
+                        final double coeff = beta * r / (ALPHA * cv * cv) * PhysicalParameters.G * cmd.totaldepth
+                                * (cmd.u * detady - cmd.v * detadx)
+                                / reduceFactor;
+                        local_tau_bx_extra -= coeff * (-cmd.v) * ele.area;
+                        local_tau_by_extra -= coeff * (+cmd.u) * ele.area;
+                    }
+                }
+
+                for (int j = 0; j < 3; j++) {
+                    final SedimentModel2DData smd = smds[j];
+                    synchronized (smd) {
+                        smd._tau_bx_extra += local_tau_bx_extra;
+                        smd._tau_by_extra += local_tau_by_extra;
+                    }
+                }
+            }
+
             for (int j = 0; j < 3; j++) {
-                final int i = ele.getDOF(j).number;
-                SedimentModel2DData smd = dof_data[i];
-                final CurrentModel2DData cmd = dof_currentdata[i];
+                SedimentModel2DData smd = smds[j];
+                final CurrentModel2DData cmd = cmds[j];
                 
                 // Fehlerkorrektur C
                 double result_SKonc_i = -tauC * (koeffmat[j][1] * u_mean + koeffmat[j][2] * v_mean) * localResC * ele.area;
@@ -1206,19 +1262,19 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     double gl = 1.;
                     if (l != j) { // ToDo siehe Marina-Version 2.8.9
                         if (terms_z[l] > 0) { // abgelegener Knoten sedimentiert
-                            if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
-                                gl = cmd.wlambda * dof_data[ele.getDOF(l).number].lambdaQs
-                                 * Math.max(0., 1. - (dof_data[ele.getDOF(l).number].z - smd.z) / ele.distance[l][j])
+                            if (smds[l].z > smd.z) { // abgelegener Knoten liegt unterhalb
+                                gl = cmd.wlambda * smds[l].lambdaQs
+                                 * Math.max(0., 1. - (smds[l].z - smd.z) / ele.distance[l][j])
                                 ;
                             } else { // abgelegener Knoten liegt oberhalb
                                 gl = 1.;
                             }
                         } else { // abgelegener Knoten erodiert
-                            if (dof_data[ele.getDOF(l).number].z > smd.z) { // abgelegener Knoten liegt unterhalb
+                            if (smds[l].z > smd.z) { // abgelegener Knoten liegt unterhalb
                                 gl = 1.;
                             } else { // abgelegenen Knoten liegt oberhalb
-                                gl = smd.lambdaQs * dof_data[ele.getDOF(l).number].lambda * Math.max(0.,
-                                        1. - (smd.z - dof_data[ele.getDOF(l).number].z) / ele.distance[l][j]);
+                                gl = smd.lambdaQs * smds[l].lambda * Math.max(0.,
+                                        1. - (smd.z - smds[l].z) / ele.distance[l][j]);
                             }
                         }
                     }
@@ -1235,17 +1291,17 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
                     smd.rZCorrect += resCorrect * ele.area / 3.;
 
                     // Test ob der Knoten tiefster / hoester im Patch ist
-                    smd._isDeepest &= ((smd.z > dof_data[ele.getDOF((j + 1) % 3).number].z + smd.bound)
-                            && (smd.z > dof_data[ele.getDOF((j + 2) % 3).number].z + smd.bound));
-                    smd._isHighest &= ((smd.z < dof_data[ele.getDOF((j + 1) % 3).number].z - smd.bound)
-                            && (smd.z < dof_data[ele.getDOF((j + 2) % 3).number].z - smd.bound));
+                    smd._isDeepest &= ((smd.z > smds[(j + 1) % 3].z + smd.bound)
+                            && (smd.z > smds[(j + 2) % 3].z + smd.bound));
+                    smd._isHighest &= ((smd.z < smds[(j + 1) % 3].z - smd.bound)
+                            && (smd.z < smds[(j + 2) % 3].z - smd.bound));
                 }
 
             }
         } else {
             // dry element
             for (int j = 0; j < 3; j++) {
-                SedimentModel2DData smd = dof_data[element.getDOF(j).number];
+                SedimentModel2DData smd = smds[j];
                 synchronized (smd) {
                     smd._bottomslope += eleSedimentData.bottomslope * ele.area;
                 }
@@ -1276,7 +1332,7 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
             final double normTauB = Math.hypot(cmd.tauBx, cmd.tauBy);
             if (normTauB > 1.E-4) { // Verschwenken der resultirerenden Geschwindigkeiten auf Grund der sekundaer Stroemung
                 final double lambda = Math.min(1,
-                        Math.hypot(cmd.tau_bx_extra, cmd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
+                        Math.hypot(smd.tau_bx_extra, smd.tau_by_extra) / (smd.bedDragCoeff)); // ??? ToDo
                 smd.u = (1. - lambda) * smd.u + lambda * cmd.tauBx / normTauB * cmd.cv;
                 smd.v = (1. - lambda) * smd.v + lambda * cmd.tauBy / normTauB * cmd.cv;
             }
@@ -2357,6 +2413,13 @@ public class SedimentModel2D extends TimeDependentFEApproximation implements FEM
 
             smd.bottomslope = smd._bottomslope / (dof.lumpedMass * 3.);
             smd._bottomslope = 0.;
+
+            // Mittelung der zusaetzlichen Bodenschubspannung aus der Sekundaerstroemung
+            final double area = dof.lumpedMass * 3.;
+            smd.tau_bx_extra = smd._tau_bx_extra / area;
+            smd.tau_by_extra = smd._tau_by_extra / area;
+            smd._tau_bx_extra = 0.;
+            smd._tau_by_extra = 0.;
 
             smd.rC /= dof.lumpedMass;
             smd.rZTransport /= dof.lumpedMass;

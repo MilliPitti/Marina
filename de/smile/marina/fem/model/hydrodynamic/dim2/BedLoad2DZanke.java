@@ -67,8 +67,8 @@ public class BedLoad2DZanke implements BedLoad2DFormulation {
             double ufx = cmd.u * PhysicalParameters.sqrtG / Cs;
             double ufy = cmd.v * PhysicalParameters.sqrtG / Cs;
             // Shields function of load particles
-            double sfx = (ufx * ufx) / Factor * cmd.u / cmd.cv + cmd.tau_bx_extra / Cs; // Peter 04.12.08
-            double sfy = (ufy * ufy) / Factor * cmd.v / cmd.cv + cmd.tau_by_extra / Cs; // Peter 04.12.08
+            double sfx = (ufx * ufx) / Factor * cmd.u / cmd.cv + smd.tau_bx_extra / Cs; // Peter 04.12.08
+            double sfy = (ufy * ufy) / Factor * cmd.v / cmd.cv + smd.tau_by_extra / Cs; // Peter 04.12.08
 
             sfx *= Math.min(1., Math.max(0., smd.zh - smd.z) / (smd.d50 * 5.)); // decreasing depending on not erodible bottom // Peter 18.08.2010
             sfy *= Math.min(1., Math.max(0., smd.zh - smd.z) / (smd.d50 * 5.)); // decreasing depending on not erodible bottom // Peter 18.08.2010

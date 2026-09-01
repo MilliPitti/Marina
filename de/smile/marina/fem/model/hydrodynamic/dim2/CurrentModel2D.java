@@ -48,7 +48,7 @@ import javax.xml.bind.*;
  * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.10.8
+ * @version 4.10.8.5
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
@@ -59,7 +59,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
     private final CurrentDat currentdat;
 
-    static private final double ALPHA = .75; // coefficient for secondary flow [0.75 rough bottom, 1. smooth], die Beruecksichtigung der Bodenrauheit erfolgt ueber beta in der Formel
 
     public static final double BATTJESKOEFF = 0.3; // 0.1 - 0.3 Austauschkoeffizient infolge Wellenbrechens
 
@@ -252,7 +251,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 if (V_gesetzt) {
                     dof_data[i].u = inStream.readFloat();
                     dof_data[i].v = inStream.readFloat();
-                    dof_data[i].cv = Math.hypot(dof_data[i].u, dof_data[i].v);
+                    dof_data[i].cv = Math.sqrt(dof_data[i].u*dof_data[i].u + dof_data[i].v*dof_data[i].v);
                 }
 
                 if (Q_gesetzt) {
@@ -274,7 +273,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 if (SHEAR_gesetzt) {
                     dof_data[i].tauBx = inStream.readFloat();
                     dof_data[i].tauBy = inStream.readFloat();
-                    dof_data[i].bottomFrictionCoefficient = Math.hypot(dof_data[i].tauBx, dof_data[i].tauBy)
+                    dof_data[i].bottomFrictionCoefficient = Math.sqrt(dof_data[i].tauBx*dof_data[i].tauBx + dof_data[i].tauBy*dof_data[i].tauBy)
                             / dof_data[i].rho;
                 }
 
@@ -610,6 +609,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
         final FTriangle ele = (FTriangle) element;
         final DOF[] dofs = element.getDOFs();
         final Current2DElementData eleCurrentData = element_data[ele.number];
+        // ===== Einmaliges Vorladen der drei Knoten-Datenobjekte =====
+        final CurrentModel2DData cmd0 = dof_data[dofs[0].number];
+        final CurrentModel2DData cmd1 = dof_data[dofs[1].number];
+        final CurrentModel2DData cmd2 = dof_data[dofs[2].number];
+        final CurrentModel2DData[] cmds = {cmd0, cmd1, cmd2};
+        // ============================================================
 
         eleCurrentData.deepestTotalDepth = 0.;
         eleCurrentData.iwatt = 0;
@@ -618,7 +623,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         eleCurrentData.wlambda = 1;
 
         for (int j = 0; j < 3; j++) {
-            final CurrentModel2DData cmd = dof_data[dofs[j].number];
+            final CurrentModel2DData cmd = cmds[j];
             final double totaldepth = cmd.totaldepth;
 
             if (totaldepth < WATT) {
@@ -639,7 +644,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             eleCurrentData.isDry = true;
 
             for (int j = 0; j < 3; j++) {
-                final CurrentModel2DData cmd = dof_data[ele.getDOF(j).number];
+                final CurrentModel2DData cmd = cmds[j];
                 final double w1_lambda = 1. - cmd.totaldepth / halfWATT;
                 synchronized (cmd) {
                     cmd.reta -= (1.E-7 + infiltrationRate) * w1_lambda * bottomslope; // kuenstliches Versickeren auf trockenen Elementen zur Modellstabilisierung
@@ -666,8 +671,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double vdy = 0.;
             double detadx = 0.;
             double detady = 0.;
-            double depthdx = 0.;
-            double depthdy = 0.;
 
             double rhodx = 0.;
             double rhody = 0.;
@@ -684,7 +687,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // compute element derivations
             for (int j = 0; j < 3; j++) {
                 final DOF dof = dofs[j];
-                final CurrentModel2DData cmd = dof_data[dof.number];
+                final CurrentModel2DData cmd = cmds[j];
 
                 rhodx += cmd.rho * koeffmat[j][1];
                 rhody += cmd.rho * koeffmat[j][2];
@@ -704,9 +707,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                 detadx += cmd.eta * koeffmat[j][1];
                 detady += cmd.eta * koeffmat[j][2];
-
-                depthdx += cmd.totaldepth * koeffmat[j][1];
-                depthdy += cmd.totaldepth * koeffmat[j][2];
 
                 final WaveHYPModel2DData wave = WaveHYPModel2DData.extract(dof);
                 if (wave != null) {
@@ -741,8 +741,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             eleCurrentData.dudy = udy;
             eleCurrentData.dvdx = vdx;
             eleCurrentData.dvdy = vdy;
-            eleCurrentData.ddepthdx = depthdx;
-            eleCurrentData.ddepthdy = depthdy;
 
             eleCurrentData.u_mean = u_mean;
             eleCurrentData.v_mean = v_mean;
@@ -760,24 +758,21 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 switch (eleCurrentData.iwatt) {
                     case 1:
                         for (int j = 0; j < 3; j++) {
-                            final int jg = dofs[j].number;
-                            if (dof_data[jg].totaldepth >= WATT) {
-                                detadx += dof_data[jg].eta * koeffmat[j][1];
-                                detady += dof_data[jg].eta * koeffmat[j][2];
+                            if (cmds[j].totaldepth >= WATT) {
+                                detadx += cmds[j].eta * koeffmat[j][1];
+                                detady += cmds[j].eta * koeffmat[j][2];
                             } else {
-                                final int jg_1 = dofs[(j + 1) % 3].number;
-                                final int jg_2 = dofs[(j + 2) % 3].number;
-                                if ((dof_data[jg].eta < dof_data[jg_1].eta)
-                                        || (dof_data[jg].eta < dof_data[jg_2].eta)) {
-                                    detadx += dof_data[jg].eta * koeffmat[j][1];
-                                    detady += dof_data[jg].eta * koeffmat[j][2];
-                                    flood = Math.min(1., Math.max(dof_data[jg_1].eta - dof_data[jg].eta,
-                                            dof_data[jg_2].eta - dof_data[jg].eta) / WATT);
+                                if ((cmds[j].eta < cmds[(j + 1) % 3].eta)
+                                        || (cmds[j].eta < cmds[(j + 2) % 3].eta)) {
+                                    detadx += cmds[j].eta * koeffmat[j][1];
+                                    detady += cmds[j].eta * koeffmat[j][2];
+                                    flood = Math.min(1., Math.max(cmds[(j + 1) % 3].eta - cmds[j].eta,
+                                            cmds[(j + 2) % 3].eta - cmds[j].eta) / WATT);
                                 } else {
-                                    detadx += (dof_data[jg].w1_lambda * 0.5 * (dof_data[jg_1].eta + dof_data[jg_2].eta)
-                                            + dof_data[jg].wlambda * dof_data[jg].eta) * koeffmat[j][1];
-                                    detady += (dof_data[jg].w1_lambda * 0.5 * (dof_data[jg_1].eta + dof_data[jg_2].eta)
-                                            + dof_data[jg].wlambda * dof_data[jg].eta) * koeffmat[j][2];
+                                    detadx += (cmds[j].w1_lambda * 0.5 * (cmds[(j + 1) % 3].eta + cmds[(j + 2) % 3].eta)
+                                            + cmds[j].wlambda * cmds[j].eta) * koeffmat[j][1];
+                                    detady += (cmds[j].w1_lambda * 0.5 * (cmds[(j + 1) % 3].eta + cmds[(j + 2) % 3].eta)
+                                            + cmds[j].wlambda * cmds[j].eta) * koeffmat[j][2];
                                 }
                             }
                         }
@@ -785,35 +780,32 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                     case 2:
                         for (int j = 0; j < 3; j++) {
-                            final int jg = dofs[j].number;
-                            if (dof_data[jg].totaldepth >= WATT) {
-                                detadx += dof_data[jg].eta * koeffmat[j][1];
-                                detady += dof_data[jg].eta * koeffmat[j][2];
+                            if (cmds[j].totaldepth >= WATT) {
+                                detadx += cmds[j].eta * koeffmat[j][1];
+                                detady += cmds[j].eta * koeffmat[j][2];
 
-                                final int jg_1 = dofs[(j + 1) % 3].number;
-                                final int jg_2 = dofs[(j + 2) % 3].number;
 
-                                if (dof_data[jg].eta > dof_data[jg_1].eta) {
-                                    detadx += dof_data[jg_1].eta * koeffmat[(j + 1) % 3][1];
-                                    detady += dof_data[jg_1].eta * koeffmat[(j + 1) % 3][2];
-                                    flood = Math.min(1., (dof_data[jg].eta - dof_data[jg_1].eta) / WATT);
+                                if (cmds[j].eta > cmds[(j + 1) % 3].eta) {
+                                    detadx += cmds[(j + 1) % 3].eta * koeffmat[(j + 1) % 3][1];
+                                    detady += cmds[(j + 1) % 3].eta * koeffmat[(j + 1) % 3][2];
+                                    flood = Math.min(1., (cmds[j].eta - cmds[(j + 1) % 3].eta) / WATT);
                                 } else {
-                                    detadx += (dof_data[jg_1].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][1];
-                                    detady += (dof_data[jg_1].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][2];
+                                    detadx += (cmds[(j + 1) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 1) % 3].wlambda * cmds[(j + 1) % 3].eta) * koeffmat[(j + 1) % 3][1];
+                                    detady += (cmds[(j + 1) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 1) % 3].wlambda * cmds[(j + 1) % 3].eta) * koeffmat[(j + 1) % 3][2];
                                 }
 
-                                if (dof_data[jg].eta > dof_data[jg_2].eta) {
-                                    detadx += dof_data[jg_2].eta * koeffmat[(j + 2) % 3][1];
-                                    detady += dof_data[jg_2].eta * koeffmat[(j + 2) % 3][2];
+                                if (cmds[j].eta > cmds[(j + 2) % 3].eta) {
+                                    detadx += cmds[(j + 2) % 3].eta * koeffmat[(j + 2) % 3][1];
+                                    detady += cmds[(j + 2) % 3].eta * koeffmat[(j + 2) % 3][2];
                                     flood = Math.min(1.,
-                                            Math.max(flood, (dof_data[jg].eta - dof_data[jg_2].eta) / WATT));
+                                            Math.max(flood, (cmds[j].eta - cmds[(j + 2) % 3].eta) / WATT));
                                 } else {
-                                    detadx += (dof_data[jg_2].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][1];
-                                    detady += (dof_data[jg_2].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][2];
+                                    detadx += (cmds[(j + 2) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 2) % 3].wlambda * cmds[(j + 2) % 3].eta) * koeffmat[(j + 2) % 3][1];
+                                    detady += (cmds[(j + 2) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 2) % 3].wlambda * cmds[(j + 2) % 3].eta) * koeffmat[(j + 2) % 3][2];
                                 }
                                 break;
                             }
@@ -821,57 +813,54 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         break;
 
                     case 3:
-                        double dmax = dof_data[dofs[0].number].totaldepth;
+                        double dmax = cmds[0].totaldepth;
                         int j = 0;
-                        if (dof_data[dofs[1].number].totaldepth > dmax) {
+                        if (cmds[1].totaldepth > dmax) {
                             j = 1;
-                            dmax = dof_data[dofs[1].number].totaldepth;
+                            dmax = cmds[1].totaldepth;
                         }
-                        if (dof_data[dofs[2].number].totaldepth > dmax) {
+                        if (cmds[2].totaldepth > dmax) {
                             j = 2;
-                            /* dmax = dof_data[dofs[2].number].totaldepth; **unnoetig** */}
+                            /* dmax = cmds[2].totaldepth; **unnoetig** */}
                         /* Knoten j hat groeszte Wassertiefe */
-                        final int jg = dofs[j].number;
-                        detadx += dof_data[jg].eta * koeffmat[j][1];
-                        detady += dof_data[jg].eta * koeffmat[j][2];
+                        detadx += cmds[j].eta * koeffmat[j][1];
+                        detady += cmds[j].eta * koeffmat[j][2];
 
-                        final int jg_1 = dofs[(j + 1) % 3].number;
-                        final int jg_2 = dofs[(j + 2) % 3].number;
 
-                        if (dof_data[jg].eta > dof_data[jg_1].eta) {
-                            detadx += (dof_data[jg].wlambda * dof_data[jg_1].eta
-                                    + dof_data[jg].w1_lambda * (dof_data[jg_1].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_1].wlambda * dof_data[jg_1].eta))
+                        if (cmds[j].eta > cmds[(j + 1) % 3].eta) {
+                            detadx += (cmds[j].wlambda * cmds[(j + 1) % 3].eta
+                                    + cmds[j].w1_lambda * (cmds[(j + 1) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 1) % 3].wlambda * cmds[(j + 1) % 3].eta))
                                     * koeffmat[(j + 1) % 3][1];
-                            detady += (dof_data[jg].wlambda * dof_data[jg_1].eta
-                                    + dof_data[jg].w1_lambda * (dof_data[jg_1].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_1].wlambda * dof_data[jg_1].eta))
+                            detady += (cmds[j].wlambda * cmds[(j + 1) % 3].eta
+                                    + cmds[j].w1_lambda * (cmds[(j + 1) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 1) % 3].wlambda * cmds[(j + 1) % 3].eta))
                                     * koeffmat[(j + 1) % 3][2];
                             flood = Math.min(1.,
-                                    dof_data[jg].wlambda * (dof_data[jg].eta - dof_data[jg_1].eta) / WATT);
+                                    cmds[j].wlambda * (cmds[j].eta - cmds[(j + 1) % 3].eta) / WATT);
                         } else {
-                            detadx += (dof_data[jg_1].w1_lambda * dof_data[jg].eta
-                                    + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][1];
-                            detady += (dof_data[jg_1].w1_lambda * dof_data[jg].eta
-                                    + dof_data[jg_1].wlambda * dof_data[jg_1].eta) * koeffmat[(j + 1) % 3][2];
+                            detadx += (cmds[(j + 1) % 3].w1_lambda * cmds[j].eta
+                                    + cmds[(j + 1) % 3].wlambda * cmds[(j + 1) % 3].eta) * koeffmat[(j + 1) % 3][1];
+                            detady += (cmds[(j + 1) % 3].w1_lambda * cmds[j].eta
+                                    + cmds[(j + 1) % 3].wlambda * cmds[(j + 1) % 3].eta) * koeffmat[(j + 1) % 3][2];
                         }
 
-                        if (dof_data[jg].eta > dof_data[jg_2].eta) {
-                            detadx += (dof_data[jg].wlambda * dof_data[jg_2].eta
-                                    + dof_data[jg].w1_lambda * (dof_data[jg_2].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_2].wlambda * dof_data[jg_2].eta))
+                        if (cmds[j].eta > cmds[(j + 2) % 3].eta) {
+                            detadx += (cmds[j].wlambda * cmds[(j + 2) % 3].eta
+                                    + cmds[j].w1_lambda * (cmds[(j + 2) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 2) % 3].wlambda * cmds[(j + 2) % 3].eta))
                                     * koeffmat[(j + 2) % 3][1];
-                            detady += (dof_data[jg].wlambda * dof_data[jg_2].eta
-                                    + dof_data[jg].w1_lambda * (dof_data[jg_2].w1_lambda * dof_data[jg].eta
-                                            + dof_data[jg_2].wlambda * dof_data[jg_2].eta))
+                            detady += (cmds[j].wlambda * cmds[(j + 2) % 3].eta
+                                    + cmds[j].w1_lambda * (cmds[(j + 2) % 3].w1_lambda * cmds[j].eta
+                                            + cmds[(j + 2) % 3].wlambda * cmds[(j + 2) % 3].eta))
                                     * koeffmat[(j + 2) % 3][2];
                             flood = Math.min(1., Math.max(flood,
-                                    dof_data[jg].wlambda * (dof_data[jg].eta - dof_data[jg_2].eta) / WATT));
+                                    cmds[j].wlambda * (cmds[j].eta - cmds[(j + 2) % 3].eta) / WATT));
                         } else {
-                            detadx += (dof_data[jg_2].w1_lambda * dof_data[jg].eta
-                                    + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][1];
-                            detady += (dof_data[jg_2].w1_lambda * dof_data[jg].eta
-                                    + dof_data[jg_2].wlambda * dof_data[jg_2].eta) * koeffmat[(j + 2) % 3][2];
+                            detadx += (cmds[(j + 2) % 3].w1_lambda * cmds[j].eta
+                                    + cmds[(j + 2) % 3].wlambda * cmds[(j + 2) % 3].eta) * koeffmat[(j + 2) % 3][1];
+                            detady += (cmds[(j + 2) % 3].w1_lambda * cmds[j].eta
+                                    + cmds[(j + 2) % 3].wlambda * cmds[(j + 2) % 3].eta) * koeffmat[(j + 2) % 3][2];
                         }
                         break;
                 }
@@ -899,10 +888,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
             if (wavebreaking > 0.)
                 astx += BATTJESKOEFF * depth_mean * Math.cbrt(wavebreaking / PhysicalParameters.RHO_WATER);
             // wave induced turbulence by Radiation-Stresses
-            astx += Math.hypot((dsxxdx + dsxydy), (dsxydx + dsyydy)) / PhysicalParameters.RHO_WATER;
+            astx += Math.sqrt((dsxxdx + dsxydy)*(dsxxdx + dsxydy) + (dsxydx + dsyydy)*(dsxydx + dsyydy)) / PhysicalParameters.RHO_WATER;
 
             // isotropher Elder - Anteil mit Strickler Bodenschubspannung approximiert - ca. 0.06
-            final double u_star = Math.hypot(u_mean, v_mean) * PhysicalParameters.sqrtG /
+            final double u_star = Math.sqrt(u_mean*u_mean + v_mean*v_mean) * PhysicalParameters.sqrtG /
                     (eleCurrentData.meanStricklerCoefficient * Math.pow(depth_mean, 1.0 / 6.0));
             // Elder-Koeffizient kappa (ca. 0.6): nu_t = kappa * u* * h
            final double nu_elder = 0.6 / 2. * u_star * depth_mean;
@@ -917,47 +906,46 @@ public class CurrentModel2D extends SurfaceWaterModel {
             if (eleCurrentData.withWeir) {
                 int iUnderFlowTopoWeir = 0;
                 for (int j = 0; j < 3; j++) {
-                    final int jn = dofs[j].number;
-                    if (dof_data[jn].bWeir != null) {
-                        if ((dof_data[jn].bWeir instanceof BroadCrestedWeir)
-                                && !(dof_data[jn].bWeir instanceof BroadCrestedTopoWeir)) {
-                            if ((((BroadCrestedWeir) dof_data[jn].bWeir).getCrestLevel()
-                                    + dof_data[jn].eta) <= (-WATT)) {
+                    if (cmds[j].bWeir != null) {
+                        if ((cmds[j].bWeir instanceof BroadCrestedWeir)
+                                && !(cmds[j].bWeir instanceof BroadCrestedTopoWeir)) {
+                            if ((((BroadCrestedWeir) cmds[j].bWeir).getCrestLevel()
+                                    + cmds[j].eta) <= (-WATT)) {
                                 detadx = 0.;
                                 detady = 0.;
                             } else {
                                 double factor = Math.min(1.,
-                                        (((BroadCrestedWeir) dof_data[jn].bWeir).getCrestLevel() + dof_data[jn].eta
+                                        (((BroadCrestedWeir) cmds[j].bWeir).getCrestLevel() + cmds[j].eta
                                                 + WATT) / 6. / WATT);
                                 detadx *= factor;
                                 detady *= factor;
                             }
                         }
-                        if (dof_data[jn].bWeir instanceof NeedleWeir needleWeir) {
+                        if (cmds[j].bWeir instanceof NeedleWeir needleWeir) {
                             double factor = needleWeir.getOpening();
                             detadx *= factor;
                             detady *= factor;
                         }
-                        if (dof_data[jn].bWeir instanceof UnderFlowWeir underFlowWeir) {
-                            if (dof_data[jn].bWeir instanceof UnderFlowTopoWeir underFlowTopoWeir) {
-                                if (dof_data[jn].eta + underFlowTopoWeir.getSluiceLevel() >= (-WATT)) {
+                        if (cmds[j].bWeir instanceof UnderFlowWeir underFlowWeir) {
+                            if (cmds[j].bWeir instanceof UnderFlowTopoWeir underFlowTopoWeir) {
+                                if (cmds[j].eta + underFlowTopoWeir.getSluiceLevel() >= (-WATT)) {
                                     astx += Math
-                                            .abs(Math.hypot(detadx - dof_data[jn].dhdx, detady - dof_data[jn].dhdy));
+                                            .abs(Math.sqrt((detadx - cmds[j].dhdx)*(detadx - cmds[j].dhdx) + (detady - cmds[j].dhdy)*(detady - cmds[j].dhdy)));
                                     if (iUnderFlowTopoWeir == 0) {
-                                        detadx = dof_data[jn].dhdx;
-                                        detady = dof_data[jn].dhdy;
+                                        detadx = cmds[j].dhdx;
+                                        detady = cmds[j].dhdy;
                                         iUnderFlowTopoWeir++;
                                     } else {
-                                        detadx = 0.5 * (detadx + dof_data[jn].dhdx);
-                                        detady = 0.5 * (detady + dof_data[jn].dhdy);
+                                        detadx = 0.5 * (detadx + cmds[j].dhdx);
+                                        detady = 0.5 * (detady + cmds[j].dhdy);
                                         iUnderFlowTopoWeir++;
                                     }
                                 }
                             } else {
-                                if (dof_data[jn].eta + underFlowWeir.getSluiceLevel() >= (-WATT)) {
+                                if (cmds[j].eta + underFlowWeir.getSluiceLevel() >= (-WATT)) {
                                     double factor = Math.min(1.,
-                                            Math.max(0., dof_data[jn].z - underFlowWeir.getSluiceLevel())
-                                                    / Math.max(WATT, dof_data[jn].totaldepth));
+                                            Math.max(0., cmds[j].z - underFlowWeir.getSluiceLevel())
+                                                    / Math.max(WATT, cmds[j].totaldepth));
                                     detadx *= factor;
                                     detady *= factor;
                                 }
@@ -970,22 +958,28 @@ public class CurrentModel2D extends SurfaceWaterModel {
             eleCurrentData.dhdx = detadx;
             eleCurrentData.dhdy = detady;
 
+            double depthdx = detadx + dzdx;
+            double depthdy = detady + dzdy;
+
+            eleCurrentData.ddepthdx = depthdx;
+            eleCurrentData.ddepthdy = depthdy;
+
             double cureq1_mean = 0.;
             double cureq2_mean = 0.;
             double cureq3_mean = 0.;
 
             // Elementfehler der Kontigleichung berechnen
             for (int j = 0; j < 3; j++) {
-                final CurrentModel2DData cmd = dof_data[dofs[j].number];
-                final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
-                // Kontigleichung
+                final CurrentModel2DData cmd = cmds[j];
                 terms_eta[j] = cmd.totaldepth * (udx + vdy) + (cmd.u * depthdx + cmd.v * depthdy);
-                cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]) * wlambda;
+                cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]);
             }
 
+            // Residuum der Kontigleichung fuer Folgemodelle bereitstellen (Sekundaerstroemung im SedimentModel2D)
+            eleCurrentData.cureq1_mean = cureq1_mean;
+
             for (int j = 0; j < 3; j++) {
-                final SedimentModel2DData smd = SedimentModel2DData.extract(dofs[j]);
-                final CurrentModel2DData cmd = dof_data[dofs[j].number];
+                final CurrentModel2DData cmd = cmds[j];
                 final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
                 final double nonZeroTotalDepth = ((cmd.totaldepth < WATT) ? WATT : cmd.totaldepth);
 
@@ -1030,29 +1024,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 - cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
                 cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
-
-                // ToDo ins Sedimentmodell
-                if ((eleCurrentData.iwatt == 0) && (cmd.totaldepth > 0.1) && smd != null) { // secondary Current shear stress only in wett elements
-                    double reduceFactor = (Math.abs(cureq1_mean * cmd.totaldepth) + 1.) * bottomslope;
-                    reduceFactor *= reduceFactor * reduceFactor;
-                    // reduceFactor *= reduceFactor; // hoch 6
-                    // final double chezy = cmd.kst * Math.pow(cmd.totaldepth, 1./6.);
-                    final double chezy = Math.sqrt(PhysicalParameters.G * smd.cv / smd.bedDragCoeff); // siehe Berechnung des grainShearStress
-                    final double alphaStar = 1; // 1 nach MIKE 21C mit gravitationellem Transport; 0.5 ohne grav. Transport;
-                    final double beta = alphaStar * 2. / PhysicalParameters.KARMANCONSTANT
-                            / PhysicalParameters.KARMANCONSTANT * Math.max(0.,
-                                    1. - PhysicalParameters.sqrtG / PhysicalParameters.KARMANCONSTANT / chezy);
-                    // final double beta = 7.*0.75;
-                    final double cv = (cmd.cv >= 0.1) ? cmd.cv : 0.1;// max(cmd.cv, 0.1);
-                    final double r = smd.bedDragCoeff / cv;
-                    final double coeff = beta * r / (ALPHA * cv * cv) * PhysicalParameters.G * cmd.totaldepth
-                            * (cmd.u * detady - cmd.v * detadx)
-                            / reduceFactor;
-                    synchronized (cmd) {
-                        cmd._tau_bx_extra -= coeff * (-cmd.v) * ele.area;
-                        cmd._tau_by_extra -= coeff * (+cmd.u) * ele.area;
-                    }
-                }
             }
 
             // residual-basierte Elementausdehnung
@@ -1063,7 +1034,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // Operatornorm for each direction component and then again as euclidean vector norm
             final double operatornorm_x = c0 + Math.abs(u_mean);
             final double operatornorm_y = c0 + Math.abs(v_mean);
-            final double operatornorm = Math.hypot(operatornorm_x, operatornorm_y);
+            final double operatornorm = Math.sqrt(operatornorm_x * operatornorm_x + operatornorm_y * operatornorm_y);
             final double cont_dimless = cont_res / operatornorm;
             final double mom_dimless  = mom_res * depth_mean / (operatornorm * operatornorm);
 
@@ -1083,7 +1054,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             for (int j = 0; j < 3; j++) {
 
-                final CurrentModel2DData cmd = dof_data[ele.getDOF(j).number];
+                final CurrentModel2DData cmd = cmds[j];
                 final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
 
                 // Fehlerkorrektur durchfuehren
@@ -1119,21 +1090,21 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     final double gl;
                     if (l != j && eleCurrentData.iwatt != 0) {
                         if (terms_eta[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen
-                            if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
+                            if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
                                                                                 // liegt unterhalb
                                 gl = cmd.wlambda * Math.max(0.,
-                                        1. - (cmd.eta - dof_data[ele.getDOF(l).number].eta) / ele.distance[l][j]);
+                                        1. - (cmd.eta - cmds[l].eta) / ele.distance[l][j]);
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                gl = (flood > dof_data[ele.getDOF(l).number].wlambda ? flood
-                                        : dof_data[ele.getDOF(l).number].wlambda);
+                                gl = (flood > cmds[l].wlambda ? flood
+                                        : cmds[l].wlambda);
                             }
                         } else { // Wasserstand am abgelegenen Knoten will fallen
-                            if (dof_data[ele.getDOF(l).number].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
+                            if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
                                                                                 // liegt unterhalb
                                 gl = 1.;
                             } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
                                 gl = wlambda * Math.max(0.,
-                                        1. - (dof_data[ele.getDOF(l).number].eta - cmd.eta) / ele.distance[l][j]);
+                                        1. - (cmds[l].eta - cmd.eta) / ele.distance[l][j]);
                             }
                         }
                     }else{
@@ -1145,8 +1116,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                     // puddledetection
                     if (l != j) {
-                        puddleLambda = ((puddleLambda < dof_data[ele.getDOF(l).number].wlambda)
-                                ? dof_data[ele.getDOF(l).number].wlambda
+                        puddleLambda = ((puddleLambda < cmds[l].wlambda)
+                                ? cmds[l].wlambda
                                 : puddleLambda);
                     }
 
@@ -1353,7 +1324,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         currentdata.wlambda = Math.min(1., currentdata.totaldepth / WATT);
         currentdata.w1_lambda = 1. - currentdata.wlambda;
 
-        currentdata.cv = Math.hypot(currentdata.u, currentdata.v);
+        currentdata.cv = Math.sqrt(currentdata.u*currentdata.u + currentdata.v*currentdata.v);
 
         currentdata.bottomFrictionCoefficient = PhysicalParameters.KINVISCOSITY_WATER; // Bodenreibungskoeffizient
 
@@ -1382,7 +1353,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         double ks_dune = 0.; // in [m]
         double duneLength = 0.01;
         if (sedimentmodeldata != null) {
-            duneLength = Math.hypot(sedimentmodeldata.duneLengthX, sedimentmodeldata.duneLengthY);
+            duneLength = Math.sqrt(sedimentmodeldata.duneLengthX * sedimentmodeldata.duneLengthX + sedimentmodeldata.duneLengthY * sedimentmodeldata.duneLengthY);
             final double lambda = Math.min(1., duneLength/(4.*dof.meanEdgeLength)); // Verringerung der Rauheit aus Duehnen, wenn das Netz die Duene mit 4 Stuetzstellen selbst Abbilden kann
             // ToDo vielleicht vorher noch das Skalarprodukt mit dem Geschwindigkeitsvektor bilden um Lambda weiter zu verrringern
             ks_dune = (1. - lambda) * 1.1 * 0.7 *sedimentmodeldata.duneHeight * (1.-Math.exp(-25*sedimentmodeldata.duneHeight/Math.max(0.01, duneLength)));
@@ -1466,10 +1437,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
         if (currentdata.bWeir != null) {
             double[] qu = currentdata.bWeir.getV(dof, currentdata.eta, t);
 
-            if (currentdata.cv > Math.hypot(qu[0], qu[1]) && !(currentdata.bWeir instanceof BroadCrestedTopoWeir)) {
+            if (currentdata.cv > Math.sqrt(qu[0]*qu[0] + qu[1]*qu[1]) && !(currentdata.bWeir instanceof BroadCrestedTopoWeir)) {
                 currentdata.u = qu[0];
                 currentdata.v = qu[1];
-                currentdata.cv = Math.hypot(qu[0], qu[1]);
+                currentdata.cv = Math.sqrt(qu[0]*qu[0] + qu[1]*qu[1]);
             }
         }
     } // end setBoundaryCondition
@@ -2071,8 +2042,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     xf_os.writeFloat(0.f);
                     xf_os.writeFloat(0.f);
                 } else {
-                    double taux = (current.bottomFrictionCoefficient * current.u + current.tau_bx_extra) * current.rho; // ToDo Schubspannung aus der Orbitalgeschwindigkeit
-                    double tauy = (current.bottomFrictionCoefficient * current.v + current.tau_by_extra) * current.rho;
+                    double taux = current.bottomFrictionCoefficient * current.u * current.rho; // ToDo Schubspannung aus der Orbitalgeschwindigkeit
+                    double tauy = current.bottomFrictionCoefficient * current.v * current.rho;
                     xf_os.writeFloat((float) taux);
                     xf_os.writeFloat((float) tauy);
                 }
@@ -2376,11 +2347,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             cmd.rv /= dof.lumpedMass;
             cmd.reta /= dof.lumpedMass;
 
-            cmd.tau_bx_extra = cmd._tau_bx_extra / area;
-            cmd.tau_by_extra = cmd._tau_by_extra / area;
-            cmd._tau_bx_extra = 0.;
-            cmd._tau_by_extra = 0.;
-
             final double ru = beta0 * cmd.ru + beta1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
             final double rv = beta0 * cmd.rv + beta1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
             double reta = beta0 * cmd.reta + beta1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
@@ -2414,11 +2380,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
             cmd.setWaterLevel(cmd.eta + dt * reta);
             // ToDo Sedimentmodel?!
             if (smd != null) {
-                cmd.tauBx = cmd.rho * (smd.bedDragCoeff * cmd.u + cmd.tau_bx_extra);
-                cmd.tauBy = cmd.rho * (smd.bedDragCoeff * cmd.v + cmd.tau_by_extra);
+                // tau_b*_extra (Sekundaerstroemung) wird ausschliesslich im SedimentModel2D berechnet und gehalten
+                cmd.tauBx = cmd.rho * (smd.bedDragCoeff * cmd.u + smd.tau_bx_extra);
+                cmd.tauBy = cmd.rho * (smd.bedDragCoeff * cmd.v + smd.tau_by_extra);
             } else {
-                cmd.tauBx = cmd.rho * cmd.tau_bx_extra;
-                cmd.tauBy = cmd.rho * cmd.tau_by_extra;
+                cmd.tauBx = 0.;
+                cmd.tauBy = 0.;
             }
 
             boolean rIsNaN = Double.isNaN(ru) || Double.isNaN(rv) || Double.isNaN(reta);

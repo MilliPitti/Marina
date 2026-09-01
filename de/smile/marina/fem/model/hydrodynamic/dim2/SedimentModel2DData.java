@@ -65,6 +65,9 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
     public double bottomslope = 1.;
     double _bottomslope = 0.; // temporary value
 
+    double _tau_bx_extra, _tau_by_extra; // temporary for elementdependent extra parts of bottom shear stress (secondary flow)
+    public double tau_bx_extra, tau_by_extra; // elementdependent extra parts of bottom shear stress (secondary flow), virtuelle Modellannahme - keine Ergebnisgroesse
+
     public double z; // [m] Lage des Gewaesserbodens als Tiefe
     double dzdt;
 
@@ -694,6 +697,8 @@ public class SedimentModel2DData extends SedimentProperties implements ModelData
         rvalue.v = v; // tiefenintegrierte Geschwindigkeiten, werden durch sekundaerstroemung
                       // angepasst
         rvalue.tauB = tauB;
+        rvalue.tau_bx_extra = tau_bx_extra;
+        rvalue.tau_by_extra = tau_by_extra;
 
         rvalue.bedload = bedload; // bedload sedimenttransport
         rvalue.bedloadVector = new double[] { bedloadVector[0], bedloadVector[1] };

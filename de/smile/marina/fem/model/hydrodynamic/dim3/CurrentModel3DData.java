@@ -181,8 +181,6 @@ public class CurrentModel3DData extends SurfaceWaterModelData {
         cm2dd.z = this.z;
         cm2dd.kst = this.kst;
         cm2dd.ks = this.ks;
-        cm2dd.tau_bx_extra =0.;
-        cm2dd.tau_by_extra =0.;
 
         cm2dd.wlambda = Math.min(1., cm2dd.totaldepth / CurrentModel2D.WATT);
         cm2dd.w1_lambda = 1. - cm2dd.wlambda;

@@ -681,7 +681,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double dsxydy = 0.;
             double dsyydy = 0.;
             double wavebreaking = 0.;
-
+            double depthdx = 0.;
+            double depthdy = 0.;
             double elementsize = ele.maxEdgeLength;
             boolean indicator = false;
             // compute element derivations
@@ -707,6 +708,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
                 detadx += cmd.eta * koeffmat[j][1];
                 detady += cmd.eta * koeffmat[j][2];
+                depthdx += cmd.totaldepth * koeffmat[j][1];
+                depthdy += cmd.totaldepth * koeffmat[j][2];
 
                 final WaveHYPModel2DData wave = WaveHYPModel2DData.extract(dof);
                 if (wave != null) {
@@ -958,9 +961,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             eleCurrentData.dhdx = detadx;
             eleCurrentData.dhdy = detady;
 
-            double depthdx = detadx + dzdx;
-            double depthdy = detady + dzdy;
-
             eleCurrentData.ddepthdx = depthdx;
             eleCurrentData.ddepthdy = depthdy;
 
@@ -1070,9 +1070,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
                                         - 1./3. * (1. / Math.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;
 
-                double result_H_i = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean * wlambda
+                double result_H_i = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean * eleCurrentData.wlambda
                                                 + koeffmat[j][1] * u_mean * cureq1_mean
-                                                + koeffmat[j][2] * depth_mean * cureq3_mean * wlambda
+                                                + koeffmat[j][2] * depth_mean * cureq3_mean * eleCurrentData.wlambda
                                                 + koeffmat[j][2] * v_mean * cureq1_mean
                                             ) * ele.area;
 

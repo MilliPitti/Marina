@@ -48,7 +48,7 @@ import javax.xml.bind.*;
  * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.10.8.5
+ * @version 4.11.0
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {
@@ -66,6 +66,11 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
     protected static double speedUpFactor = 1.; 
 
+    /** Hoehenskala [m] der richtungsbasierten Gewichte im projizierten Galerkin-Step der Kontinuitaetsgleichung:
+     *  ein Knoten, dessen Wasserstand um mehr als diese Hoehe oberhalb (steigendes Element) bzw. unterhalb
+     *  (fallendes Element) der nassen Wasseroberflaeche liegt, ist vom Massenaustausch des Elements entkoppelt. */
+    static double projectionHeightScale = 0.1;
+
     // Konstruktor
     public CurrentModel2D(FEDecomposition fe, CurrentDat currentdat) {
         System.out.println("CurrentModel2D initialization");
@@ -76,6 +81,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         this.currentdat = currentdat;
         WATT = Math.max(0.01, currentdat.watt); // verhindert das jemand als Wattgrenze 0 angibt
         halfWATT = WATT / 2.;
+        projectionHeightScale = 2. * WATT;
         infiltrationRate = currentdat.infiltrationRate;
         speedUpFactor = currentdat.speedUp;
 
@@ -637,7 +643,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         // caculate Bottomslope
         final SedimentElementData eleSedimentData = SedimentElementData.extract(ele);
-        final double bottomslope = (eleSedimentData != null) ? eleSedimentData.bottomslope : ele.bottomslope;
+        // final double bottomslope = (eleSedimentData != null) ? eleSedimentData.bottomslope : ele.bottomslope;
 
         if (dry == 3) { // element is totaly dry
 
@@ -647,7 +653,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final CurrentModel2DData cmd = cmds[j];
                 final double w1_lambda = 1. - cmd.totaldepth / halfWATT;
                 synchronized (cmd) {
-                    cmd.reta -= (1.E-7 + infiltrationRate) * w1_lambda * bottomslope; // kuenstliches Versickeren auf trockenen Elementen zur Modellstabilisierung
+                    cmd.reta -= (/*1.E-7 +*/ infiltrationRate) * w1_lambda /* bottomslope*/; // kuenstliches Versickeren auf trockenen Elementen zur Modellstabilisierung
                 }
             }
 
@@ -1052,6 +1058,82 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
             timeStep = tau_cur;
 
+
+            // SUPG-Anteil der Kontinuitaet
+            final double[] sSupg = new double[3];
+            for (int k = 0; k < 3; k++) {
+                sSupg[k] = -tau_cur * (  koeffmat[k][1] * depth_mean * cureq2_mean 
+                                       + koeffmat[k][1] * u_mean * cureq1_mean
+                                       + koeffmat[k][2] * depth_mean * cureq3_mean 
+                                       + koeffmat[k][2] * v_mean * cureq1_mean) * ele.area;
+            }
+            if (eleCurrentData.iwatt != 0) {
+                // Projektion s_i <- w_i (s_i - s̄_w), s̄_w = sum(w_k s_k) / sum(w_k), mit w_i = wlambda_i:
+                // trockene Knoten bekommen keinen Stabilisierungsanteil (weder Abgabe noch Aufnahme), duenne Knoten
+                // tiefenproportional, nasse voll. Summe bleibt 0, voll nasses Element unveraendert.
+                final double[] w = new double[3];
+                double sw = 0., sws = 0.;
+                for (int k = 0; k < 3; k++) {
+                    w[k] = cmds[k].wlambda;
+                    sw += w[k];
+                    sws += w[k] * sSupg[k];
+                }
+                final double sbar = (sw > 0.) ? sws / sw : 0.;
+                for (int k = 0; k < 3; k++) {
+                    sSupg[k] = (sw > 0.) ? w[k] * (sSupg[k] - sbar) : 0.;
+                }
+            }
+
+            // Galerkin-Anteil der Kontinuitaet: konsistente Massenmatrix (A/6 Diagonale, A/12 Nebendiagonale)
+            final double[] gGal = new double[3];
+            for (int k = 0; k < 3; k++) {
+                gGal[k] = -ele.area * (terms_eta[k] / 6. + (terms_eta[(k + 1) % 3] + terms_eta[(k + 2) % 3]) / 12.);
+            }
+            if (eleCurrentData.iwatt != 0) {
+                // Projektion g_i <- w_i (g_i - g̅_w + G_tot / sum(w_k)), g̅_w = sum(w_k g_k) / sum(w_k):
+                // die Elementsumme G_tot (Netto-Massenaenderung) bleibt exakt erhalten, wird aber nur auf Knoten mit
+                // Gewicht w_i > 0 verteilt. Die Gewichte sind richtungsbasiert in Anlehnung an das fruehere gl:
+                //  - steigendes Element (G_tot > 0, Wasser kommt an): Knoten unterhalb bzw. auf Hoehe der nassen
+                //    Wasseroberflaeche eta_ref empfangen voll (auch trockene -> Benetzung von oben), Knoten oberhalb
+                //    nur, wenn die Oberflaeche sie fast erreicht hat (Rampe ueber max(projectionHeightScale, totaldepth)).
+                //  - fallendes Element (G_tot < 0, Wasser geht weg): nur Knoten mit Wasser (wlambda) geben ab,
+                //    Pfuetzen unterhalb der Oberflaeche werden nicht von oben leergezogen (Rampe).
+                // Voll nasses Element: w = 1 -> unveraendert.
+                final double gtot = gGal[0] + gGal[1] + gGal[2];
+
+                double swl = 0., sweta = 0.;
+                for (int k = 0; k < 3; k++) {
+                    swl += cmds[k].wlambda;
+                    sweta += cmds[k].wlambda * cmds[k].eta;
+                }
+                final double eta_ref = (swl > 0.) ? sweta / swl : (cmds[0].eta + cmds[1].eta + cmds[2].eta) / 3.;
+
+                final double[] w = new double[3];
+                double sw = 0., swg = 0.;
+                for (int k = 0; k < 3; k++) {
+                    final double eta_k = cmds[k].eta;
+                    // Rampenskala: mindestens projectionHeightScale, bei tiefen Knoten deren Wassertiefe -> ein Knoten
+                    // wird nur entkoppelt, wenn der Hoehenunterschied groesser als sein eigenes Wasser ist
+                    final double hScale = Math.max(projectionHeightScale, cmds[k].totaldepth);
+                    if (gtot > 0.) { // Element steigt
+                        w[k] = Math.max(0., 1. - Math.max(0., eta_k - eta_ref) / hScale);
+                    } else { // Element faellt (oder stagniert)
+                        w[k] = cmds[k].wlambda * Math.max(0., 1. - Math.max(0., eta_ref - eta_k) / hScale);
+                    }
+                    sw += w[k];
+                    swg += w[k] * gGal[k];
+                }
+                if (sw > 0.) {
+                    final double gbar = swg / sw;
+                    final double gdist = gtot / sw;
+                    for (int k = 0; k < 3; k++) {
+                        gGal[k] = w[k] * (gGal[k] - gbar + gdist);
+                    }
+                } else { // kein Knoten kann abgeben: keine Massenaenderung
+                    gGal[0] = gGal[1] = gGal[2] = 0.;
+                }
+            }
+
             for (int j = 0; j < 3; j++) {
 
                 final CurrentModel2DData cmd = cmds[j];
@@ -1070,15 +1152,11 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
                                         - 1./3. * (1. / Math.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;
 
-                double result_H_i = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean * eleCurrentData.wlambda
-                                                + koeffmat[j][1] * u_mean * cureq1_mean
-                                                + koeffmat[j][2] * depth_mean * cureq3_mean * eleCurrentData.wlambda
-                                                + koeffmat[j][2] * v_mean * cureq1_mean
-                                            ) * ele.area;
+                final double result_H_i = sSupg[j] + gGal[j];   // SUPG-Anteil und Galerkin-Anteil, beide projiziert
 
                 double puddleLambda = cmd.puddleLambda;
 
-                // Begin standart Galerkin-step
+                // Begin standart Galerkin-step (Impulsgleichungen; Kontinuitaet siehe gGal oben)
                 for (int l = 0; l < 3; l++) {
 
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
@@ -1086,33 +1164,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     // Impulse Equations
                     result_U_i -= vorfak * terms_u[l];
                     result_V_i -= vorfak * terms_v[l];
-
-                    final double gl;
-                    if (l != j && eleCurrentData.iwatt != 0) {
-                        if (terms_eta[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen
-                            if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
-                                                                                // liegt unterhalb
-                                gl = cmd.wlambda * Math.max(0.,
-                                        1. - (cmd.eta - cmds[l].eta) / ele.distance[l][j]);
-                            } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                gl = (flood > cmds[l].wlambda ? flood
-                                        : cmds[l].wlambda);
-                            }
-                        } else { // Wasserstand am abgelegenen Knoten will fallen
-                            if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten
-                                                                                // liegt unterhalb
-                                gl = 1.;
-                            } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                gl = wlambda * Math.max(0.,
-                                        1. - (cmds[l].eta - cmd.eta) / ele.distance[l][j]);
-                            }
-                        }
-                    }else{
-                        gl = 1;
-                    }
-
-                    // Conti Equation
-                    result_H_i -= vorfak * terms_eta[l] * gl;
 
                     // puddledetection
                     if (l != j) {
@@ -2346,10 +2397,17 @@ public class CurrentModel2D extends SurfaceWaterModel {
             cmd.ru /= dof.lumpedMass;
             cmd.rv /= dof.lumpedMass;
             cmd.reta /= dof.lumpedMass;
+            
+            final double b0=1+(beta0-1) * cmd.wlambda; // nicht auf trockenen Knoten
+            final double b1=cmd.wlambda * beta1; // 
 
-            final double ru = beta0 * cmd.ru + beta1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
-            final double rv = beta0 * cmd.rv + beta1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
-            double reta = beta0 * cmd.reta + beta1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            final double ru = b0 * cmd.ru + b1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            final double rv = b0 * cmd.rv + b1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            double reta = b0 * cmd.reta + b1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+
+            // final double ru = beta0 * cmd.ru + beta1 * cmd.dudt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            // final double rv = beta0 * cmd.rv + beta1 * cmd.dvdt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
+            // double reta = beta0 * cmd.reta + beta1 * cmd.detadt;  // zusaetzlichen Stabilisierung in Anlehnung am expliziten Adams-Bashford 2. Ordnung mit variabler Schrittweite
 
             cmd.dudt = cmd.ru;  cmd.ru=0.;
             cmd.dvdt = cmd.rv;  cmd.rv=0.;

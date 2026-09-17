@@ -47,8 +47,8 @@ import javax.xml.bind.*;
 public class MarinaXML {
     
     public final static int majorversion = 4;
-    public final static int minorversion = 10;
-    public final static String update = "10";
+    public final static int minorversion = 11;
+    public final static String update = "0";
 
     public final static boolean release=true;
     

@@ -1059,47 +1059,30 @@ public class CurrentModel2D extends SurfaceWaterModel {
             timeStep = tau_cur;
 
 
-            // SUPG-Anteil der Kontinuitaet
-            final double[] sSupg = new double[3];
+            // Kontinuitaetsgleichung: SUPG-Anteil und Galerkin-Anteil (konsistente Massenmatrix, A/6 Diagonale,
+            // A/12 Nebendiagonale) werden gemeinsam gesammelt und in teiltrockenen Elementen gemeinsam projiziert.
+            // Der SUPG-Anteil ist summenfrei, die Elementsumme von rH ist damit die Netto-Massenaenderung des Elements.
+            final double[] rH = new double[3];
             for (int k = 0; k < 3; k++) {
-                sSupg[k] = -tau_cur * (  koeffmat[k][1] * depth_mean * cureq2_mean 
-                                       + koeffmat[k][1] * u_mean * cureq1_mean
-                                       + koeffmat[k][2] * depth_mean * cureq3_mean 
-                                       + koeffmat[k][2] * v_mean * cureq1_mean) * ele.area;
+                final double supg = -tau_cur * (  koeffmat[k][1] * depth_mean * cureq2_mean
+                                                + koeffmat[k][1] * u_mean * cureq1_mean
+                                                + koeffmat[k][2] * depth_mean * cureq3_mean
+                                                + koeffmat[k][2] * v_mean * cureq1_mean) * ele.area;
+                final double galerkin = -ele.area * (terms_eta[k] / 6. + (terms_eta[(k + 1) % 3] + terms_eta[(k + 2) % 3]) / 12.);
+                rH[k] = supg + galerkin;
             }
             if (eleCurrentData.iwatt != 0) {
-                // Projektion s_i <- w_i (s_i - s̄_w), s̄_w = sum(w_k s_k) / sum(w_k), mit w_i = wlambda_i:
-                // trockene Knoten bekommen keinen Stabilisierungsanteil (weder Abgabe noch Aufnahme), duenne Knoten
-                // tiefenproportional, nasse voll. Summe bleibt 0, voll nasses Element unveraendert.
-                final double[] w = new double[3];
-                double sw = 0., sws = 0.;
-                for (int k = 0; k < 3; k++) {
-                    w[k] = cmds[k].wlambda;
-                    sw += w[k];
-                    sws += w[k] * sSupg[k];
-                }
-                final double sbar = (sw > 0.) ? sws / sw : 0.;
-                for (int k = 0; k < 3; k++) {
-                    sSupg[k] = (sw > 0.) ? w[k] * (sSupg[k] - sbar) : 0.;
-                }
-            }
-
-            // Galerkin-Anteil der Kontinuitaet: konsistente Massenmatrix (A/6 Diagonale, A/12 Nebendiagonale)
-            final double[] gGal = new double[3];
-            for (int k = 0; k < 3; k++) {
-                gGal[k] = -ele.area * (terms_eta[k] / 6. + (terms_eta[(k + 1) % 3] + terms_eta[(k + 2) % 3]) / 12.);
-            }
-            if (eleCurrentData.iwatt != 0) {
-                // Projektion g_i <- w_i (g_i - g̅_w + G_tot / sum(w_k)), g̅_w = sum(w_k g_k) / sum(w_k):
-                // die Elementsumme G_tot (Netto-Massenaenderung) bleibt exakt erhalten, wird aber nur auf Knoten mit
-                // Gewicht w_i > 0 verteilt. Die Gewichte sind richtungsbasiert in Anlehnung an das fruehere gl:
-                //  - steigendes Element (G_tot > 0, Wasser kommt an): Knoten unterhalb bzw. auf Hoehe der nassen
+                // Projektion r_i <- w_i (r_i - r̄_w + R_tot / sum(w_k)), r̄_w = sum(w_k r_k) / sum(w_k):
+                // die Elementsumme R_tot (Netto-Massenaenderung) bleibt exakt erhalten, wird aber nur auf Knoten mit
+                // Gewicht w_i > 0 verteilt; der summenfreie Stabilisierungsanteil wird mit denselben Gewichten
+                // umverteilt. Die Gewichte sind richtungsbasiert in Anlehnung an das fruehere gl:
+                //  - steigendes Element (R_tot > 0, Wasser kommt an): Knoten unterhalb bzw. auf Hoehe der nassen
                 //    Wasseroberflaeche eta_ref empfangen voll (auch trockene -> Benetzung von oben), Knoten oberhalb
                 //    nur, wenn die Oberflaeche sie fast erreicht hat (Rampe ueber max(projectionHeightScale, totaldepth)).
-                //  - fallendes Element (G_tot < 0, Wasser geht weg): nur Knoten mit Wasser (wlambda) geben ab,
+                //  - fallendes Element (R_tot < 0, Wasser geht weg): nur Knoten mit Wasser (wlambda) geben ab,
                 //    Pfuetzen unterhalb der Oberflaeche werden nicht von oben leergezogen (Rampe).
                 // Voll nasses Element: w = 1 -> unveraendert.
-                final double gtot = gGal[0] + gGal[1] + gGal[2];
+                final double rtot = rH[0] + rH[1] + rH[2];
 
                 double swl = 0., sweta = 0.;
                 for (int k = 0; k < 3; k++) {
@@ -1109,28 +1092,28 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final double eta_ref = (swl > 0.) ? sweta / swl : (cmds[0].eta + cmds[1].eta + cmds[2].eta) / 3.;
 
                 final double[] w = new double[3];
-                double sw = 0., swg = 0.;
+                double sw = 0., swr = 0.;
                 for (int k = 0; k < 3; k++) {
                     final double eta_k = cmds[k].eta;
                     // Rampenskala: mindestens projectionHeightScale, bei tiefen Knoten deren Wassertiefe -> ein Knoten
                     // wird nur entkoppelt, wenn der Hoehenunterschied groesser als sein eigenes Wasser ist
                     final double hScale = Math.max(projectionHeightScale, cmds[k].totaldepth);
-                    if (gtot > 0.) { // Element steigt
+                    if (rtot > 0.) { // Element steigt
                         w[k] = Math.max(0., 1. - Math.max(0., eta_k - eta_ref) / hScale);
                     } else { // Element faellt (oder stagniert)
                         w[k] = cmds[k].wlambda * Math.max(0., 1. - Math.max(0., eta_ref - eta_k) / hScale);
                     }
                     sw += w[k];
-                    swg += w[k] * gGal[k];
+                    swr += w[k] * rH[k];
                 }
                 if (sw > 0.) {
-                    final double gbar = swg / sw;
-                    final double gdist = gtot / sw;
+                    final double rbar = swr / sw;
+                    final double rdist = rtot / sw;
                     for (int k = 0; k < 3; k++) {
-                        gGal[k] = w[k] * (gGal[k] - gbar + gdist);
+                        rH[k] = w[k] * (rH[k] - rbar + rdist);
                     }
                 } else { // kein Knoten kann abgeben: keine Massenaenderung
-                    gGal[0] = gGal[1] = gGal[2] = 0.;
+                    rH[0] = rH[1] = rH[2] = 0.;
                 }
             }
 
@@ -1152,11 +1135,11 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         result_V_i -=  (koeffmat[j][1] * astx * vdx + koeffmat[j][2] * asty * vdy) * wlambda * ele.area
                                         - 1./3. * (1. / Math.max(cmd.totaldepth,CurrentModel2D.WATT)) * (depthdx * astx * vdx + depthdy * asty * vdy) * wlambda * ele.area;
 
-                final double result_H_i = sSupg[j] + gGal[j];   // SUPG-Anteil und Galerkin-Anteil, beide projiziert
+                final double result_H_i = rH[j];   // Kontinuitaet: SUPG- und Galerkin-Anteil, gemeinsam projiziert
 
                 double puddleLambda = cmd.puddleLambda;
 
-                // Begin standart Galerkin-step (Impulsgleichungen; Kontinuitaet siehe gGal oben)
+                // Begin standart Galerkin-step (Impulsgleichungen; Kontinuitaet siehe rH oben)
                 for (int l = 0; l < 3; l++) {
 
                     final double vorfak = ele.area * ((l == j) ? 1. / 6. : 1. / 12.);
@@ -2419,7 +2402,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 source_dhdt = cmd.sourceh.getValue(time);
             }
             if (cmd.sourceQ != null) {
-                source_dhdt = cmd.sourceQ.getValue(time) / area;
+                source_dhdt = cmd.sourceQ.getValue(time) / area * 3.;
             }
             final GroundWater2DData gwdata = GroundWater2DData.extract(dof);
             if (gwdata != null) {

@@ -24,6 +24,5 @@ else
     # Run
     echo "Starting Marina..."
     # echo "CLASSPATH: $CLASSPATH"
-    # Using simple 'nice' to avoid permission denied errors (default is usually +10 niceness)
-    nice java -Xmx4G -cp "$CLASSPATH" de.smile.marina.MarinaXML "$1"
+    java -Xmx4G -cp "$CLASSPATH" de.smile.marina.MarinaXML "$1"
 fi

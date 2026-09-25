@@ -59,16 +59,27 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
     private final CurrentDat currentdat;
 
-    public static final double BATTJESKOEFF = 0.3; // 0.1 - 0.3 Austauschkoeffizient infolge Wellenbrechens
+    static final double BATTJESKOEFF = 0.3; // 0.1 - 0.3 Austauschkoeffizient infolge Wellenwirkung (Wellenbrechen oder Radiationstresses)
+
+    /** Elder-Koeffizient der tiefengemittelten Wirbelviskositaet nu_t = ELDERKOEFF * u* * h [-]:
+     *  kappa/6 ≈ 0.07 aus dem logarithmischen Geschwindigkeitsprofil (Elder 1959). */
+    static final double ELDERKOEFF = 0.41 / 6.;
+
+    /** Referenzgefaelle [-] des Wasserspiegels fuer die Entkopplung des Massenaustauschs in teilnassen Elementen:
+     *  bergauf gerichtete Transfers werden mit max(0, 1 - (deta/d)/DECOUPLING_SLOPE) gewichtet, ab diesem
+     *  Gefaelle sind Quelle und Ziel vollstaendig entkoppelt. Natuerliche Gefaelle 1e-4..1e-3, Fronten 1e-2..1e-1. */
+    static final double DECOUPLING_SLOPE = 0.05;
 
     private double previousTimeStep = 0.0; // Speichert den vorherigen Zeitschritt für das gesamte Modell
 
-    protected static double speedUpFactor = 1.; 
+    /** Randknoten, deren Randbedingung Nachbarknoten liest oder schreibt (Wehr-Glaettung, Extrapolation) */
+    private DOF[] coupledBoundaryDOFs = new DOF[0];
+    /** Wehrknoten, Weir.getV liest die Nachbarknoten und setzt eta */
+    private DOF[] weirDOFs = new DOF[0];
+    /** Q-Steuerungen der Raender, jede Instanz einmal */
+    private QSteuerung[] qBoundaries = new QSteuerung[0];
 
-    /** Hoehenskala [m] der richtungsbasierten Gewichte im projizierten Galerkin-Step der Kontinuitaetsgleichung:
-     *  ein Knoten, dessen Wasserstand um mehr als diese Hoehe oberhalb (steigendes Element) bzw. unterhalb
-     *  (fallendes Element) der nassen Wasseroberflaeche liegt, ist vom Massenaustausch des Elements entkoppelt. */
-    static double projectionHeightScale = 0.1;
+    protected static double speedUpFactor = 1.; 
 
     // Konstruktor
     public CurrentModel2D(FEDecomposition fe, CurrentDat currentdat) {
@@ -80,7 +91,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
         this.currentdat = currentdat;
         WATT = Math.max(0.01, currentdat.watt); // verhindert das jemand als Wattgrenze 0 angibt
         halfWATT = WATT / 2.;
-        projectionHeightScale = 2. * WATT;
         infiltrationRate = currentdat.infiltrationRate;
         speedUpFactor = currentdat.speedUp;
 
@@ -117,7 +127,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         }
         if (currentdat.bottomFriction == CurrentDat.BottomFriction.Nikuradse) {
             nikuradse = true;
-            // read rauhigkeitsmodell // nikuradse-dat in mm
+            // read rauhigkeitsmodell // nikuradse-dat in m
             if (currentdat.nikuradse_name != null) {
                 if (currentdat.nikuradseFileType == SmileIO.MeshFileType.SystemDat) {
                     readNikuradseCoeff(currentdat.nikuradse_name);
@@ -134,6 +144,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             readWeirXML(currentdat.weirsFileName);
         }
         initializeWeirRoughness();
+        initBoundaryConditionPhases();
 
         try {
             xf_os = new DataOutputStream(new FileOutputStream(currentdat.xferg_name));
@@ -147,12 +158,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
     }
 
     /**
-     * Initialisiert die Wasserspiegellage mit einem konstanten Wert.
-     * Die Methode setzt den Wasserspiegel auf den uebergebenen konstanten Wert f�r
-     * den gesamten Projektzeitraum.
-     *
+     * Initialisiert die Wasserspiegellage mit einem konstanten Wert.     *
      * @param initalWaterLevel Der konstante Wert fuer die Wasserspiegellage.
-     * @return true, wenn die Initialisierung erfolgreich war, false falls nicht.
      */
     public void constantInitialWaterLevel(double initalWaterLevel) {
         System.out.println("\t Set initial value " + initalWaterLevel);
@@ -160,13 +167,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
         for (int i = 0; i < fenet.getNumberofDOFs(); i++) {
             DOF dof = fenet.getDOF(i);
             SedimentModel2DData sedimentmodeldata = SedimentModel2DData.extract(dof);
-            dof_data[i].z = dof.z;
-            if (sedimentmodeldata != null)
-                dof_data[i].z = sedimentmodeldata.z;
-            if ((dof_data[i].z + initalWaterLevel) > 0.)
-                dof_data[i].eta = initalWaterLevel;
-            else
-                dof_data[i].eta = -dof_data[i].z;
+            dof_data[i].z = (sedimentmodeldata != null) ? sedimentmodeldata.z : dof.z;
+            // setzt eta, totaldepth, wlambda; trockene Knoten: eta = -z
+            dof_data[i].setWaterLevel(initalWaterLevel);
         }
         setMaxTimeStep(estimateCourantTimeStepFromState());
     }
@@ -278,8 +281,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 if (SHEAR_gesetzt) {
                     dof_data[i].tauBx = inStream.readFloat();
                     dof_data[i].tauBy = inStream.readFloat();
-                    dof_data[i].bottomFrictionCoefficient = Math.sqrt(dof_data[i].tauBx*dof_data[i].tauBx + dof_data[i].tauBy*dof_data[i].tauBy)
-                            / dof_data[i].rho;
                 }
 
                 if (V_SCAL_gesetzt) {
@@ -375,7 +376,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     for (int j = 0; j < 3; j++) {
                         CurrentModel2DData nodeCmd = dof_data[dofs[j].number];
                         nodeCmd.kst = 20.;
-                        nodeCmd.ks = CurrentModel2DData.Strickler2Nikuradse(20.); // in mm
+                        nodeCmd.ks = CurrentModel2DData.Strickler2Nikuradse(20.); // in m
                     }
                 }
             }
@@ -670,8 +671,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double v_mean = 0.;
             double depth_mean = 0.;
 
-            double minTotalDepth = Double.MAX_VALUE; 
-
             double udx = 0.;
             double udy = 0.;
             double vdx = 0.;
@@ -690,6 +689,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double wavebreaking = 0.;
             double depthdx = 0.;
             double depthdy = 0.;
+            // Divergenzanteile der benetzungsgewichteten Geschwindigkeit wlambda*u, nur fuer die Kontinuitaet
+            double uwdx = 0.;
+            double vwdy = 0.;
             double elementsize = ele.maxEdgeLength;
             boolean indicator = false;
             // compute element derivations
@@ -706,15 +708,15 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 eleCurrentData.deepestTotalDepth = (eleCurrentData.deepestTotalDepth > cmd.totaldepth)
                         ? eleCurrentData.deepestTotalDepth
                         : cmd.totaldepth;// max(eleCurrentData.deepestTotalDepth, cmd.totaldepth);
-                minTotalDepth = (minTotalDepth > cmd.totaldepth)
-                        ? cmd.totaldepth
-                        : minTotalDepth;// min(minTotalDepth, cmd.totaldepth);
 
                 udx += cmd.u * koeffmat[j][1];
                 udy += cmd.u * koeffmat[j][2];
 
                 vdx += cmd.v * koeffmat[j][1];
                 vdy += cmd.v * koeffmat[j][2];
+
+                uwdx += cmd.wlambda * cmd.u * koeffmat[j][1];
+                vwdy += cmd.wlambda * cmd.v * koeffmat[j][2];
 
                 detadx += cmd.eta * koeffmat[j][1];
                 detady += cmd.eta * koeffmat[j][2];
@@ -900,14 +902,14 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // Battjes-Ansatz turbulence by wavebreaking
             if (wavebreaking > 0.)
                 astx += BATTJESKOEFF * depth_mean * Math.cbrt(wavebreaking / PhysicalParameters.RHO_WATER);
-            // wave induced turbulence by Radiation-Stresses
-            astx += Math.sqrt((dsxxdx + dsxydy)*(dsxxdx + dsxydy) + (dsxydx + dsyydy)*(dsxydx + dsyydy)) / PhysicalParameters.RHO_WATER;
+            // wave induced turbulence by Radiation-Stresses: u*_w = sqrt(|div S|/rho), nu = c * h * u*_w
+            astx += BATTJESKOEFF * depth_mean * Math.sqrt(Math.hypot(dsxxdx + dsxydy, dsxydx + dsyydy) / PhysicalParameters.RHO_WATER);
 
-            // isotropher Elder - Anteil mit Strickler Bodenschubspannung approximiert - ca. 0.06
+            // Elder-Anteil nu_t = ELDERKOEFF * u* * h, u* aus der Strickler-Bodenschubspannung
+            // u* = |u| * sqrt(g) / (kst * h^(1/6))
             final double u_star = Math.sqrt(u_mean*u_mean + v_mean*v_mean) * PhysicalParameters.sqrtG /
                     (eleCurrentData.meanStricklerCoefficient * Math.pow(depth_mean, 1.0 / 6.0));
-            // Elder-Koeffizient kappa (ca. 0.6): nu_t = kappa * u* * h
-           final double nu_elder = 0.6 / 2. * u_star * depth_mean;
+            final double nu_elder = ELDERKOEFF * u_star * depth_mean;
 
             double asty = astx;
             astx += nu_elder/(1+Math.abs(dzdx));
@@ -978,11 +980,27 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double cureq2_mean = 0.;
             double cureq3_mean = 0.;
 
+            // Benetzungsgewichte, wie g in der Konti-Projektion
+            double gs = 0.;
+            final double[] gw = new double[3];
+            for (int j = 0; j < 3; j++) {
+                gw[j] = (flood > cmds[j].wlambda ? flood : cmds[j].wlambda);
+                gs += gw[j];
+            }
+
             // Elementfehler der Kontigleichung berechnen
             for (int j = 0; j < 3; j++) {
                 final CurrentModel2DData cmd = cmds[j];
-                terms_eta[j] = cmd.totaldepth * (udx + vdy) + (cmd.u * depthdx + cmd.v * depthdy);
-                cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]);
+                // Kontinuitaet mit der benetzungsgewichteten Geschwindigkeit uw = wlambda*u als Knotenfeld in BEIDEN
+                // Anteilen der Produktform. Die Elementsumme ist dann exakt das Integral von div(h*uw), die
+                // Kantenfluesse heben sich zwischen Nachbarelementen auf -> massenerhaltend. Ein duenner, schneller
+                // Film am Grabenrand erzeugt so keinen ueberhoehten Kantenfluss h_mittel*u_mittel mehr.
+                // Nur einen Anteil zu wichten ist nicht konservativ.
+                final double uw = cmd.wlambda * cmd.u;
+                final double vw = cmd.wlambda * cmd.v;
+                terms_eta[j] = cmd.totaldepth * (uwdx + vwdy) + (uw * depthdx + vw * depthdy);
+                // terms_eta[j] = cmd.totaldepth * (udx + vdy) + (cmd.u * depthdx + cmd.v * depthdy);
+                cureq1_mean += gw[j] / gs * (cmd.detadt + terms_eta[j]);
             }
 
             // Residuum der Kontigleichung fuer Folgemodelle bereitstellen (Sekundaerstroemung im SedimentModel2D)
@@ -998,7 +1016,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         // Druckterm
                         PhysicalParameters.G * detadx
                                 // density term
-                                - 0.5 * PhysicalParameters.G * rhodx * cmd.totaldepth / cmd.rho * wlambda
+                                + 0.5 * PhysicalParameters.G * rhodx * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
                                 + (cmd.u * udx + cmd.v * udy)
                                 // Coriolis
@@ -1012,14 +1030,14 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
                                 - cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
-                cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
+                cureq2_mean += gw[j] / gs * (cmd.dudt + terms_u[j]);
 
                 // Impulsgleichung y
                 terms_v[j] =
                         // Druckter
                         PhysicalParameters.G * detady 
                                 // density term
-                                - 0.5 * PhysicalParameters.G * rhody * cmd.totaldepth / cmd.rho * wlambda
+                                + 0.5 * PhysicalParameters.G * rhody * cmd.totaldepth / cmd.rho * wlambda
                                 // Advektionsterme
                                 + (cmd.u * vdx + cmd.v * vdy)
                                 // Coriolis
@@ -1033,7 +1051,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // CouplingTerm from the derivation of the Formulation q -> v
                                 - cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
-                cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
+                cureq3_mean += gw[j] / gs * (cmd.dvdt + terms_v[j]);
             }
 
             // residual-basierte Elementausdehnung
@@ -1061,40 +1079,39 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double tau_cur = 0.5 * elementsize / operatornorm;
 
             timeStep = tau_cur;
-
-
             // Kontinuitaetsgleichung: Galerkin-Anteil (konsistente Massenmatrix, A/6 Diagonale, A/12 Nebendiagonale)
-            // und SUPG-Anteil werden gemeinsam in rH gesammelt. Die konsistente Massenmatrix wird zerlegt in
-            //     rH_j = -A*terms_eta[j]/3                              (gelumpter Anteil, traegt die Massenaenderung)
-            //          - A/12 * sum_{l!=j} (gl_jl*terms_eta[l] - terms_eta[j])   (Austauschanteil, bei gl = 1 summenfrei)
-            // In teiltrockenen Elementen wird der Anteil des abgelegenen Knotens l in der Gleichung von Knoten j mit
-            // gl gewichtet, abhaengig von Richtung, Lage und Wasserspiegelgefaelle:
-            //  - l will steigen und liegt unterhalb: j nimmt nur mit eigener Benetzung und bei flachem Gefaelle
-            //    teil (kein aufgestaendertes Wasser auf j),
-            //  - l will steigen und liegt oberhalb: j bekommt den Anteil mit der Benetzung von l bzw. flood,
-            //  - l will fallen und liegt unterhalb: voller Anteil,
-            //  - l will fallen und liegt oberhalb: j nimmt nur mit Benetzung und bei flachem Gefaelle teil
-            //    (der Graben wird nicht fuer das Fallen eines fast trockenen Feldknotens leergezogen).
-            // Austausch- und SUPG-Anteil sind summenfrei und werden mit den Knotenbenetzungen g umverteilt:
-            //     r_j = -A*terms_eta[j]/3 + g_j * (x_j - mean_g(x)) + g_j * (supg_j - mean_g(supg))
-            // Trockene Knoten bekommen weder Austausch- noch Stabilisierungsanteil, die Elementsumme bleibt exakt
-            // -A/3 * sum(terms_eta), die Masse ist also erhalten. Voll nasses Element: konsistente Massenmatrix.
+            // und SUPG-Anteil werden gemeinsam in rH gesammelt und gemeinsam mit gl projiziert.
+            //     rH_j = -A*terms_eta[j]/3                                   (gelumpter Anteil, Massenaenderung)
+            //          - A/12 * sum_{l!=j} (gl_jl*teff[l] - teff[j])         (Austauschanteil Galerkin + SUPG)
+            // supg ist hier der SUPG-Knotenwert je Flaeche (ohne ele.area) und auf dem Element summenfrei
+            // (sum_j koeffmat[j][k] = 0). Er geht in zwei Kombinationen mit terms_eta ein:
+            //     teff[l] = terms_eta[l] + 4*supg[l]   Austausch: fuer gl = 1 ergibt der Austausch exakt
+            //                                          Galerkin-Nebendiagonale plus A*supg[j]
+            //                                          (sum_{l!=j}(supg[l]-supg[j]) = -3*supg[j])
+            //     tdir[l] = terms_eta[l] - 3*supg[l]   Richtung: rH_l = -A/3*(terms_eta[l] - 3*supg[l]) bei gl = 1,
+            //                                          tdir[l] < 0 heisst also "l will steigen" inkl. Stabilisierung
+            // Der Austauschanteil wird mit den Knotenbenetzungen g umverteilt, die Elementsumme bleibt exakt
+            // -A/3 * sum(terms_eta), die Masse ist also erhalten.
             final double[] rH = new double[3];
-            final double[] supg = new double[3];
+            final double[] teff = new double[3];
+            final double[] tdir = new double[3];
             final double[] xchg = new double[3];
             final double[] g = new double[3];
-            double gsum = 0., gsupg = 0., gxchg = 0.;
+            double gsum = 0., gxchg = 0.;
             for (int j = 0; j < 3; j++) {
-                final CurrentModel2DData cmd = cmds[j];
-                final double wlambda = (flood > cmd.wlambda ? flood : cmd.wlambda);
-                g[j] = wlambda;
+                g[j] = (flood > cmds[j].wlambda ? flood : cmds[j].wlambda);
                 gsum += g[j];
 
-                supg[j] = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean
-                                      + koeffmat[j][1] * u_mean * cureq1_mean
-                                      + koeffmat[j][2] * depth_mean * cureq3_mean
-                                      + koeffmat[j][2] * v_mean * cureq1_mean) * ele.area;
-                gsupg += g[j] * supg[j];
+                final double supg = -tau_cur * (  koeffmat[j][1] * depth_mean * cureq2_mean * g[j]
+                                                + koeffmat[j][1] * u_mean * cureq1_mean
+                                                + koeffmat[j][2] * depth_mean * cureq3_mean * g[j]
+                                                + koeffmat[j][2] * v_mean * cureq1_mean);
+                teff[j] = terms_eta[j] + 4. * supg;
+                tdir[j] = terms_eta[j] - 3. * supg;
+            }
+            for (int j = 0; j < 3; j++) {
+                final CurrentModel2DData cmd = cmds[j];
+                // final double wlambda = g[j];
 
                 double x = 0.;
                 for (int l = 0; l < 3; l++) {
@@ -1103,26 +1120,45 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     }
                     double gl;
                     if (eleCurrentData.iwatt != 0) {
-                        if (terms_eta[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen
-                            if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                                gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda) * Math.max(0., 1. - (cmd.eta - cmds[l].eta) / ele.distance[l][j]);
-                            } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda);
-                            }
-                        } else { // Wasserstand am abgelegenen Knoten will fallen
-                            if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                                gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda);
-                            } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                                gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda) * Math.max(0., 1. - (cmds[l].eta - cmd.eta) / ele.distance[l][j]);
-                            }
+                        // ---- alte richtungsbasierte gl-Berechnung (auskommentiert, zum Vergleich) ----
+                        // if (tdir[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen (Galerkin + SUPG)
+                        //     if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
+                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda) * Math.max(0., 1. - (cmd.eta - cmds[l].eta) / ele.distance[l][j]);
+                        //     } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
+                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda);
+                        //     }
+                        // } else { // Wasserstand am abgelegenen Knoten will fallen
+                        //     if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
+                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda);
+                        //     } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
+                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda) * Math.max(0., 1. - (cmds[l].eta - cmd.eta) / ele.distance[l][j]);
+                        //     }
+                        // }
+                        // ---- Entkopplung ueber die verbindende Wassersaeule ----
+                        // Der Nebendiagonalanteil ist ein Massentransfer entlang der Kante (j,l) mit Quelle s und Ziel t:
+                        //   l will steigen (tdir[l] < 0): Wasser kommt bei l an und breitet sich zu j aus -> s = l, t = j
+                        //   l will fallen:                 Wasser verlaesst l, j liefert nach              -> s = j, t = l
+                        final boolean rises = tdir[l] < 0;
+                        final CurrentModel2DData src = rises ? cmds[l] : cmd;
+                        final CurrentModel2DData tgt = rises ? cmd : cmds[l];
+                        // Verbindende Wassersaeule: Wasserspiegel der Quelle ueber dem hoeheren Boden der Kante
+                        // (z ist Bodentiefe, Bodenhoehe = -z): hconn = eta_s + min(z_s, z_t) = min(h_s, eta_s + z_t).
+                        // Negativ, wenn der Boden des Ziels ueber dem Quellwasserspiegel liegt (kein Aufstaendern,
+                        // Graben wird nicht leergezogen). Bei trockenem Ziel unterhalb ergibt sich min(h_s, deta)/WATT = flood.
+                        final double hconn = src.eta + Math.min(src.z, tgt.z);
+                        final double phiConn = Math.min(1., Math.max(0., hconn / WATT));
+                        // Gefaelle: nur bergauf (Ziel hoeher als Quelle) entkoppelt ein steiler Wasserspiegel, bei gleichem
+                        // deta kurze Kanten staerker als lange. Referenzgefaelle DECOUPLING_SLOPE.
+                        final double slopeUp = Math.max(0., tgt.eta - src.eta) / ele.distance[l][j];
+                        final double phiSlope = Math.max(0., 1. - slopeUp / DECOUPLING_SLOPE);
+                        gl = phiConn * phiSlope;
+                        if (!rises) {
+                            gl *= cmds[l].wlambda;   // Defizit eines fast trockenen Knotens nicht auf den Nachbarn einpraegen
                         }
-                        // lam = 1: voll nass (kleinste Tiefe >= 2*WATT), lam = 0: ein Knoten an oder unter der Wattgrenze
-                        final double lam = Math.min(1., Math.max(0., (minTotalDepth - WATT) / WATT));
-                        gl = lam + (1. - lam) * gl;
                     } else {
                         gl = 1.;
                     }
-                    x -= ele.area * (gl * terms_eta[l] - terms_eta[j]) / 12.;
+                    x -= ele.area * (gl * teff[l] - teff[j]) / 12.;
                 }
                 xchg[j] = x;
                 gxchg += g[j] * x;
@@ -1130,7 +1166,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             for (int j = 0; j < 3; j++) {
                 rH[j] = -ele.area * terms_eta[j] / 3.;
                 if (gsum > 0.) {
-                    rH[j] += g[j] * ((xchg[j] - gxchg / gsum) + (supg[j] - gsupg / gsum));
+                    rH[j] += g[j] * (xchg[j] - gxchg / gsum);
                 }
             }
 
@@ -1190,23 +1226,81 @@ public class CurrentModel2D extends SurfaceWaterModel {
     } // end ElementApproximation
 
     /**
-     * setBoundaryCondition
+     * Setzt die Randbedingungen aller Knoten in vier Phasen. Nur knotenlokale Anteile laufen parallel.
+     * Anteile, die Nachbarknoten lesen oder schreiben (Wehr-Glaettung, Extrapolation, Wehr-getV), laufen
+     * sequentiell in fester Knotenreihenfolge. Das Ergebnis ist damit unabhaengig von der Thread-Anzahl,
+     * und der Austausch -dh/+dh der Wasserstands-Extrapolation bleibt massenerhaltend (keine verlorenen Updates).
+     */
+    @Override
+    public void setBoundaryConditions() {
+        applyBoundaryConditions(true);
+    }
+
+    /**
+     * @param withNeighbourSmoothing false: ohne Phase 2 (nicht idempotent), z.B. fuer die Ergebnisausgabe
+     */
+    private void applyBoundaryConditions(boolean withNeighbourSmoothing) {
+        // Phase 1 (parallel, nur eigener Knoten): Bathymetrie, Wasserstands-RB
+        Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> setLocalBoundaryCondition(dof, time));
+        // Phase 2 (sequentiell): Wehr-Glaettung und Extrapolation, schreibt auch Nachbarknoten
+        if (withNeighbourSmoothing) {
+            for (DOF dof : coupledBoundaryDOFs)
+                setCoupledBoundaryCondition(dof);
+        }
+        // Q-Steuerungen einmal je Zeitpunkt mit den endgueltigen Wasserstaenden
+        for (QSteuerung q : qBoundaries)
+            q.update(dof_data, time);
+        // Phase 3 (parallel, nur eigener Knoten): Geschwindigkeits-RB, Wattstrategie, Reibung, Wind, Dichte
+        Arrays.stream(fenet.getDOFs()).parallel().forEach(dof -> setDerivedBoundaryValues(dof, time));
+        // Phase 4 (sequentiell): Wehre, getV liest die Nachbarknoten und setzt eta
+        for (DOF dof : weirDOFs)
+            setWeirVelocity(dof, time);
+    }
+
+    /** bestimmt die Knotenlisten fuer die sequentiellen Phasen von setBoundaryConditions, nach dem Einlesen der Wehre */
+    private void initBoundaryConditionPhases() {
+        final ArrayList<DOF> coupled = new ArrayList<>();
+        final ArrayList<DOF> weirs = new ArrayList<>();
+        final LinkedHashSet<QSteuerung> qs = new LinkedHashSet<>();
+        for (DOF dof : fenet.getDOFs()) { // Reihenfolge = dof.number -> reproduzierbar
+            final CurrentModel2DData c = dof_data[dof.number];
+            if (c.bWeir != null || c.extrapolate_h || c.extrapolate_u || c.extrapolate_v)
+                coupled.add(dof);
+            if (c.bWeir != null)
+                weirs.add(dof);
+            if (c.bQx != null)
+                qs.add(c.bQx);
+            if (c.bQy != null)
+                qs.add(c.bQy);
+        }
+        coupledBoundaryDOFs = coupled.toArray(new DOF[0]);
+        weirDOFs = weirs.toArray(new DOF[0]);
+        qBoundaries = qs.toArray(new QSteuerung[0]);
+    }
+
+    /**
+     * setBoundaryCondition fuer einen einzelnen Knoten, alle Phasen nacheinander.
+     * Nur fuer sequentielle Aufrufe, im Zeitschritt wird setBoundaryConditions verwendet.
      * 
      * @param dof
      * @param t
      */
     @Override
     public final void setBoundaryCondition(DOF dof, double t) {
+        setLocalBoundaryCondition(dof, t);
+        setCoupledBoundaryCondition(dof);
+        setDerivedBoundaryValues(dof, t);
+        if (dof_data[dof.number].bWeir != null)
+            setWeirVelocity(dof, t);
+    }
 
-        final int i = dof.number;
-        final CurrentModel2DData currentdata = dof_data[i];
+    /** Phase 1: nur der eigene Knoten wird gelesen und geschrieben */
+    private void setLocalBoundaryCondition(DOF dof, double t) {
+        final CurrentModel2DData currentdata = dof_data[dof.number];
 
         currentdata.puddleLambda = 0.;
 
-        double d50; // in [m]
-
-        final SedimentModel2DData sedimentmodeldata = SedimentModel2DData.extract(dof);
-        if (sedimentmodeldata == null) {
+        if (SedimentModel2DData.extract(dof) == null) {
             final BathymetryData2D bathymetrymodeldata = BathymetryData2D.extract(dof);
             if (bathymetrymodeldata != null) {
                 currentdata.setBottomLevel(bathymetrymodeldata.z);
@@ -1214,16 +1308,21 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // else {
             // currentdata.z = dof.z; // reicht beim initialiseren
             // }
-            d50 = 0.0001 * 1.E-3; // [m]
-        } else {
-            // currentdata.z = sedimentmodeldata.z; // schon im Sedimentmodell gesetzt mit
-            // setBottomLevel(z)
-            // currentdata.dzdt = sedimentmodeldata.dzdt; // schon im
-            // Sedimentmodell.timStep() gesetzt
-            d50 = sedimentmodeldata.d50; // [m]
         }
+        // sonst: currentdata.z = sedimentmodeldata.z schon im Sedimentmodell mit setBottomLevel(z) gesetzt
 
-        if (currentdata.bWeir != null) { // ToDo das verstehe ich nicht! Die Geschwindigkeiten werden am ENDE der
+        if (currentdata.bh != null) {
+            currentdata.setWaterLevel(currentdata.bh.getValue(t));
+            currentdata.detadt = currentdata.bh.getDifferential(t);
+        }
+    }
+
+    /** Phase 2: liest und schreibt Nachbarknoten, darf nur sequentiell aufgerufen werden */
+    private void setCoupledBoundaryCondition(DOF dof) {
+        final CurrentModel2DData currentdata = dof_data[dof.number];
+
+        // Glaettung am Wehr, an Knoten mit Wasserstands-RB wirkungslos (bh gilt)
+        if (currentdata.bWeir != null && currentdata.bh == null) { // ToDo das verstehe ich nicht! Die Geschwindigkeiten werden am ENDE der
                                          // Methode gesetzt
             final FElement[] felem = dof.getFElements();
             for (FElement elem : felem) {
@@ -1232,7 +1331,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         for (int ii = 1; ii < 3; ii++) {
                             final CurrentModel2DData tmpcdata = dof_data[elem.getDOF((ll + ii) % 3).number];
                             if (tmpcdata.totaldepth > WATT) {
-                                currentdata.setWaterLevel_synchronized(
+                                currentdata.setWaterLevel(
                                         (999. * currentdata.eta + 1. * tmpcdata.eta) / 1000.);
                             }
                         }
@@ -1240,11 +1339,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     }
                 }
             }
-        }
-
-        if (currentdata.bh != null) {
-            currentdata.setWaterLevel_synchronized(currentdata.bh.getValue(t));
-            currentdata.detadt = currentdata.bh.getDifferential(t);
         }
 
         /* extrapolate no exact defined boundary conditions */
@@ -1261,8 +1355,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                     if (tmpcdata.extrapolate_h) {
                                         dh /= 10.;
                                     }
-                                    currentdata.setWaterLevel_synchronized(currentdata.eta - dh);
-                                    tmpcdata.setWaterLevel_synchronized(tmpcdata.eta + dh);
+                                    currentdata.setWaterLevel(currentdata.eta - dh);
+                                    tmpcdata.setWaterLevel(tmpcdata.eta + dh);
                                 }
                                 if (currentdata.extrapolate_u) {
                                     final double lambda = Math.min(1., currentdata.totaldepth / 5.);
@@ -1272,9 +1366,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                     if (tmpcdata.extrapolate_u) {
                                         du /= 10.;
                                     }
-                                    synchronized (currentdata) {
-                                        currentdata.u -= du;
-                                    }
+                                    currentdata.u -= du;
                                 }
                                 if (currentdata.extrapolate_v) {
                                     final double lambda = Math.min(1., currentdata.totaldepth / 5.);
@@ -1284,9 +1376,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                     if (tmpcdata.extrapolate_v) {
                                         dv /= 10.;
                                     }
-                                    synchronized (currentdata) {
-                                        currentdata.v -= dv;
-                                    }
+                                    currentdata.v -= dv;
                                 }
                             } else {
                                 if (currentdata.extrapolate_h) {
@@ -1294,9 +1384,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                     if (tmpcdata.extrapolate_h) {
                                         dh /= 10.;
                                     }
-                                    currentdata.setWaterLevel_synchronized(currentdata.eta - dh);
+                                    currentdata.setWaterLevel(currentdata.eta - dh);
                                     if (dh < 0.)
-                                        tmpcdata.setWaterLevel_synchronized(tmpcdata.eta + dh);
+                                        tmpcdata.setWaterLevel(tmpcdata.eta + dh);
                                 }
                             }
                         }
@@ -1322,8 +1412,16 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
             }
             final double dh = (currentdata.eta - minh) / 100. * currentdata.w1_lambda;
-            currentdata.setWaterLevel_synchronized(currentdata.eta - dh);
+            currentdata.setWaterLevel(currentdata.eta - dh);
         }
+    }
+
+    /** Phase 3: nur der eigene Knoten wird geschrieben */
+    private void setDerivedBoundaryValues(DOF dof, double t) {
+        final int i = dof.number;
+        final CurrentModel2DData currentdata = dof_data[i];
+        final SedimentModel2DData sedimentmodeldata = SedimentModel2DData.extract(dof);
+        double d50 = (sedimentmodeldata == null) ? 0.0001 * 1.E-3 : sedimentmodeldata.d50; // [m]
 
         if (currentdata.bQx != null) {
             currentdata.bQx.update(dof_data, t);
@@ -1424,10 +1522,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // Schlammauflage
             if (fmuddata != null)
                 ks = Math.max(0., ks - fmuddata.thickness);
-            // final double k=0.41;// Karman-Konstante (k=0,41)
-            // z0 = 0.033*ks bei Re* > 3.3
-            currentdata.bottomFrictionCoefficient += PhysicalParameters.G
-                    / Function.sqr(18. * Math.log10(12. * depthForFriction / ks)); // Colebrooks / Nikuradse
+            final double chezy = Math.max(5., 18. * Math.log10(12. * depthForFriction / ks));
+            currentdata.bottomFrictionCoefficient = PhysicalParameters.G / Function.sqr(chezy); // Colebrooks / Nikuradse
 
         } else {
 
@@ -1459,6 +1555,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     currentdata.tau_windy = tau_wind * meteorologyData2D.windspeed * meteorologyData2D.windy;
                 else
                     currentdata.tau_windy = 0.;
+            } else {
+                currentdata.tau_windx = 0.;
+                currentdata.tau_windy = 0.;
             }
         } else {
             currentdata.tau_windx = 0.;
@@ -1483,7 +1582,11 @@ public class CurrentModel2D extends SurfaceWaterModel {
         if (sedimentmodeldata != null) {
             currentdata.rho += sedimentmodeldata.sC * (PhysicalParameters.RHO_SEDIM - currentdata.rho);
         }
+    }
 
+    /** Phase 4: Wehre, getV liest die Nachbarknoten und setzt eta, darf nur sequentiell aufgerufen werden */
+    private void setWeirVelocity(DOF dof, double t) {
+        final CurrentModel2DData currentdata = dof_data[dof.number];
         // Wehrimplementierung
         if (currentdata.bWeir != null) {
             double[] qu = currentdata.bWeir.getV(dof, currentdata.eta, t);
@@ -1695,7 +1798,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     y = bin_in.fbinreaddouble();
                     kst = bin_in.fbinreaddouble(); // -> kst
                     // Plausibilitaetskontrolle
-                    if (Double.isNaN(kst) || kst <= 0.) {
+                    if (!Double.isFinite(kst) || kst <= 0.) {
                         hasValidValues = false;
                     }
                     DOF dof = fenet.getDOF(nr);
@@ -1711,12 +1814,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
                 // Abbruch, wenn Netz nicht ok!
                 if (!hasValidValues) {
-                    System.out.println("***                     WARNUNG                       ***");
+                    System.out.println("***                      FEHLER                       ***");
                     System.out.println("***   Ueberpruefen Sie die Rauheiten des              ***");
-                    System.out.println("***   Rauheitennetzes. Das verwendetet Netz hat       ***");
-                    System.out.println("***   Knoten mit negativen oder nicht definierten     ***");
-                    System.out.println("***   Rauheiten!                                      ***");
-                    System.out.println("***   Die Simulation wird fortgesetzt                 ***");
+                    System.out.println("***   Rauheitennetzes. Das verwendete Netz hat        ***");
+                    System.out.println("***   Knoten mit Rauheiten <= 0 oder nicht            ***");
+                    System.out.println("***   definierten Rauheiten!                          ***");
+                    System.out.println("***   Die Simulation wird abgebrochen                 ***");
                     System.exit(1);
                 }
             } else {
@@ -1754,10 +1857,15 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         String line;
 
+        final FileIO systemfile = new FileIO();
         try {
-            FileIO systemfile = new FileIO();
             systemfile.fopen(filename, FileIO.input, 'C');
+        } catch (Exception e) {
+            System.out.println("cannot open file: " + filename);
+            System.exit(1);
+        }
 
+        try {
             System.out.println("\tReading Bottom-Friction-File (in TiCAD-System.Dat-Format): " + filename);
 
             do {
@@ -1774,7 +1882,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final int gebiets_knoten = Integer.parseInt(strto.nextToken());
 
             if (rand_knoten < 0 || rand_knoten > 10000000 || gebiets_knoten < 0 || gebiets_knoten > 10000000) {
-                throw new Exception("Fehler");
+                throw new Exception("invalid number of nodes: " + rand_knoten + " + " + gebiets_knoten);
             }
 
             if ((rand_knoten + gebiets_knoten) != fenet.getNumberofDOFs()) {
@@ -1802,13 +1910,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         kst = Double.NaN;
                     }
 
-                    if (Double.isNaN(kst) || kst < 0) {
+                    if (!Double.isFinite(kst) || kst <= 0.) { // kst = 0 -> Division durch 0 in der Reibung
 
                         System.out.println("");
 
                         System.out.println("********************************       ERROR         ***********************************");
-                        System.out.println("Invalid z-value (z=NaN or z<0.0) in Bottom Friction-Mesh: <" + filename + "> node number <" + p_count + ">");
-                        System.out.println("To correct this problem ensure that node nr <" + p_count + "> has a correct floating point (greater zero)");
+                        System.out.println("Invalid bottom friction value (NaN or <= 0.0) in Bottom Friction-Mesh: <" + filename + "> node number <" + knoten_nr + ">");
+                        System.out.println("To correct this problem ensure that node nr <" + knoten_nr + "> has a correct floating point (greater zero)");
                         System.out.println("bottom friction value");
                         System.out.println("*****************************************************************************************");
                         System.out.println("");
@@ -1824,8 +1932,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
 
             }
-        } catch (Exception e) {
-            System.out.println("cannot open file: " + filename);
+        } catch (Exception e) { // NumberFormatException, fehlende Tokens, Dateiende (line == null)
+            System.out.println("error while reading file: " + filename + " (" + e + ")");
             System.exit(1);
         }
 
@@ -1843,7 +1951,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
     }
 
     /**
-     * the method read Nikuradse coefficients datas in [mm]
+     * the method read Nikuradse coefficients datas in [m]
      * from a JanetBinary-file named filename
      * 
      * @param nam name of the file to be open
@@ -1921,13 +2029,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     y = bin_in.fbinreaddouble();
                     ks = bin_in.fbinreaddouble(); // -> ks
                     // Plausibilitaetskontrolle
-                    if (Double.isNaN(ks) || ks <= 0.) {
+                    if (!Double.isFinite(ks) || ks <= 0.) {
                         hasValidValues = false;
                     }
 
                     DOF dof = fenet.getDOF(nr);
                     CurrentModel2DData currentdata = CurrentModel2DData.extract(dof);
-                    currentdata.ks = ks; // [mm]
+                    currentdata.ks = ks; // [m]
                     currentdata.kst = CurrentModel2DData.Nikuradse2Strickler(ks); // nach
                                                                                   // http://www.baw.de/vip/abteilungen/wbk/Publikationen/scn/sc1-99a/node21.htm
 
@@ -1939,12 +2047,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 }
                 // Abbruch, wenn Netz nicht ok!
                 if (!hasValidValues) {
-                    System.out.println("***                     WARNUNG                       ***");
+                    System.out.println("***                      FEHLER                       ***");
                     System.out.println("***   Ueberpruefen Sie die Rauheiten des              ***");
-                    System.out.println("***   Rauheitennetzes. Das verwendetet Netz hat       ***");
-                    System.out.println("***   Knoten mit negativen oder nicht definierten     ***");
-                    System.out.println("***   Rauheiten!                                      ***");
-                    System.out.println("***   Die Simulation wird fortgesetzt                 ***");
+                    System.out.println("***   Rauheitennetzes. Das verwendete Netz hat        ***");
+                    System.out.println("***   Knoten mit Rauheiten <= 0 oder nicht            ***");
+                    System.out.println("***   definierten Rauheiten!                          ***");
+                    System.out.println("***   Die Simulation wird abgebrochen                 ***");
                     System.exit(1);
                 }
             } else {
@@ -1970,7 +2078,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
     }
 
     /**
-     * the method readNikuradseCoeff read the datas for Nikuradse coefficients in [mm]
+     * the method readNikuradseCoeff read the datas for Nikuradse coefficients in [m]
      * from a sysdat-file named nam
      * 
      * @param nam name of the file to be open
@@ -1985,10 +2093,15 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
         String line;
 
+        final FileIO systemfile = new FileIO();
         try {
-            FileIO systemfile = new FileIO();
             systemfile.fopen(filename, FileIO.input, 'C');
+        } catch (Exception e) {
+            System.out.println("cannot open file: " + filename);
+            System.exit(1);
+        }
 
+        try {
             System.out.println("\tReading Nikuradse Coefficients from file (in TiCAD-System.Dat-Format): " + filename);
 
             do {
@@ -2005,7 +2118,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
             final int gebiets_knoten = Integer.parseInt(strto.nextToken());
 
             if (rand_knoten < 0 || rand_knoten > 10000000 || gebiets_knoten < 0 || gebiets_knoten > 10000000) {
-                throw new Exception("Fehler");
+                throw new Exception("invalid number of nodes: " + rand_knoten + " + " + gebiets_knoten);
+            }
+
+            if ((rand_knoten + gebiets_knoten) != fenet.getNumberofDOFs()) {
+                System.out.println("system and " + filename + " have different number of nodes");
+                System.exit(1);
             }
 
             // Knoten einlesen
@@ -2025,13 +2143,13 @@ public class CurrentModel2D extends SurfaceWaterModel {
                         ks = Double.NaN;
                     }
 
-                    if (Double.isNaN(ks) || ks < 0) {
+                    if (!Double.isFinite(ks) || ks <= 0.) { // ks = 0 -> Division durch 0 in der Reibung
 
                         System.out.println("");
 
                         System.out.println("********************************       ERROR         ***********************************");
-                        System.out.println("Invalid z-value (z=NaN or z<0.0) in Bottom Friction-Mesh: <" + filename + "> node number <" + p_count + ">");
-                        System.out.println("To correct this problem ensure that node nr <" + p_count + "> has a correct floating point (greater zero)");
+                        System.out.println("Invalid bottom friction value (NaN or <= 0.0) in Bottom Friction-Mesh: <" + filename + "> node number <" + knoten_nr + ">");
+                        System.out.println("To correct this problem ensure that node nr <" + knoten_nr + "> has a correct floating point (greater zero)");
                         System.out.println("bottom friction value");
                         System.out.println("*****************************************************************************************");
                         System.out.println("");
@@ -2040,15 +2158,15 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     DOF dof = fenet.getDOF(knoten_nr);
                     CurrentModel2DData currentdata =
                             CurrentModel2DData.extract(dof);
-                    currentdata.ks = ks; // [mm]
+                    currentdata.ks = ks; // [m]
                     currentdata.kst = CurrentModel2DData.Nikuradse2Strickler(ks); // nach http://www.baw.de/vip/abteilungen/wbk/Publikationen/scn/sc1-99a/node21.htm
 
                     p_count++;
                 }
 
             }
-        } catch (Exception e) {
-            System.out.println("cannot open file: " + filename);
+        } catch (Exception e) { // NumberFormatException, fehlende Tokens, Dateiende (line == null)
+            System.out.println("error while reading file: " + filename + " (" + e + ")");
             System.exit(1);
         }
 
@@ -2075,11 +2193,12 @@ public class CurrentModel2D extends SurfaceWaterModel {
         try {
             xf_os.writeFloat((float) time);
 
+            // Rand-Werte fuer die Ausgabe setzen, ohne die nicht idempotente Nachbar-Glaettung
+            if (MarinaXML.release)
+                applyBoundaryConditions(false);
+
             for (DOF dof : fenet.getDOFs()) {
                 CurrentModel2DData current = dof_data[dof.number];
-                if (MarinaXML.release) {
-                    setBoundaryCondition(dof, time);
-                }
                 xf_os.writeFloat((float) current.z);
                 if (current.totaldepth < WATT && MarinaXML.release) {
                     xf_os.writeFloat(0.f);
@@ -2412,7 +2531,8 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 source_dhdt = cmd.sourceh.getValue(time);
             }
             if (cmd.sourceQ != null) {
-                source_dhdt = cmd.sourceQ.getValue(time) / area * 3.;
+                // Kontrollvolumen der gelumpten Massenmatrix ist lumpedMass
+                source_dhdt += cmd.sourceQ.getValue(time) / dof.lumpedMass;
             }
             final GroundWater2DData gwdata = GroundWater2DData.extract(dof);
             if (gwdata != null) {

@@ -133,7 +133,7 @@ public class  CurrentModel3D extends SurfaceWaterModel  {
         }
         if (currentdat.bottomFriction == CurrentDat.BottomFriction.Nikuradse) {
             nikuradse = true;
-            // read rauhigkeitsmodell // nikuradse-dat
+            // read rauhigkeitsmodell // nikuradse-dat in m
             if (currentdat.nikuradse_name != null) {
                 if (currentdat.nikuradseFileType == SmileIO.MeshFileType.SystemDat) {
                     readNikuradseCoeff(currentdat.nikuradse_name);
@@ -1794,7 +1794,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
         }
     }
 
-    /** the method read Nikuradse Coeff read the datas for Nikuradse coefficients
+    /** the method read Nikuradse Coeff read the datas for Nikuradse coefficients in [m]
      *  from a JanetBinary-file named filename
      *  @param nam  name of the file to be open */
     @SuppressWarnings("unused")
@@ -1876,7 +1876,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                     // ENDE NEU WIEBKE 20.02.2007
                     DOF dof = fenet.getDOF(nr);
                     CurrentModel3DData currentdata = CurrentModel3DData.extract(dof);
-                    currentdata.ks = ks;
+                    currentdata.ks = ks; // [m]
                     currentdata.kst = CurrentModel2DData.Nikuradse2Strickler(ks); // nach http://www.baw.de/vip/abteilungen/wbk/Publikationen/scn/sc1-99a/node21.htm
 
                     // Status-Flag lesen
@@ -1906,7 +1906,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
         }
     }
 
-    /** the method readStricklerCoeff read the datas for strickler coefficients
+    /** the method readNikuradseCoeff read the datas for Nikuradse coefficients in [m]
      *  from a sysdat-file named nam
      *  @param nam  name of the file to be open */
     private void readNikuradseCoeff(String filename) {
@@ -1976,7 +1976,7 @@ if(unterBoden<3 && ueberWasser<3){ // mindestens ein Knoten der Schicht liegt ob
                     }
                     DOF dof = fenet.getDOF(knoten_nr);
                     CurrentModel3DData currentdata = CurrentModel3DData.extract(dof);
-                    currentdata.ks = ks;
+                    currentdata.ks = ks; // [m]
                     currentdata.kst = CurrentModel2DData.Nikuradse2Strickler(ks); // nach http://www.baw.de/vip/abteilungen/wbk/Publikationen/scn/sc1-99a/node21.htm
 
                     p_count++;

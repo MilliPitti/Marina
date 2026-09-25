@@ -29,7 +29,6 @@ import de.smile.marina.fem.DOF;
 import de.smile.marina.fem.FElement;
 import de.smile.marina.fem.FTriangle;
 import de.smile.marina.fem.ModelData;
-import static de.smile.marina.fem.model.hydrodynamic.dim2.SurfaceWaterModel.halfWATT;
 import de.smile.marina.fem.model.hydrodynamic.dim2.weirs.TimeDependentWeir;
 import static de.smile.math.Function.sqr;
 import static java.lang.Math.abs;
@@ -198,10 +197,10 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
     }
 
     /**
-     * absoluter Rauheitshoehe Rz [mm] nach Strickler-Beiwert k_ST [m^(1/3/s]
+     * absoluter Rauheitshoehe Rz [m] nach Strickler-Beiwert k_ST [m^(1/3/s]
      * umrechnen in Anlehnung an DIN EN 752-4
      *
-     * @param Rz absolute Rauheitshoehe
+     * @param Rz absolute Rauheitshoehe [m]
      * @param depth Tiefe / im original hydraulischer Radius
      * @return Strickler-Beiwert [m^(1/3)/s] aus dem Inervall [1,Unendlich]
      */
@@ -251,6 +250,21 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
         id = SEARCH_MODEL_DATA;
     }
 
+    /** Begrenzt die Geschwindigkeit auf |u| <= Fr_max * sqrt(g*h) mit
+     *  Fr_max = wlambda * (1 + 2*min(1,h)). Oberhalb von WATT wie bisher, darunter stetig gegen 0.
+     *  Projektion statt Daempfung: ein zweiter Aufruf aendert nichts (idempotent), das Ergebnis haengt also
+     *  weder vom Zeitschritt noch von der Zahl der Aufrufe (setBottomLevel, Randglaettung) ab. */
+    private void limitVelocity() {
+        final double frMax = this.wlambda * (1. + 2. * Math.min(1., this.totaldepth)); // in 1m tiefem Wasser Froude-Zahl bis 3
+        final double cv2max = frMax * frMax * PhysicalParameters.G * this.totaldepth;
+        final double cv2 = this.u * this.u + this.v * this.v;
+        if (cv2 > cv2max) {
+            final double scale = Math.sqrt(cv2max / cv2);   // cv2 > cv2max >= 0, also keine Division durch 0
+            this.u *= scale;
+            this.v *= scale;
+        }
+    }
+
     synchronized final void setWaterLevel_synchronized(double h) {  // synchronized notwendig in setBoundaryCondition, da beim glaetten der Wasserspiegellagen an Raendern auch benachbarte Knotenwerte veraendert werden
         if ((this.z + h) <= 0.) {
             this.eta = -this.z;
@@ -263,19 +277,8 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
             this.totaldepth = this.z + this.eta;
             this.wlambda = Math.min(1., this.totaldepth / CurrentModel2D.WATT);
             this.w1_lambda = 1. - this.wlambda;
-            // Froude - kostet viel Zeit, ist aber bei Dammbruchsimulationen notwendig 
-            if (this.totaldepth > halfWATT / 10.) {
-                final double cv2 = this.u * this.u + this.v * this.v;
-                final double vg = PhysicalParameters.G * this.totaldepth;
-                final double froud = Math.sqrt(cv2 / vg) / (1. + 2. * Math.min(1., this.totaldepth)); // in 1m tiefem Wasser darf die Froud-Zahl bis 2 gehen
-                if (froud > 1.) {
-                    this.u /= froud;
-                    this.v /= froud;
-                }
-            }else{
-                this.u *= this.wlambda;
-                this.v *= this.wlambda;
-            }
+            // Froude-Begrenzung
+            limitVelocity();
         }
     }
 
@@ -291,19 +294,8 @@ public class CurrentModel2DData extends SurfaceWaterModelData {
             this.totaldepth = this.z + this.eta;
             this.wlambda = Math.min(1., this.totaldepth / CurrentModel2D.WATT);
             this.w1_lambda = 1. - this.wlambda;
-            // Froude - kostet viel Zeit, ist aber bei Dammbruchsimulationen notwendig 
-            if (this.totaldepth > halfWATT / 10.) {
-                final double cv2 = this.u * this.u + this.v * this.v;
-                final double vg = PhysicalParameters.G * this.totaldepth;
-                final double froud = Math.sqrt(cv2 / vg) / (1. + 2. * Math.min(1., this.totaldepth)); // in 1m tiefem Wasser darf die Froud-Zahl bis 2 gehen
-                if (froud > 1.) {
-                    this.u /= froud;
-                    this.v /= froud;
-                }
-            }else{
-                this.u *= this.wlambda;
-                this.v *= this.wlambda;
-            }
+            // Froude-Begrenzung
+            limitVelocity();
         }
     }
 

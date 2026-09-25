@@ -104,6 +104,9 @@
                                             <complexType>
                                                 <choice>
                                                     <element name="Nikuradse">
+                                                        <annotation>
+                                                            <documentation>Nikuradse-Beiwert k_s in m (Konstante und Knotenwerte der Datei)</documentation>
+                                                        </annotation>
                                                         <complexType>
                                                             <choice>
                                                                 <element name="TriangleMesh">
@@ -116,12 +119,18 @@
                                                                         </sequence>
                                                                     </complexType>
                                                                 </element>
-                                                                <element name="Constant" type="double">
+                                                                <element name="Constant" type="tns:TPositiveDouble">
+                                                                    <annotation>
+                                                                        <documentation>Konstanter Nikuradse-Beiwert k_s in m, muss groesser 0 sein (0 fuehrt zum Abbruch)</documentation>
+                                                                    </annotation>
                                                                 </element>
                                                             </choice>
                                                         </complexType>
                                                     </element>
                                                     <element name="ManningStrickler">
+                                                        <annotation>
+                                                            <documentation>Strickler-Beiwert k_st in m^(1/3)/s (Konstante und Knotenwerte der Datei)</documentation>
+                                                        </annotation>
                                                         <complexType>
                                                             <choice>
                                                                 <element name="TriangleMesh">
@@ -134,7 +143,10 @@
                                                                         </sequence>
                                                                     </complexType>
                                                                 </element>
-                                                                <element name="Constant" type="double">
+                                                                <element name="Constant" type="tns:TPositiveDouble">
+                                                                    <annotation>
+                                                                        <documentation>Konstanter Strickler-Beiwert k_st in m^(1/3)/s, muss groesser 0 sein (0 fuehrt zum Abbruch)</documentation>
+                                                                    </annotation>
                                                                 </element>
                                                             </choice>
                                                         </complexType>
@@ -152,7 +164,10 @@
                                                         </complexType>
                                                     </element>
                                                     <element
-                                                        name="Constant" type="double">  <!-- Strickler wird ab 1.8 nicht mehr genutzt -->
+                                                        name="Constant" type="tns:TPositiveDouble">  <!-- Strickler wird ab 1.8 nicht mehr genutzt -->
+                                                        <annotation>
+                                                            <documentation>Konstanter Strickler-Beiwert k_st in m^(1/3)/s, muss groesser 0 sein (0 fuehrt zum Abbruch)</documentation>
+                                                        </annotation>
                                                     </element>
                                                 </choice>
                                             </complexType>
@@ -447,6 +462,9 @@
                                             <complexType>
                                                 <choice>
                                                     <element name="Nikuradse">
+                                                        <annotation>
+                                                            <documentation>Nikuradse-Beiwert k_s in m (Konstante und Knotenwerte der Datei)</documentation>
+                                                        </annotation>
                                                         <complexType>
                                                             <choice>
                                                                 <element name="TriangleMesh">
@@ -459,12 +477,18 @@
                                                                         </sequence>
                                                                     </complexType>
                                                                 </element>
-                                                                <element name="Constant" type="double">
+                                                                <element name="Constant" type="tns:TPositiveDouble">
+                                                                    <annotation>
+                                                                        <documentation>Konstanter Nikuradse-Beiwert k_s in m, muss groesser 0 sein (0 fuehrt zum Abbruch)</documentation>
+                                                                    </annotation>
                                                                 </element>
                                                             </choice>
                                                         </complexType>
                                                     </element>
                                                     <element name="ManningStrickler">
+                                                        <annotation>
+                                                            <documentation>Strickler-Beiwert k_st in m^(1/3)/s (Konstante und Knotenwerte der Datei)</documentation>
+                                                        </annotation>
                                                         <complexType>
                                                             <choice>
                                                                 <element name="TriangleMesh">
@@ -477,7 +501,10 @@
                                                                         </sequence>
                                                                     </complexType>
                                                                 </element>
-                                                                <element name="Constant" type="double">
+                                                                <element name="Constant" type="tns:TPositiveDouble">
+                                                                    <annotation>
+                                                                        <documentation>Konstanter Strickler-Beiwert k_st in m^(1/3)/s, muss groesser 0 sein (0 fuehrt zum Abbruch)</documentation>
+                                                                    </annotation>
                                                                 </element>
                                                             </choice>
                                                         </complexType>
@@ -495,7 +522,10 @@
                                                         </complexType>
                                                     </element>
                                                     <element
-                                                        name="Constant" type="double">  <!-- Strickler wird ab 1.8 nicht mehrgenutzt -->
+                                                        name="Constant" type="tns:TPositiveDouble">  <!-- Strickler wird ab 1.8 nicht mehrgenutzt -->
+                                                        <annotation>
+                                                            <documentation>Konstanter Strickler-Beiwert k_st in m^(1/3)/s, muss groesser 0 sein (0 fuehrt zum Abbruch)</documentation>
+                                                        </annotation>
                                                     </element>
                                                 </choice>
                                             </complexType>
@@ -2136,6 +2166,15 @@
 
 
 
+    <simpleType name="TPositiveDouble">
+        <annotation>
+            <documentation>Gleitkommazahl groesser 0 (z.B. Rauheitsbeiwerte, 0 fuehrt zur Division durch 0)</documentation>
+        </annotation>
+        <restriction base="double">
+            <minExclusive value="0"/>
+        </restriction>
+    </simpleType>
+    
     <simpleType name="TMeshFileType">
         <restriction base="string">
             <enumeration value="JanetBinaryFile"></enumeration>

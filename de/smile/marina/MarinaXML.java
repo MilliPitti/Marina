@@ -56,6 +56,26 @@ public class MarinaXML {
     public static int epsgCode = -1;
 
     /**
+     * Prueft eine konstante Rauheit aus der xml-Datei. Werte <= 0, NaN oder unendlich fuehren in der
+     * Reibungsberechnung zur Division durch 0, deshalb Abbruch mit Fehlermeldung.
+     *
+     * @param value Konstante aus der xml-Datei, null wenn nicht angegeben (wird unveraendert zurueckgegeben)
+     * @param name  Bezeichnung fuer die Meldung (k_s oder k_st)
+     */
+    private static Double checkPositiveRoughness(Double value, String name) {
+        if (value != null && (!Double.isFinite(value) || value <= 0.)) {
+            System.out.println("");
+            System.out.println("********************************       ERROR         ***********************************");
+            System.out.println("Invalid constant bottom friction " + name + " = " + value + " in the xml file");
+            System.out.println("The constant roughness must be a finite value greater zero");
+            System.out.println("*****************************************************************************************");
+            System.out.println("");
+            System.exit(1);
+        }
+        return value;
+    }
+
+    /**
      *
      * @param args
      * @throws java.net.UnknownHostException
@@ -261,7 +281,7 @@ public class MarinaXML {
                                 currentdat.strickler_name = base_dir + configuration.getCurrentModel2D().getBottomFriction().getManningStrickler().getTriangleMesh().getFileName();
                             } else {
                                 try {
-                                    currentdat.constantStrickler = configuration.getCurrentModel2D().getBottomFriction().getManningStrickler().getConstant();
+                                    currentdat.constantStrickler = checkPositiveRoughness(configuration.getCurrentModel2D().getBottomFriction().getManningStrickler().getConstant(), "k_st");
                                     currentdat.constantNikuradse = CurrentModel2DData.Strickler2Nikuradse(currentdat.constantStrickler);
                                     System.out.println("\tconstant roughness based on Manning-Strickler in the modeldomain: kst= " + currentdat.constantStrickler);
                                 } catch (Exception e) {
@@ -280,7 +300,7 @@ public class MarinaXML {
                                 currentdat.nikuradse_name = base_dir + configuration.getCurrentModel2D().getBottomFriction().getNikuradse().getTriangleMesh().getFileName();
                             } else {
                                 try {
-                                    currentdat.constantNikuradse = configuration.getCurrentModel2D().getBottomFriction().getNikuradse().getConstant();
+                                    currentdat.constantNikuradse = checkPositiveRoughness(configuration.getCurrentModel2D().getBottomFriction().getNikuradse().getConstant(), "k_s");
                                     currentdat.constantStrickler = CurrentModel2DData.Nikuradse2Strickler(currentdat.constantNikuradse);
                                     System.out.println("\tconstant roughness based on Nikuradse in the modeldomain: ks= " + currentdat.constantNikuradse);
                                 } catch (Exception e) {
@@ -300,7 +320,7 @@ public class MarinaXML {
                         }
                         // Ist eine konstante Rauheit gegeben ?
                         else try {
-                            currentdat.constantStrickler = configuration.getCurrentModel2D().getBottomFriction().getConstant();
+                            currentdat.constantStrickler = checkPositiveRoughness(configuration.getCurrentModel2D().getBottomFriction().getConstant(), "k_st");
                             System.out.println("Veraenderung in der xml-Datei - in Zukunft das zusaetzliche Schluesselwort ManningStrickler verwenden");
                             System.out.println("konstante Rauhigkeitsbeiwerte nach Manning-Strickler im Gebiet: kst= " +currentdat.constantStrickler);
                         } catch (Exception e) {
@@ -421,7 +441,7 @@ public class MarinaXML {
                                 currentdat.strickler_name = base_dir + configuration.getCurrentModel3D().getBottomFriction().getManningStrickler().getTriangleMesh().getFileName();
                             } else {
                                 try {
-                                    currentdat.constantStrickler = configuration.getCurrentModel3D().getBottomFriction().getManningStrickler().getConstant();
+                                    currentdat.constantStrickler = checkPositiveRoughness(configuration.getCurrentModel3D().getBottomFriction().getManningStrickler().getConstant(), "k_st");
                                     System.out.println("konstante Rauhigkeitsbeiwerte nach Manning-Strickler im Gebiet: kst= " + currentdat.constantStrickler);
                                 } catch (Exception e) {
                                     System.out.println("konstante Rauhigkeitsbeiwerte nach Manning-Strickler im Gebiet: kst= " + currentdat.constantStrickler);
@@ -440,7 +460,7 @@ public class MarinaXML {
                                 currentdat.nikuradse_name = base_dir + configuration.getCurrentModel3D().getBottomFriction().getNikuradse().getTriangleMesh().getFileName();
                             } else {
                                 try {
-                                    currentdat.constantNikuradse = configuration.getCurrentModel3D().getBottomFriction().getNikuradse().getConstant();
+                                    currentdat.constantNikuradse = checkPositiveRoughness(configuration.getCurrentModel3D().getBottomFriction().getNikuradse().getConstant(), "k_s");
                                     System.out.println("konstante Rauhigkeitsbeiwerte nach Nikuradse im Gebiet: ks= " + currentdat.constantNikuradse);
                                 } catch (Exception e) {
                                     System.out.println("konstante Rauhigkeitsbeiwerte nach Nikuradse im Gebiet: ks= " + currentdat.constantNikuradse);

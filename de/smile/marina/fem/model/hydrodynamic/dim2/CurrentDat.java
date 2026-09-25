@@ -50,7 +50,7 @@ public class CurrentDat{
 
     public String nikuradse_name = null;
     public SmileIO.MeshFileType nikuradseFileType = SmileIO.MeshFileType.SystemDat;
-    public double constantNikuradse = 13.;
+    public double constantNikuradse = 13.e-3; // in [m] entspricht k_st ≈ 51
     
     public enum WeirFileType {weirXML};
     public String weirsFileName = null;

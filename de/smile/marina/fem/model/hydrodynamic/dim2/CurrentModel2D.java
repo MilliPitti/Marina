@@ -61,9 +61,10 @@ public class CurrentModel2D extends SurfaceWaterModel {
 
     static final double BATTJESKOEFF = 0.3; // 0.1 - 0.3 Austauschkoeffizient infolge Wellenwirkung (Wellenbrechen oder Radiationstresses)
 
-    /** Elder-Koeffizient der tiefengemittelten Wirbelviskositaet nu_t = ELDERKOEFF * u* * h [-]:
-     *  kappa/6 ≈ 0.07 aus dem logarithmischen Geschwindigkeitsprofil (Elder 1959). */
-    static final double ELDERKOEFF = 0.41 / 6.;
+    /** Koeffizient der tiefengemittelten horizontalen Wirbelviskositaet nu_t = ELDERKOEFF * u* * h [-].
+     *  kappa/6 ≈ 0.07 (Elder 1959) gilt nur fuer die vertikale Diffusion. Fuer die horizontale Viskositaet im
+     *  tiefengemittelten Modell ist 0.3 ueblich.*/
+    static final double ELDERKOEFF = 0.3;
 
     /** Referenzgefaelle [-] des Wasserspiegels fuer die Entkopplung des Massenaustauschs in teilnassen Elementen:
      *  bergauf gerichtete Transfers werden mit max(0, 1 - (deta/d)/DECOUPLING_SLOPE) gewichtet, ab diesem
@@ -621,6 +622,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
         final CurrentModel2DData cmd2 = dof_data[dofs[2].number];
         final CurrentModel2DData[] cmds = {cmd0, cmd1, cmd2};
         // ============================================================
+        final SedimentElementData eleSedimentData = SedimentElementData.extract(ele);
 
         eleCurrentData.deepestTotalDepth = 0.;
         eleCurrentData.iwatt = 0;
@@ -641,10 +643,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             }
         }
 
-        // caculate Bottomslope
-        final SedimentElementData eleSedimentData = SedimentElementData.extract(ele);
-        // final double bottomslope = (eleSedimentData != null) ? eleSedimentData.bottomslope : ele.bottomslope;
-
         if (dry == 3) { // element is totaly dry
 
             eleCurrentData.isDry = true;
@@ -653,7 +651,11 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final CurrentModel2DData cmd = cmds[j];
                 final double w1_lambda = 1. - cmd.totaldepth / halfWATT;
                 synchronized (cmd) {
-                    cmd.reta -= (/*1.E-7 +*/ infiltrationRate) * w1_lambda /* bottomslope*/; // kuenstliches Versickeren auf trockenen Elementen zur Modellstabilisierung
+                    // kuenstliches Versickern [m/s] auf trockenen Elementen: baut Restfilme h < halfWATT ab, die ohne Nachbarn
+                    // mit Wasser sonst stehen bleiben (1e-7 m/s = 0.36 mm/h). Flaechenanteil ele.area/3 wie bei den uebrigen
+                    // reta-Beitraegen, reta wird im Zeitschritt durch lumpedMass = Summe(area/3) geteilt.
+                    // infiltrationRate wirkt nicht hier, sondern einmal je Knoten ueber source_dhdt im Zeitschritt.
+                    cmd.reta -= 1.E-7 * w1_lambda * ele.area / 3.;
                 }
             }
 
@@ -980,14 +982,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
             double cureq2_mean = 0.;
             double cureq3_mean = 0.;
 
-            // Benetzungsgewichte, wie g in der Konti-Projektion
-            double gs = 0.;
-            final double[] gw = new double[3];
-            for (int j = 0; j < 3; j++) {
-                gw[j] = (flood > cmds[j].wlambda ? flood : cmds[j].wlambda);
-                gs += gw[j];
-            }
-
             // Elementfehler der Kontigleichung berechnen
             for (int j = 0; j < 3; j++) {
                 final CurrentModel2DData cmd = cmds[j];
@@ -1000,7 +994,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 final double vw = cmd.wlambda * cmd.v;
                 terms_eta[j] = cmd.totaldepth * (uwdx + vwdy) + (uw * depthdx + vw * depthdy);
                 // terms_eta[j] = cmd.totaldepth * (udx + vdy) + (cmd.u * depthdx + cmd.v * depthdy);
-                cureq1_mean += gw[j] / gs * (cmd.detadt + terms_eta[j]);
+                cureq1_mean += 1. / 3. * (cmd.detadt + terms_eta[j]);
             }
 
             // Residuum der Kontigleichung fuer Folgemodelle bereitstellen (Sekundaerstroemung im SedimentModel2D)
@@ -1030,7 +1024,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // KopplungsTerm aus der Herleitung der Formulierung von q -> v
                                 - cmd.u / nonZeroTotalDepth * cureq1_mean * wlambda // Verbesserung in der Dammbruchsimulation / wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
-                cureq2_mean += gw[j] / gs * (cmd.dudt + terms_u[j]);
+                cureq2_mean += 1. / 3. * (cmd.dudt + terms_u[j]);
 
                 // Impulsgleichung y
                 terms_v[j] =
@@ -1051,7 +1045,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
                                 // CouplingTerm from the derivation of the Formulation q -> v
                                 - cmd.v / nonZeroTotalDepth * cureq1_mean * wlambda // Improvement in the dam break simulation cmd.wlamda scaled nonZeroTotalDepth against Null, if the node dries out // Peter 06.03.26 Vorzeichen gedreht
                 ;
-                cureq3_mean += gw[j] / gs * (cmd.dvdt + terms_v[j]);
+                cureq3_mean += 1. / 3. * (cmd.dvdt + terms_v[j]);
             }
 
             // residual-basierte Elementausdehnung
@@ -1120,20 +1114,6 @@ public class CurrentModel2D extends SurfaceWaterModel {
                     }
                     double gl;
                     if (eleCurrentData.iwatt != 0) {
-                        // ---- alte richtungsbasierte gl-Berechnung (auskommentiert, zum Vergleich) ----
-                        // if (tdir[l] < 0) { // Wasserstand am abgelegenen Knoten will steigen (Galerkin + SUPG)
-                        //     if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda) * Math.max(0., 1. - (cmd.eta - cmds[l].eta) / ele.distance[l][j]);
-                        //     } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda);
-                        //     }
-                        // } else { // Wasserstand am abgelegenen Knoten will fallen
-                        //     if (cmds[l].eta < cmd.eta) { // Wasserstand am abgelegenen Knoten liegt unterhalb
-                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda);
-                        //     } else { // Wasserstand am abgelegenen Knoten liegt oberhalb
-                        //         gl = (wlambda > cmds[l].wlambda ? wlambda : cmds[l].wlambda) * Math.max(0., 1. - (cmds[l].eta - cmd.eta) / ele.distance[l][j]);
-                        //     }
-                        // }
                         // ---- Entkopplung ueber die verbindende Wassersaeule ----
                         // Der Nebendiagonalanteil ist ein Massentransfer entlang der Kante (j,l) mit Quelle s und Ziel t:
                         //   l will steigen (tdir[l] < 0): Wasser kommt bei l an und breitet sich zu j aus -> s = l, t = j
@@ -1522,8 +1502,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
             // Schlammauflage
             if (fmuddata != null)
                 ks = Math.max(0., ks - fmuddata.thickness);
+            // Chezy nach unten begrenzt, sonst Singularitaet bei ks >= 12h (log10 <= 0)
             final double chezy = Math.max(5., 18. * Math.log10(12. * depthForFriction / ks));
-            currentdata.bottomFrictionCoefficient = PhysicalParameters.G / Function.sqr(chezy); // Colebrooks / Nikuradse
+            currentdata.bottomFrictionCoefficient += PhysicalParameters.G / Function.sqr(chezy); // Colebrooks / Nikuradse
 
         } else {
 
@@ -2541,8 +2522,7 @@ public class CurrentModel2D extends SurfaceWaterModel {
             } else {
                 source_dhdt -= infiltrationRate;
             }
-            reta += source_dhdt;
-            reta -= infiltrationRate * (1. - cmd.puddleLambda); // Versickern in Pfuezen
+            reta += source_dhdt; // Infiltration einmal je Knoten, auch in Pfuetzen (Bodeneigenschaft, keine Zusatzsenke)
 
             cmd.u += dt * ru;
             cmd.v += dt * rv;

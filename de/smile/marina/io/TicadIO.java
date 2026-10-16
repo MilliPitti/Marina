@@ -315,7 +315,7 @@ public class TicadIO {
             anzWerte += 1;
         }
         if ((ergMaske & TicadIO.HRES_POS) == TicadIO.HRES_POS) {
-            anzWerte += 1;
+            anzWerte += 2; // x, y
         }
         if ((ergMaske & TicadIO.HRES_Z) == TicadIO.HRES_Z) {
             anzWerte += 1;

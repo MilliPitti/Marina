@@ -188,7 +188,7 @@ public class DetritusModel2D extends TimeDependentFEApproximation implements FEM
                 }
 
                 if (Pos_gesetzt) {
-                    inStream.skip(4);
+                    inStream.skip(8); // HRES_POS: 2 float (x, y)
                 }
 
                 if (Z_gesetzt) {

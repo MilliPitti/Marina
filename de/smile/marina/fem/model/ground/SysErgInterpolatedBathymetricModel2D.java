@@ -280,7 +280,7 @@ public class SysErgInterpolatedBathymetricModel2D extends TimeDependentFEApproxi
                         inStream.skip(4);
                     }
                     if (Pos_gesetzt) {
-                        inStream.skip(4);
+                        inStream.skip(8); // HRES_POS: 2 float (x, y)
                     }
                     if (Z_gesetzt) {
                         data.z = inStream.readFloat();

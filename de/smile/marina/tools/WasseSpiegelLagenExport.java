@@ -127,7 +127,7 @@ public class WasseSpiegelLagenExport {
                 }
 
                 if ((ergMaske & TicadIO.HRES_POS) == TicadIO.HRES_POS) {
-                    inStream.skip(4);
+                    inStream.skip(8); // HRES_POS: 2 float (x, y)
                 }
 
                 if ((ergMaske & TicadIO.HRES_Z) == TicadIO.HRES_Z) {

@@ -49,7 +49,7 @@ import java.util.logging.Logger;
  * load, suspened transport and bottom evolution
  * 
  * @author Peter Milbradt
- * @version 4.10.8.1
+ * @version 4.12.0
  */
 public class SedimentModel2D extends TimeDependentFEApproximation implements FEModel, TicadModel, TimeDependentModel {
 

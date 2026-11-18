@@ -982,15 +982,12 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
         
         
         int count = bshFct.size();
-        //	System.out.println("bshFct.size()="+bshFct.size());
-        int vcount = 8;// ((BSHPointValue)bshd.values.elementAt(0)).value.length;
-        
         VectorFunction2d[] vf2d = new VectorFunction2d[count];
         double[] zeiten = new double[count];
         
         
         int t=0;
-        for (Enumeration e = bshFct.elements();e.hasMoreElements();) {
+        for (Enumeration<BSHDat> e = bshFct.elements();e.hasMoreElements();) {
             BSHDat bshDat = (BSHDat) e.nextElement();
             //		System.out.println("bshDat="+bshDat);
             //
@@ -1031,7 +1028,7 @@ public class  SpectralWaveModel extends TimeDependentFEApproximation implements 
             Point2D.Double[] punkte = new Point2D.Double[numberofpoints];
             
             int it=0;
-            for (Enumeration ee = bshDat.values.elements();ee.hasMoreElements();) {
+            for (Enumeration<?> ee = bshDat.values.elements();ee.hasMoreElements();) {
                 BSHPointValue bshpv = (BSHPointValue) ee.nextElement();
                 punkte[it]=bshpv.p;
                 feld[it]=bshpv.value;

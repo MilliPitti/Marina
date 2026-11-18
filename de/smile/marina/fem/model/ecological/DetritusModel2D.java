@@ -25,7 +25,6 @@ package de.smile.marina.fem.model.ecological;
 
 import de.smile.marina.TimeDependentModel;
 import de.smile.marina.fem.*;
-import de.smile.math.Function;
 import bijava.math.ifunction.DiscretScalarFunction1d;
 import bijava.math.ifunction.ScalarFunction1d;
 import de.smile.marina.fem.model.hydrodynamic.BoundaryCondition;

@@ -2521,8 +2521,9 @@ public class CurrentModel2D extends SurfaceWaterModel {
                 source_dhdt -= gwdata.source;
             } else {
                 source_dhdt -= infiltrationRate;
+                source_dhdt -= 1.E-6 * (1. - cmd.puddleLambda); // Versickern in Pfuezen, nur ohne Grundwasserkopplung
             }
-            reta += source_dhdt; // Infiltration einmal je Knoten, auch in Pfuetzen (Bodeneigenschaft, keine Zusatzsenke)
+            reta += source_dhdt;
 
             cmd.u += dt * ru;
             cmd.v += dt * rv;

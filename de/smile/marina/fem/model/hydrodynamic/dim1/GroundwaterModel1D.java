@@ -37,7 +37,7 @@ import java.util.*;
 public class GroundwaterModel1D extends TimeDependentFEApproximation implements FEModel, TimeDependentModel {
     private static final double INITIAL_MAX_TIMESTEP = 0.001;
 
-    private int n,  numberofdofs;
+    private int numberofdofs;
     private double previousTimeStep = 0.0;
     private double drawXMin = Double.NaN;
     private double drawXMax = Double.NaN;
@@ -52,7 +52,6 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         initialDOFs();
 
         numberofdofs = fenet.getNumberofDOFs();
-        n = numberofdofs;
         setMaxTimeStep(INITIAL_MAX_TIMESTEP);
     }
 
@@ -172,14 +171,8 @@ public class GroundwaterModel1D extends TimeDependentFEApproximation implements 
         final FEdge ele = (FEdge) element;
 
         final double[][] koeffmat = ele.getkoeffmat();
-        final double[] eta = new double[2];
-
-
         // compute element derivations
         double dhdx = 0.;
-        double dh2dx2 = 0.; // fuer Diffusion
-        double C_mean = 0.; // mittlere Konzentration
-        double u_mean = 0.; // mittlere Geschwindigkeit
         double[] q = new double[2];
 
         //-----------------------------------------------------------------------

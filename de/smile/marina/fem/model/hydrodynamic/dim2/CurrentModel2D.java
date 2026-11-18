@@ -48,7 +48,7 @@ import javax.xml.bind.*;
  * and Coriolis force. This model uses finite element methods to solve the governing equations,
  * and it supports various boundary conditions and initial conditions.
  * 
- * @version 4.12.0
+ * @version 4.12.1
  * @author Peter Milbradt
  */
 public class CurrentModel2D extends SurfaceWaterModel {

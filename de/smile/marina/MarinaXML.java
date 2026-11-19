@@ -48,7 +48,7 @@ public class MarinaXML {
     
     public final static int majorversion = 4;
     public final static int minorversion = 12;
-    public final static String update = "1";
+    public final static String update = "2";
 
     public final static boolean release=true;
     

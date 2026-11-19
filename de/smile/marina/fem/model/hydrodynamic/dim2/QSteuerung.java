@@ -31,7 +31,7 @@ import javax.vecmath.*;
 
 /**
  * @author Peter Milbradt
- * @version 4.4.9
+ * @version 4.12.2
  */
 public class QSteuerung implements ScalarFunction1d {
 
@@ -44,11 +44,9 @@ public class QSteuerung implements ScalarFunction1d {
     protected DiscretScalarFunction1d z, v, d;
     protected int[] knotennummern;
 
-    protected final double repsilon = 1.E-4; // relative Fehlergrenze
-    protected double epsilon = 1.E-10; // absolute Fehlergrenze
+    protected final double repsilon = 1.E-5; // relative Fehlergrenze |dQ / Q| der iterativen Geschwindigkeitsverteilung
     protected double A;
     protected double s = 0.; // Laenge des Querschnittes
-    protected double maxQ = 0.;
 
     protected final double WATT = CurrentModel2D.WATT;
 
@@ -61,9 +59,6 @@ public class QSteuerung implements ScalarFunction1d {
      * @param sysdat
      */
     public QSteuerung(DiscretScalarFunction1d qzeitreihe, int[] knotennummern, FEDecomposition sysdat) {
-        maxQ = Math.max(qzeitreihe.getmax()[1], -qzeitreihe.getmin()[1]);
-        epsilon = Math.max(1.E-10, maxQ * repsilon); // Abbruchgrenze, relatives zur Groesze der Durchfluesse
-
         this.sysdat = sysdat;
         this.qzeitreihe = qzeitreihe;
         this.knotennummern = knotennummern;
@@ -178,21 +173,19 @@ public class QSteuerung implements ScalarFunction1d {
     protected void berechneV(double Q) {
 
         berechneA(); // QS-Flaeche
-        // System.out.println("Flaeche = "+A);
 
         // Geschwindigkeitsverteilung: Verlauf entsprechend dem QS-Profil (1.Schritt)
         v = berechneVvorh(Q);
 
-        if (Math.abs(Q) > epsilon) {
-            // Iteratives Berechnen der Geschwindigkeitsverteilung, solange bis Qvorh vom
-            // Eingangswert
-            // Q maximal nur noch um epsilon = 1 % abweicht
+        if (Math.abs(Q) > 1.E-10) {
+            // Iteratives Berechnen der Geschwindigkeitsverteilung, solange bis Qvorh vom Eingangswert Q
+            // relativ nur noch um repsilon abweicht.
             int anz = v.getSizeOfValues();
             int schritt = 0;
             double Qvorh = berechneQvorh(v);
             double dQ = Q - Qvorh;
 
-            while ((Math.abs(dQ / Q) > epsilon) && (schritt < 20)) {
+            while ((Math.abs(dQ) / Math.max(1.E-10, Math.abs(Q)) > repsilon) && (schritt < 20)) {
 
                 // Berechnen der Korrektur-Geschwindigkeitsverteilung
                 DiscretScalarFunction1d dv = berechneVvorh(dQ);
@@ -203,7 +196,6 @@ public class QSteuerung implements ScalarFunction1d {
                 // Berechnen der Durchfluss-Differenz
                 dQ = Q - berechneQvorh(v);
             }
-            // System.out.println(Q + " " + berechneQvorh(v));
         }
     }
 
@@ -242,8 +234,8 @@ public class QSteuerung implements ScalarFunction1d {
             double[] v0 = vin.getValueAt(i);
             double[] v1 = vin.getValueAt(i + 1);
 
-            // Trapetzregel
-            Qvorh += 0.5 * (d1[1] * v1[1] + d0[1] * v0[1]) * (d1[0] - d0[0]);
+            // Exaktes Integral des Produkts d*v zweier linearer Funktionen entlang der Kante.
+            Qvorh += (d1[0] - d0[0]) / 6. * (2. * d0[1] * v0[1] + 2. * d1[1] * v1[1] + d0[1] * v1[1] + d1[1] * v0[1]);
         }
         return Qvorh;
     }

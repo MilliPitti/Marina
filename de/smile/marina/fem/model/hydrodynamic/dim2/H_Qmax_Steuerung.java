@@ -34,7 +34,7 @@ import de.smile.marina.fem.FElement;
  * beschraenkt den Durchfluss auf Qmax bei gegebenen Wasserstand, unabhaengig von der Durchflussrichtung
  *
  * @author milbradt
- * @version 3.15.5
+ * @version 4.12.2
  */
 public class H_Qmax_Steuerung extends QSteuerung {
 
@@ -52,9 +52,6 @@ public class H_Qmax_Steuerung extends QSteuerung {
      * @param sysdat
      */
     public H_Qmax_Steuerung(DiscretScalarFunction1d h_qmax_Relation, int[] knotennummern, FEDecomposition sysdat) {
-        maxQ = h_qmax_Relation.getmax()[1];
-        epsilon = Math.max(1.E-10, maxQ * repsilon); // Abbruchgrenze, relatives zur Groesze der Durchfluesse
-
         this.sysdat = sysdat;
         this.h_qmax_Relation = h_qmax_Relation;
         this.knotennummern = knotennummern;
@@ -109,7 +106,7 @@ public class H_Qmax_Steuerung extends QSteuerung {
                 h_mean = Math.max(h_mean, zmin + Math.max(WATT, Math.abs(h_qmax_Relation.getValue(h_mean)) / (Math.sqrt(PhysicalParameters.G * 20 * WATT) * s)));
                 /* END: bestimmen der mittleren Wasserspiegellage ueber den Querschnitt */
                 final double Qmax = Math.abs(h_qmax_Relation.getValue(h_mean));
-                if (Qmax > epsilon) {
+                if (Qmax > 1.E-10) {
                     final double Q_aktuellOVERQmax = Q_aktuell / Qmax;
                     if (Q_aktuellOVERQmax > 1.) {
                         /** Gechwindigkeiten durch Division verringern */

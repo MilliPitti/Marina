@@ -33,7 +33,7 @@ import de.smile.marina.fem.FElement;
 /**
  *
  * @author milbradt
- * @version 3.15.5
+ * @version 4.12.2
  */
 public class H_Q_Steuerung  extends QSteuerung {
 
@@ -49,9 +49,6 @@ public class H_Q_Steuerung  extends QSteuerung {
      * @param sysdat
      */
     public H_Q_Steuerung(DiscretScalarFunction1d h_q_Relation, int[] knotennummern, FEDecomposition sysdat) {
-        maxQ = h_q_Relation.getmax()[1];
-        epsilon = Math.max(1.E-10, maxQ * repsilon); // Abbruchgrenze, relatives zur Groesze der Durchfluesse
-
         this.sysdat = sysdat;
         this.h_q_Relation=h_q_Relation;
         this.knotennummern=knotennummern;
